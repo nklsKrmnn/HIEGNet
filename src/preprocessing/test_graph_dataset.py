@@ -3,6 +3,7 @@ import numpy as np
 import pickle
 import torch
 from torch_geometric.data import Dataset, Data
+from torch_geometric.loader import DataLoader
 import os
 import random
 
@@ -54,7 +55,7 @@ class GraphDataset(Dataset):
                     edge_index = torch.tensor(np.argwhere(adjectency_matrix == 1).T, dtype=torch.long)
 
                     # Create the node features in tensor
-                    x = df_patient_staining.drop(columns=['Center X', 'Center Y', 'patient', 'staining'])
+                    x = df_patient_staining[['Center X', 'Center Y', 'patient', 'staining', 'Perimeter', 'Area']]
                     x = x.replace({True: 1, False: 0})
                     x = x.to_numpy()
                     x = torch.tensor(x, dtype=torch.float)
@@ -97,4 +98,10 @@ if __name__ == "__main__":
 
     test = dataset[1]
     print(test)
+
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+
+    test = next(iter(dataloader))
+    print(test)
+
     print('done')

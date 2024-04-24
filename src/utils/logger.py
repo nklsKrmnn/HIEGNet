@@ -129,19 +129,34 @@ class Logger():
         tqdm.write(f"[LOGGER]: Epoch {epoch}: Training Loss = {value}")
         self._summary_writer.add_scalar("loss/train", value, epoch)
 
-    def log_validation_loss(self, value: float, epoch: int) -> None:
+    def log_test_loss(self, value: float, epoch: int) -> None:
         """
-        Logs the validation loss for an epoch.
+        Logs the test loss for an epoch.
 
-        This method writes a message to the console and writes the validation loss to the
+        This method writes a message to the console and writes the test loss to the
         TensorBoard log file.
 
         Args:
-            value (float): The validation loss.
+            value (float): The test loss.
             epoch (int): The epoch number.
         """
-        tqdm.write(f"[LOGGER]: Epoch {epoch}: Validation Loss = {value}")
-        self._summary_writer.add_scalar("loss/val", value, epoch)
+        tqdm.write(f"[LOGGER]: Epoch {epoch}: Test Loss = {value}")
+        self._summary_writer.add_scalar("loss/test", value, epoch)
+
+    def log_accuracy_score(self, value: float, epoch: int, set: str = 'val') -> None:
+        """
+        Logs the accuracy for an epoch.
+
+        This method writes a message to the console and writes the accuracy to the
+        TensorBoard log file.
+
+        Args:
+            value (float): The accuracy.
+            epoch (int): The epoch number.
+            set (str): The set for which the accuracy is logged. Defaults to 'val'.
+        """
+        tqdm.write(f"[LOGGER]: Epoch {epoch}: Accuracy = {value}")
+        self._summary_writer.add_scalar(f"accuracy/{set}", value, epoch)
 
     def log_lr(self, lr: float, epoch: int) -> None:
         """

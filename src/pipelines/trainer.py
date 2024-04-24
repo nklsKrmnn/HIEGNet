@@ -11,10 +11,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.optim import lr_scheduler
-from torch.utils.data import DataLoader, Subset, random_split
+from torch_geometric.data import Dataset
+from torch_geometric.loader import DataLoader
 from tqdm import tqdm
-import pickle as pkl
+from sklearn.metrics import accuracy_score
 
 from src.pipelines.model_service import ModelService
 from src.utils.logger import Logger
@@ -64,6 +64,8 @@ class Trainer:
     batch_shuffle: bool
     patience: int
     log_image_frequency: int
+    dataset: Dataset
+    test_split: float
 
     def __init__(
             self,
@@ -120,12 +122,6 @@ class Trainer:
             loss_instance = nn.MSELoss()
         elif loss == "crossentropy":
             loss_instance = nn.CrossEntropyLoss()
-        elif loss == "rmse":
-            loss_instance = RMSELoss()
-        elif loss == "rmsle":
-            loss_instance = RMSLELoss()
-        elif loss == "expmse":
-            loss_instance = ExpMSELoss()
         else:
             print(f"Loss {loss} is not valid, defaulting to MSELoss")
             loss_instance = nn.MSELoss()
@@ -206,33 +202,16 @@ class Trainer:
         self.model.to(self.device)
         self.loss.to(self.device)
 
-        # # Get string with all object variables from trainer
-        # trainer_dict = vars(self).copy()
-        # trainer_dict.pop("model")
-        # trainer_dict.pop("logger")
-        # trainer_str = str(trainer_dict).replace("'", "")
-        #
-        # # Get string with all object variables from dataset
-        # dataset_dict = vars(self._dataset).copy()
-        # dataset_str = str(dataset_dict).replace("'", "")
-        #
-        # # Logg object variables
-        # self.logger.write_text(
-        #     "config_settings/Trainer_variables", trainer_str)
-        # self.logger.write_text(
-        #     "config_settings/dataset_variables", dataset_str)
-        # self.logger.write_model(self.model)
-
         # Creating training and validation data loaders from the given data
         # source
-        train_loader, validation_loader = self.setup_dataloaders()
+        dataloader = self.setup_dataloaders()
 
         # Perform model training
         self.logger.write_training_start()
-        finish_reason = self.train_model(train_loader, validation_loader)
+        finish_reason = self.train_model(dataloader)
         self.logger.write_training_end(finish_reason)
 
-    def setup_dataloaders(self) -> tuple[DataLoader, DataLoader]:
+    def setup_dataloaders(self) -> DataLoader:
         """
         Sets up the data loaders holding the training and validation datasets.
 
@@ -241,24 +220,15 @@ class Trainer:
         subsets with the specified batch size and without shuffling.
 
         Returns:
-            DataLoader: The training data loader.
-            DataLoader: The validation data loader.
+            DataLoader: The training and test data loader.
         """
-        # Splitting the dataset into training and validation sets using the dataset's subset functionality
-        train_dataset, validation_dataset = random_split(self.dataset, [1 - self.test_split, self.test_split])
 
         # Create torch data loaders
-        train_loader = DataLoader(
-            train_dataset, batch_size=self.batch_size, shuffle=self.batch_shuffle
-        )
-        validation_loader = DataLoader(
-            validation_dataset, batch_size=self.batch_size, shuffle=False
-        )
+        dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=self.batch_shuffle)
 
-        return train_loader, validation_loader
+        return dataloader
 
-    def train_model(self, train_loader: DataLoader,
-                    validation_loader: DataLoader) -> str:
+    def train_model(self, dataloader: DataLoader) -> str:
         """
         Trains the model for a specified number of epochs. For each epoch, the method calculates
         the training loss and validation loss, logs these losses, and saves the current state
@@ -269,8 +239,7 @@ class Trainer:
         interruption, the finish reason is set to `"Training finished normally"`.
 
         Args:
-            train_loader (DataLoader): DataLoader for the training set.
-            validation_loader (DataLoader): DataLoader for the validation set.
+            dataloader (DataLoader): DataLoader for the training and the test set.
 
         Returns:
             str: The reason the training ended.
@@ -282,17 +251,16 @@ class Trainer:
         finish_reason = "Training terminated before training loop ran through."
         for epoch in tqdm(range(self.epochs)):
             try:
-                train_loss = self.calculate_train_loss(
-                    train_loader)
+                train_loss, test_loss = self.train_step(dataloader)
 
-                # Logging loss and charts of results
+                # Logging loss of results
                 self.logger.log_training_loss(train_loss, epoch)
+                self.logger.log_test_loss(test_loss, epoch)
 
-                validation_loss = self.calculate_validation_loss(
-                    validation_loader)
-
-                # Logging loss and charts of results
-                self.logger.log_validation_loss(validation_loss, epoch)
+                # Calculating and logging evaluation results
+                if epoch % 30 == 0:
+                    validation_score = self.calculate_validation_score(dataloader)
+                    self.logger.log_accuracy_score(validation_score, epoch)
 
                 # Logging learning rate (getter-function only works with torch2.2 or higher)
                 if self.lr_scheduler is not None:
@@ -302,8 +270,8 @@ class Trainer:
                         self.logger.log_lr(lr=self.lr_scheduler.optimizer.param_groups[0]['lr'], epoch=epoch)
 
                 # Early stopping
-                if min_loss > validation_loss:
-                    min_loss = validation_loss
+                if min_loss > test_loss:
+                    min_loss = test_loss
                     cur_patience = 0
                 else:
                     if self.patience > 0:
@@ -325,7 +293,7 @@ class Trainer:
 
         return finish_reason
 
-    def calculate_train_loss(self, train_loader) -> float:
+    def train_step(self, dataloader) -> tuple[float, float]:
         """
         Calculates the training loss for the model. This method is called during each epoch.
 
@@ -340,57 +308,45 @@ class Trainer:
 
         Returns:
             float: The average training loss per batch.
+            float: The average test loss per batch.
         """
         self.model.train()
-        train_loss: float = 0
+        total_train_loss: float = 0
+        total_test_loss: float = 0
         step_count: int = 0
 
-        loder_len = len(train_loader)
-
-        # create an array to store the predictions and targets of all samples
-        #samples = len(train_loader.dataset)
-        #prediction_len = train_loader.dataset.dataset.decoder_target_length
-        #dim = train_loader.dataset.dataset.decoder_dimensions
-        #results = np.zeros((2, samples, prediction_len, dim))
-
-        for input_data, target in train_loader:
+        for graph_data in dataloader:
 
             # Reset optimizer
             self.optimizer.zero_grad()
 
-            input_data = input_data.to(self.device)
-            target = target.to(self.device)
+            input_graph_feature = graph_data.x.to(self.device)
+            input_graph_edge_index = graph_data.edge_index.to(self.device)
+            target = graph_data.y.float().to(self.device)
 
-            prediction = self.model.forward(input_data)
-            loss = self.loss(prediction, target.float())
+            prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
+            train_loss = self.loss(prediction[graph_data.train_mask], target[graph_data.train_mask])
 
-            # Safe prediction and target for visualization
-            #start_idx = step_count * self.batch_size
-            #end_idx = start_idx + self.batch_size
-            #results[0, start_idx:end_idx, :, :] = prediction.detach().cpu()
-            #results[1, start_idx:end_idx, :, :] = target.detach().cpu()
-
-            loss.backward()
-
+            train_loss.backward()
             self.optimizer.step()
+
+            test_loss = self.loss(prediction[graph_data.test_mask], target[graph_data.test_mask])
+
+            total_train_loss += train_loss.item()
+            total_test_loss += test_loss.item()
+            step_count += 1
 
             # Step for ReduceLROnPlateau schedule is done with validation loss
             if self.lr_scheduler is not None and not isinstance(self.lr_scheduler,
                                                                 optim.lr_scheduler.ReduceLROnPlateau):
                 self.lr_scheduler.step()
 
-            train_loss += loss.item()
-            step_count += 1
+        total_train_loss = total_train_loss / step_count
+        total_test_loss = total_test_loss / step_count
 
-            if step_count % 50 == 0:
-                print(
-                    f'Batch {step_count}/{loder_len} loss: {round(loss.item(), 2)}')
+        return total_train_loss, total_test_loss
 
-        loss = train_loss / step_count
-
-        return loss
-
-    def calculate_validation_loss(self, validation_loader) -> float:
+    def calculate_validation_score(self, validation_loader) -> float:
         """
         Calculates the validation loss for the model. This method is called during each epoch.
 
@@ -406,45 +362,35 @@ class Trainer:
             float: The average validation loss per batch.
         """
         self.model.eval()
-        validation_loss: float = 0
+        total_accuracy: float = 0
         step_count: int = 0
-
-        # create an array to store the predictions and targets of all samples
-        #samples = len(validation_loader.dataset)
-        #prediction_len = validation_loader.dataset.dataset.decoder_target_length
-        #dim = validation_loader.dataset.dataset.decoder_dimensions
-        #results = np.zeros((2, samples, prediction_len, dim))
 
         loder_len = len(validation_loader)
 
         with torch.no_grad():
-            for input_data, target in validation_loader:
+            for graph_data in validation_loader:
 
-                input_data = input_data.to(self.device)
-                target = target.to(self.device)
+                input_graph_feature = graph_data.x.to(self.device)
+                input_graph_edge_index = graph_data.edge_index.to(self.device)
+                target = graph_data.y.float().to(self.device)
 
-                prediction = self.model.forward(input_data)
-                loss = self.loss(prediction, target.float())
+                prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
 
-                #start_idx = step_count * self.batch_size
-                #end_idx = start_idx + self.batch_size
-                #results[0, start_idx:end_idx, :, :] = prediction.cpu()
-                #results[1, start_idx:end_idx, :, :] = target.cpu()
+                accuracy = accuracy_score(target[graph_data.test_mask].cpu().argmax(dim=1),
+                                          prediction[graph_data.test_mask].cpu().argmax(dim=1))
 
-                if self.lr_scheduler is not None and isinstance(self.lr_scheduler,
-                                                                optim.lr_scheduler.ReduceLROnPlateau):
-                    self.lr_scheduler.step(loss)
+                # TODO: Visualisation of the results
 
-                validation_loss += loss.sum().item()
+                total_accuracy += accuracy
                 step_count += 1
 
                 if step_count % 10 == 0:
                     print(
-                        f'Batch {step_count}/{loder_len} loss: {loss.item()}')
+                        f'Batch {step_count}/{loder_len} accuracy: {accuracy}')
 
-        loss = validation_loss / step_count
+        total_accuracy = total_accuracy / step_count
 
-        return loss
+        return total_accuracy
 
     def save_model(self) -> None:
         """
@@ -469,7 +415,7 @@ class Trainer:
         self.validation_split = 1
         train_loader, validation_loader = self.setup_dataloaders()
 
-        loss, results = self.calculate_validation_loss(validation_loader)
+        loss, results = self.calculate_validation_score(validation_loader)
 
         predictions = results[0]
         targets = results[1]

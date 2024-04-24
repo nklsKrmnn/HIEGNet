@@ -1,11 +1,11 @@
 use_gpu: true
 model_parameters:
-  test:
-    input_dim: 2
-    hidden_dim: 5
+  test_gnn:
+    input_dim: 6
+    hidden_dim: 16
     output_dim: 3
 training_parameters:
-  batch_size: 10000
+  batch_size: 1
   test_split: 0.2
   epochs: 100
   learning_rate: 0.003
@@ -18,73 +18,11 @@ training_parameters:
   weight_decay: 0.0
   momentum: 0.1
   seed: 42
-  batch_shuffle: true
+  batch_shuffle: false
   patience: 10000
   log_image_frequency: 1
 dataset_parameters:
-  data_path: "/home/dascim/repos/histograph/data/input/test.csv"
-#  read_all_files: false
-#  first_date: '2019-01-01'
-#  last_date: '2020-12-31' # YYYY-MM-DD Last date of the data to be read in
-#  data_usage_ratio: 0.5 # Only the last 50% of the read data are used in the dataset
-#  subseries_amount: 4 # The time series will be cut into 10 subseries (which each consist of a train and validation set)
-#  validation_split: 0.1 # The last 10% of timestamps in a subseries are used for validation
-#  create_new_file: true # This parameter must be set to true if the symbols to be read in are changed.
-#  scaler:  "MinMaxScaler" # Options: "StandardScaler", "MinMaxScaler", "QuantileTransformer", "PowerTransformer"
-#  data_file: "data/output/Multi_Symbol_dataset1.csv"
-#  time_resolution: 1 # Time resolution of the data in minutes
-#  outlier_quantile: 0.9999 # Set to 1 to disable outlier removal
-#  data_selection_config:
-#    ignore_nights: true # If true, only the data between start_day_time and end_day_time is used
-#    ignore_weekends: true # If true, Saturday and Sunday are ignored
-#    start_day_time: '10:00' # Start time of the day if ignore_nights is true
-#    end_day_time: '18:00' # End time of the day if ignore_nights is true
-#  time_feature:
-#    day_of_week: false
-#    month: false
-#    hour: false
-#    first_and_last: false
-#  encoder_symbols:
-#  # stocks
-#    - "AAPL" # Apple
-#    - "AAL" # American Airlines
-#    - "AMD" # Advanced Micro Devices
-#    - "C" # Citigroup
-#    - "MRNA" # Moderna
-#    - "NIO" # NIO
-#    - "NVDA" # NVIDIA
-#    - "SNAP" # Snap
-#    - "SQ" # Block
-#    - "TSLA" # Tesla
-#  # ETFs
-#    # - "ACWI" # iShares MSCI ACWI ETF
-#  # indices
-#    - "DXY" # US Dollar Index
-#    #- "SPX" # S&P 500
-#    #- "DJCIGC" # Dow Jones Commodity Index Gold
-#    #- "DJCISI" # Dow Jones Commodity Index Silver
-#    #- "DJCIEN" # Dow Jones Commodity Index Energy
-#    #- "DJCIIK" # Dow Jones Commodity Index Nickel
-#    #- "DJI" # Dow Jones Industrial Average
-#    #- "DJINET" # Dow Jones Internet Composite Index
-#    - "COMP" # NASDAQ Composite
-#    #- "W5000" # FT Wilshire 5000 Full Cap
-#    # - art1
-#    # - art2
-#    # - sin
-#    # - cos
-#  decoder_symbols:
-#    - "AAPL" # Apple
-#    - "AAL" # American Airlines
-#    - "AMD" # Advanced Micro Devices
-#    - "C" # Citigroup
-#    - "MRNA" # Moderna
-#    - "NIO" # NIO
-#    - "NVDA" # NVIDIA
-#    - "SNAP" # Snap
-#    - "SQ" # Block
-#    - "TSLA" # Tesla
-#    # - art1
-#    # - art2
-#    # - sin
-#    # - cos
+  root: "/home/dascim/repos/histograph/data/input"
+  raw_file_name: "annotations_cleaned.csv"
+  test_split: 0.2
+  process: true

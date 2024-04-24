@@ -7,6 +7,8 @@ from src.pipelines.model_service import ModelService
 from src.pipelines.trainer import Trainer
 from src.preprocessing.test_dataset import TestDataset
 from torch import cuda
+
+from src.preprocessing.test_graph_dataset import GraphDataset
 from src.utils.logger import Logger
 
 TRAIN_COMMAND: Final[str] = "train"
@@ -81,7 +83,11 @@ def main() -> None:
     model_parameters = config.pop("model_parameters")
     model_name, model_attributes = model_parameters.popitem()
 
-    dataset = TestDataset(**config.pop("dataset_parameters"))
+    # Create instance for dataset and process if given in config
+    process_dataset = config["dataset_parameters"].pop("process")
+    dataset = GraphDataset(**config["dataset_parameters"])
+    if process_dataset:
+        dataset.process()
 
     if args.pipeline == TRAIN_COMMAND:
         model = ModelService.create_model(device=device,

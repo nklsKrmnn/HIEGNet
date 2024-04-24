@@ -1,5 +1,5 @@
 """
-This module contains the ModelService class which provides methods for creating, saving, and loading PyTorch models.
+This module contains the ModelService class which provides methods for creating, saving, and loading PyTorch trained_models.
 """
 
 from pathlib import Path
@@ -10,7 +10,7 @@ import torch.nn as nn
 
 from src.pipelines.constants import MODEL_NAME_MAPPING
 
-MODEL_OUTPUT_PATH: Final[Path] = Path("data", "output", "models")
+MODEL_OUTPUT_PATH: Final[Path] = Path("data", "output", "trained_models")
 
 first_save = True
 path: str = ""
@@ -18,11 +18,11 @@ path: str = ""
 
 class ModelService():
     """
-    A service class for creating, saving, and loading PyTorch models.
+    A service class for creating, saving, and loading PyTorch trained_models.
 
     This class provides methods for creating a new model from a configuration, saving a
     model to a file, loading the latest version of a model from a file, and getting the
-    latest version number of a model. The models are saved in the `MODEL_OUTPUT_PATH`
+    latest version number of a model. The trained_models are saved in the `MODEL_OUTPUT_PATH`
     directory and have the extension '.pt'.
     """
 
