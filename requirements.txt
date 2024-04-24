@@ -7,7 +7,12 @@ scikit-learn==1.4.2
 seaborn==0.13.2
 tqdm==4.66.2
 tensorboard==2.16.2
---index-url https://download.pytorch.org/whl/cu118
-torch
-torchvision
-torchaudio
+torch==2.2.2
+torchvision==0.17.2
+torchaudio==2.2.2
+--index-url https://data.pyg.org/whl/torch-2.2.0+cu121.html
+pyg_lib==0.4.0
+torch_scatter==2.1.2
+torch_sparse==0.6.18
+torch_cluster==1.6.3
+torch_spline_conv==1.2.2
