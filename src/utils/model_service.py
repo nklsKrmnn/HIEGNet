@@ -8,7 +8,7 @@ from typing import Final, Optional
 import torch
 import torch.nn as nn
 
-from src.pipelines.constants import MODEL_NAME_MAPPING
+from src.utils.constants import MODEL_NAME_MAPPING
 
 MODEL_OUTPUT_PATH: Final[Path] = Path("data", "output", "trained_models")
 

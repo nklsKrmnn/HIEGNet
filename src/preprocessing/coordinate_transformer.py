@@ -78,7 +78,7 @@ class CoordinateTransformater:
         # The calculated robot coordinate is returned.
         return result
 
-    def match_coordinates(self, origin: np.array, target: np.array):
+    def match_coordinates(self, origin: np.array, target: np.array) -> list:
 
         # Transform the origin coordinates
         transformed_origin = np.array([self.transform_coordinates((x, y)) for x, y in origin])
@@ -90,21 +90,33 @@ class CoordinateTransformater:
             best_match = np.argmin(distances)
             best_match_distance = np.min(distances)
 
-            # Check if the target point is already matched
-            i = 0
-            while i < len(matched_points):
-                if matched_points[i][0] == target[best_match]:
-                    # If the target point is already matched, check if the new match is better
-                    if matched_points[i][1] > best_match_distance:
-                        # If the new match is better, replace the old match
-                        matched_points[i] = (-1, np.inf)
-                        i = len(matched_points)
+            if best_match_distance < 3:
+                # Check if the target point is already matched
+                i = 0
+                stop_counter = 0
+                while i < len(matched_points) and stop_counter < 5:
+                    if matched_points[i][0] == best_match:
+                        # If the target point is already matched, check if the new match is better
+                        if matched_points[i][1] > best_match_distance:
+                            # If the new match is better, replace the old match
+                            matched_points[i] = (-1, np.inf)
+                            i = len(matched_points)
+                        else:
+                            # If the old match is better, find the next best match
+                            distances[best_match] = np.inf
+                            best_match = np.argmin(distances)
+                            best_match_distance = np.min(distances)
+                            stop_counter += 1
+                            i = 0
                     else:
-                        distances[best_match] = np.inf
-                        best_match = np.argmin(distances)
-                        best_match_distance = np.min(distances)
-                        i = 0
-                else:
-                    i += 1
+                        i += 1
 
-            matched_points.append((target[np.argmin(distances)], np.min(distances)))
+                # If the target point is matched, add to the list
+                matched_points.append((np.argmin(distances), np.min(distances)))
+            else:
+                # If the target point is not matched, add to the list
+                matched_points.append((-1, np.inf))
+
+        # Return only the index matches
+        return matched_points[:][0]
+

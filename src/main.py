@@ -3,9 +3,11 @@ from typing import Final
 
 import torch
 import yaml
-from src.pipelines.model_service import ModelService
+
+from src.preprocessing.raw_data_generation import generate_raw_data
+from src.utils.constants import DATASET_NAME_MAPPING
+from src.utils.model_service import ModelService
 from src.pipelines.trainer import Trainer
-from src.preprocessing.test_dataset import TestDataset
 from torch import cuda
 
 from src.preprocessing.test_graph_dataset import GraphDataset
@@ -65,12 +67,10 @@ def main() -> None:
     gpu_activated = config.pop("use_gpu") and cuda.is_available()
     if gpu_activated:
         device = torch.device('cuda')
-        print(
-            f"Using the device '{cuda.get_device_name(device)}' for the started pipeline.")
+        print(f"[MAIN]: Using the device '{cuda.get_device_name(device)}' for the started pipeline.")
     else:
         device = torch.device('cpu')
-        print(
-            "GPU was either deactivated or is not available, using the CPU for the started pipeline.")
+        print("[MAIN]: GPU was either deactivated or is not available, using the CPU for the started pipeline.")
 
     # Setting random seed for torch
     seed = config["training_parameters"]["seed"]
@@ -79,13 +79,30 @@ def main() -> None:
         if device == torch.device("cuda"):
             torch.cuda.manual_seed(seed)
 
-
+    # Extracting model parameters from config
     model_parameters = config.pop("model_parameters")
     model_name, model_attributes = model_parameters.popitem()
 
+
+    # TODO: clean up  raw params and dataset params
+    # Create graph dataset
+    # Extracting dataset parameters from config
+    dataset_parameters = config.pop("dataset_parameters")
+    dataset_attributes = dataset_parameters.pop("class_attributes")
+    dataset_name = dataset_attributes.pop("class_name")
+    process_dataset = dataset_parameters.pop("process")
+
+    # Generate raw data file
+    generate_raw_data(raw_file_name=dataset_attributes['raw_file_name'],
+                      coordinate_transformation=config.pop('pre_processing_parameters')['coordinate_transformation'],
+                      **dataset_parameters)
+
     # Create instance for dataset and process if given in config
-    process_dataset = config["dataset_parameters"].pop("process")
-    dataset = GraphDataset(**config["dataset_parameters"])
+    try:
+        dataset = DATASET_NAME_MAPPING[dataset_name](**dataset_attributes)
+    except KeyError as parse_error:
+        raise (KeyError(f"The dataset '{dataset_name}' does not exist!")) from parse_error
+
     if process_dataset:
         dataset.process()
 

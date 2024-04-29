@@ -7,7 +7,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Final, Union
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -16,7 +15,7 @@ from torch_geometric.loader import DataLoader
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score
 
-from src.pipelines.model_service import ModelService
+from src.utils.model_service import ModelService
 from src.utils.logger import Logger
 
 FIG_OUTPUT_PATH: Final[Path] = Path("./data/output/eval_plot")
@@ -123,22 +122,22 @@ class Trainer:
         elif loss == "crossentropy":
             loss_instance = nn.CrossEntropyLoss()
         else:
-            print(f"Loss {loss} is not valid, defaulting to MSELoss")
+            print(f"[TRAINER]: Loss {loss} is not valid, defaulting to MSELoss")
             loss_instance = nn.MSELoss()
-        print(f"Using {loss} loss function.")
+        print(f"[TRAINER]: Using {loss} loss function.")
 
         # Setting up the optimizer
         if optimizer == "adam":
             optimizer_instance = optim.Adam(
                 model.parameters(), lr=learning_rate, weight_decay=weight_decay)
             if momentum != 0:
-                print(f"Momentum {momentum} is not used since the optimizer is set to Adam")
+                print(f"[TRAINER]: Momentum {momentum} is not used since the optimizer is set to Adam")
         elif optimizer == "sgd":
             optimizer_instance = optim.SGD(
                 model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay
             )
         else:
-            print(f"Optimizer {optimizer} is not valid, defaulting to Adam")
+            print(f"[TRAINER]: Optimizer {optimizer} is not valid, defaulting to Adam")
             optimizer_instance = optim.Adam(
                 model.parameters(), lr=learning_rate)
 
@@ -156,8 +155,7 @@ class Trainer:
                                                              total_steps=total_steps,
                                                              **lr_scheduler_params["params"])
             else:
-                print(
-                    f"Learning rate scheduler {lr_scheduler_params['scheduler']} is not valid, no scheduler is used.")
+                print(f"[TRAINER]: Learning rate scheduler {lr_scheduler_params['scheduler']} is not valid, no scheduler is used.")
                 lr_scheduler = None
         else:
             lr_scheduler = None
@@ -186,7 +184,7 @@ class Trainer:
         self.logger = logger
         self.dataset = dataset
         self.test_split = test_split
-        print("Trainer was successfully set up.")
+        print("[TRAINER]: Trainer was successfully set up.")
 
     def start_training(self) -> None:
         """
@@ -386,7 +384,7 @@ class Trainer:
 
                 if step_count % 10 == 0:
                     print(
-                        f'Batch {step_count}/{loder_len} accuracy: {accuracy}')
+                        f'[TRAINER]: Batch {step_count}/{loder_len} accuracy: {accuracy}')
 
         total_accuracy = total_accuracy / step_count
 
