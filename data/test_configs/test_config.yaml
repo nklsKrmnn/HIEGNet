@@ -1,13 +1,13 @@
 use_gpu: true
 model_parameters:
   test_gnn:
-    input_dim: 6
+    input_dim: 10
     hidden_dim: 16
     output_dim: 3
 training_parameters:
   batch_size: 1
   test_split: 0.2
-  epochs: 100
+  epochs: 300
   learning_rate: 0.003
   #lr_scheduler_params:
   #  scheduler: "ReduceLROnPlateau" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
@@ -42,13 +42,17 @@ dataset_parameters:
   process: true
   input_paths:
     feature_dir: "/home/dascim/repos/from_odyssee/resultats/features/"
-    df_matchings: '/home/dascim/repos/from_odyssee/resultats/matching_across_stainings_001_from_gt.npy'
+    df_matchings: '/home/dascim/repos/from_odyssee/resultats/matching_across_stainings_001_from_segmentation.npy'
     df_centroids: '/home/dascim/repos/from_odyssee/resultats/IFTA_EXC_001_25_centroids_from_gt.npy'
     df_annotations: '/home/dascim/repos/histograph/data/input/annotations_exc.csv'
   feature_list:
-    - "0_mean tcell _25"
-    - "0_std tcell _108"
-    - "1_tcell _25"
-    - "1_cd68"
-    - "2_std stain _107"
-    - "3_cd163"
+    - 'tcell _25_in'
+    - 'tcell _25_out'
+    - 'cd68_in'
+    - 'cd163_in'
+    - 'cd206_in'
+    - 'ms4a4a_in'
+    - 'cd68_out'
+    - 'cd163_out'
+    - 'cd206_out'
+    - 'ms4a4a_out'

@@ -118,5 +118,5 @@ class CoordinateTransformater:
                 matched_points.append((-1, np.inf))
 
         # Return only the index matches
-        return matched_points[:][0]
+        return matched_points[:]
 

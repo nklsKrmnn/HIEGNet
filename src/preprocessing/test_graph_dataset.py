@@ -43,8 +43,7 @@ class GraphDataset(Dataset):
         edge_index = torch.tensor(np.argwhere(adjectency_matrix == 1).T, dtype=torch.long)
 
         # Create the node features in tensor
-        x = df.drop(['centroid_x', 'centroid_y', 'Term_Dead', 'Term_Healthy', 'Term_Sclerotic'], axis=1)
-        #x = x.replace({True: 1, False: 0})
+        x = df.drop(['centroid_x', 'centroid_y', 'Term_Dead', 'Term_Healthy', 'Term_Sclerotic', 'patient'], axis=1)
         x = x.to_numpy()
         x = torch.tensor(x, dtype=torch.float)
 
@@ -61,7 +60,7 @@ class GraphDataset(Dataset):
         data.train_mask[train_indices] = True
         data.test_mask = ~data.train_mask
 
-        file_name = self.raw_file_name
+        file_name = self.raw_file_name.split('.')[0] + '.pt'
 
         torch.save(data, os.path.join(self.processed_dir, file_name))
         print(f'[Dataset]: Saves {file_name}')

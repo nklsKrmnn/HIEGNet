@@ -52,11 +52,6 @@ def generate_raw_data(feature_list: list,
     feature_files = [f for f in os.listdir(feature_dir) if isfile(join(feature_dir, f))]
     feature_df_list = [pd.read_pickle(join(feature_dir, ft_file)) for ft_file in feature_files]
 
-    # Rename columns to avoid conflicts (prefix with df index)
-    for i, df in enumerate(feature_df_list):
-        name_mapping = {col: f"{i}_{col}" for col in df.columns}
-        df.rename(columns=name_mapping, inplace=True)
-
     # Concatenate all feature DataFrames
     df_features = pd.concat(feature_df_list, axis=1)
     df_features = clean_indices(df_features, name='Features')
@@ -79,7 +74,7 @@ def generate_raw_data(feature_list: list,
     df_targets = df_targets[df_targets['patient'].isin(PATIENT) & df_targets['staining'].isin(STAINING)]
 
     # Merge centroids with matching results
-    df = pd.merge(df_matchings, df_centroids, left_on="Staining1: 25", right_index=True, how="left")
+    df = pd.merge(df_matchings, df_centroids, left_on="s1", right_index=True, how="left")
 
     n_pre_drop = df.shape[0]
     df.dropna(inplace=True)
@@ -110,15 +105,18 @@ def generate_raw_data(feature_list: list,
     coord_transformer.calculate_offset(ref_point_origin, ref_point_target)
 
     # Get indices to match to df
-    df_targets['match_index'] = coord_transformer.match_coordinates(df_targets[['Center X', 'Center Y']].to_numpy(),
-                                                                    df[['centroid_x', 'centroid_y']].to_numpy())
+    transformation_results = coord_transformer.match_coordinates(df_targets[['Center X', 'Center Y']].to_numpy(),
+                                                                df[['centroid_x', 'centroid_y']].to_numpy())
+
+    df_targets['match_index'] = np.array(transformation_results)[:, 0]
 
     # Merge targets into df wit determined indeces
     df = pd.merge(df, df_targets, left_index=True, right_on='match_index', how='left')
 
-    # Generate targets
-    #df['Term'] = np.random.choice(['Dead', 'Healthy', 'Sclerotic'], df.shape[0])
-    #df = pd.get_dummies(df, columns=['Term'])
+    # Drop unnessecary columns from df_target
+    df.drop(columns=['Center X', 'Center Y', 'match_index', 'staining'], inplace=True)
+
+    df = pd.get_dummies(df, columns=['Term'])
 
     # Save as csv
     # TODO: fix conflic with root param in config
