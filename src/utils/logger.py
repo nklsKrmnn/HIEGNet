@@ -15,6 +15,8 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from torchvision.transforms import ToTensor
 from tqdm import tqdm
 
+from src.utils.vis_training import plot_confusion_matrix
+
 first_name_logging = True
 
 class Logger():
@@ -171,8 +173,7 @@ class Logger():
         """
         self._summary_writer.add_scalar("lr", lr, epoch)
 
-    def save_prediction_chart(self, targets: np.array,
-                              predictions: np.array, epoch: int, name: str = "validation_set"):
+    def save_confusion_matrix(self, y_true, y_pred, labels, epoch: int, set='Test'):
         """
         Saves a chart of the predictions and targets for each feature to the TensorBoard log file.
         Args:
@@ -184,7 +185,10 @@ class Logger():
         Returns: None
 
         """
-        fig = []
+        title = f'Confusion Matrix: {set} Set'
+        cmap = 'Blues'
+
+        fig = plot_confusion_matrix(y_true, y_pred, labels, title, cmap)
 
         os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
@@ -194,9 +198,9 @@ class Logger():
         buf.seek(0)
         image = Image.open(buf)
         image = ToTensor()(image)
-        self._summary_writer.add_image(f"image/ts_chart_{name}", image, epoch)
+        self._summary_writer.add_image(f"image/cm_{set}", image, epoch)
 
-        print(f"[Logger]: Chart for {name} saved.")
+        print(f"[Logger]: Chart for {set} set saved.")
         plt.close('all')
 
 

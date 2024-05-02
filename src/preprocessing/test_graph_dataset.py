@@ -47,8 +47,11 @@ class GraphDataset(Dataset):
         x = x.to_numpy()
         x = torch.tensor(x, dtype=torch.float)
 
+        # Target labels
+        target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
+
         # Create the target labels in tensor
-        y = df[["Term_Dead", "Term_Healthy", "Term_Sclerotic"]]
+        y = df[target_labels]
         y = torch.tensor(y.to_numpy(), dtype=torch.long)
 
         # Create the data object for each graph
@@ -59,6 +62,7 @@ class GraphDataset(Dataset):
         train_indices = random.sample(range(data.num_nodes), int(data.num_nodes * (1-self.test_split)))
         data.train_mask[train_indices] = True
         data.test_mask = ~data.train_mask
+        data.target_labels = target_labels
 
         file_name = self.raw_file_name.split('.')[0] + '.pt'
 

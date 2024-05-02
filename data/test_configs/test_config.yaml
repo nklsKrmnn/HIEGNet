@@ -7,7 +7,7 @@ model_parameters:
 training_parameters:
   batch_size: 1
   test_split: 0.2
-  epochs: 300
+  epochs: 100
   learning_rate: 0.003
   #lr_scheduler_params:
   #  scheduler: "ReduceLROnPlateau" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
@@ -20,7 +20,7 @@ training_parameters:
   seed: 42
   batch_shuffle: false
   patience: 10000
-  log_image_frequency: 1
+  log_image_frequency: 5
 pre_processing_parameters:
   coordinate_transformation:
     reference_point_annotation:

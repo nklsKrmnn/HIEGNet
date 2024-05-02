@@ -16,5 +16,6 @@ class TestGNN(nn.Module):
         x = F.relu(x)
         x = F.dropout(x, training=self.training)
         x = self.conv2(x, edge_index)
+        x = F.relu(x)
         x = self.readout(x)
         return F.softmax(x, dim=1)

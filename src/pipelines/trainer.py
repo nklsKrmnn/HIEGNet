@@ -155,7 +155,8 @@ class Trainer:
                                                              total_steps=total_steps,
                                                              **lr_scheduler_params["params"])
             else:
-                print(f"[TRAINER]: Learning rate scheduler {lr_scheduler_params['scheduler']} is not valid, no scheduler is used.")
+                print(
+                    f"[TRAINER]: Learning rate scheduler {lr_scheduler_params['scheduler']} is not valid, no scheduler is used.")
                 lr_scheduler = None
         else:
             lr_scheduler = None
@@ -175,7 +176,7 @@ class Trainer:
         self.weight_decay = weight_decay
         self.device = device
         self.model = model
-        self.logger = Logger()
+        self.logger = logger
         self.eval_mode = eval_mode
         self.seed = seed
         self.batch_shuffle = batch_shuffle
@@ -256,8 +257,8 @@ class Trainer:
                 self.logger.log_test_loss(test_loss, epoch)
 
                 # Calculating and logging evaluation results
-                if epoch % 30 == 0:
-                    validation_score = self.calculate_validation_score(dataloader)
+                if epoch % self.log_image_frequency == 0:
+                    validation_score = self.calculate_validation_score(dataloader, epoch)
                     self.logger.log_accuracy_score(validation_score, epoch)
 
                 # Logging learning rate (getter-function only works with torch2.2 or higher)
@@ -344,7 +345,7 @@ class Trainer:
 
         return total_train_loss, total_test_loss
 
-    def calculate_validation_score(self, validation_loader) -> float:
+    def calculate_validation_score(self, validation_loader, epoch: int) -> float:
         """
         Calculates the validation loss for the model. This method is called during each epoch.
 
@@ -377,7 +378,16 @@ class Trainer:
                 accuracy = accuracy_score(target[graph_data.test_mask].cpu().argmax(dim=1),
                                           prediction[graph_data.test_mask].cpu().argmax(dim=1))
 
-                # TODO: Visualisation of the results
+                self.logger.save_confusion_matrix(target[graph_data.train_mask].cpu().argmax(dim=1),
+                                                  prediction[graph_data.train_mask].cpu().argmax(dim=1),
+                                                  labels=graph_data.target_labels,
+                                                  epoch=epoch,
+                                                  set='Train')
+
+                self.logger.save_confusion_matrix(target[graph_data.test_mask].cpu().argmax(dim=1),
+                                                  prediction[graph_data.test_mask].cpu().argmax(dim=1),
+                                                  labels=graph_data.target_labels,
+                                                  epoch=epoch)
 
                 total_accuracy += accuracy
                 step_count += 1
