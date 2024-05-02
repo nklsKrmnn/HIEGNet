@@ -129,7 +129,7 @@ class Logger():
             epoch (int): The epoch number.
         """
         tqdm.write(f"[LOGGER]: Epoch {epoch}: Training Loss = {value}")
-        self._summary_writer.add_scalar("loss/train", value, epoch)
+        self._summary_writer.add_scalar("loss/1_train", value, epoch)
 
     def log_test_loss(self, value: float, epoch: int) -> None:
         """
@@ -143,7 +143,7 @@ class Logger():
             epoch (int): The epoch number.
         """
         tqdm.write(f"[LOGGER]: Epoch {epoch}: Test Loss = {value}")
-        self._summary_writer.add_scalar("loss/test", value, epoch)
+        self._summary_writer.add_scalar("loss/2_test", value, epoch)
 
     def log_accuracy_score(self, value: float, epoch: int, set: str = 'val') -> None:
         """

@@ -12,6 +12,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch_geometric.data import Dataset
 from torch_geometric.loader import DataLoader
+from sklearn.utils.class_weight import compute_class_weight
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score
 
@@ -39,8 +40,9 @@ class Trainer:
         epochs (int): The number of epochs to train for.
         learning_rate (float): The learning rate for the optimizer.
         lr_scheduler (optim.lr_scheduler.ReduceLROnPlateau | optim.lr_scheduler.CyclicLR | optim.lr_scheduler.OneCycleLR): The learning rate scheduler to use.
-        loss (nn.MSELoss | nn.CrossEntropyLoss | RMSELoss | RMSLELoss | ExpMSELoss): The loss function to use.
+        loss (nn.MSELoss | nn.CrossEntropyLoss | nn.NLLLoss): The loss function to use.
         weight_decay (float): The weight decay for the optimizer.
+        balance_classes (bool): Whether to balance the classes.
         optimizer (optim.SGD | optim.Adam): The optimizer to use.
         device (torch.device): Whether to use the CPU or the GPU.
         model (nn.Module): The PyTorch model to train.
@@ -57,11 +59,12 @@ class Trainer:
     test_split: float
     epochs: int
     learning_rate: float
-    loss: Union[nn.MSELoss, nn.CrossEntropyLoss]
+    loss: Union[nn.MSELoss, nn.CrossEntropyLoss, nn.NLLLoss]
     optimizer: Union[optim.SGD, optim.Adam]
     lr_scheduler: Union[
         optim.lr_scheduler.ReduceLROnPlateau, optim.lr_scheduler.CyclicLR, optim.lr_scheduler.OneCycleLR, None]
     weight_decay: float
+    balance_classes: bool
     device: torch.device
     model: nn.Module
     logger: Logger
@@ -87,6 +90,7 @@ class Trainer:
             optimizer: str = "adam",
             lr_scheduler_params: dict = None,
             weight_decay: float = 0,
+            balance_classes: bool = False,
             momentum: float = 0,
             eval_mode: bool = False,
             seed: int = None,
@@ -112,6 +116,7 @@ class Trainer:
             optimizer (str, optional): Optimizer to use. Defaults to "adam".
             lr_scheduler_params (dict, optional): Parameters for the learning rate scheduler. Defaults to None.
             weight_decay (float, optional): Weight decay for the optimizer. Defaults to 0.
+            balance_classes (bool, optional): Whether to balance the classes. Defaults to False.
             momentum (float, optional): Momentum for the optimizer. Defaults to 0.
             eval_mode (bool, optional): If the model is evaluated, the validation split is set to 1.
             seed (int, optional): Seed for the random number generator.
@@ -123,11 +128,28 @@ class Trainer:
             Trainer: A Trainer instance with the specified configuration.
         """
 
+        # Compute class weights
+        if balance_classes:
+            if loss != 'nll':
+                y_labels = torch.cat([dataset[i].y.argmax(dim=1) for i in range(len(dataset))]).numpy()
+                label_classes = torch.unique(dataset[0].y.argmax(dim=1)).numpy()
+            else:
+                y_labels = torch.cat([dataset[i].y for i in range(len(dataset))]).numpy()
+                label_classes = torch.unique(dataset[0].y).numpy()
+            class_weights = compute_class_weight('balanced',
+                                                 classes=label_classes,
+                                                 y=y_labels)
+            class_weights_tensor = torch.tensor(class_weights, dtype=torch.float)
+        else:
+            class_weights_tensor = None
+
         # Setting up the loss
         if loss == "mse":
             loss_instance = nn.MSELoss()
         elif loss == "crossentropy":
-            loss_instance = nn.CrossEntropyLoss()
+            loss_instance = nn.CrossEntropyLoss(weight=class_weights_tensor)
+        elif loss == "nll":
+            loss_instance = nn.NLLLoss(weight=class_weights_tensor)
         else:
             print(f"[TRAINER]: Loss {loss} is not valid, defaulting to MSELoss")
             loss_instance = nn.MSELoss()

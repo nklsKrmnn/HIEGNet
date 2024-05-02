@@ -22,10 +22,20 @@ class GraphDataset(Dataset):
         root (str): The root directory of the dataset.
         raw_file_name (str): The name of the raw file containing the data.
         test_split (float): The fraction of the data that is used for testing. Default is 0.2.
+        random_seed (int, optional): The random seed for the train-test split. Default is None.
     """
-    def __init__(self, root, raw_file_name, test_split: float = 0.2, transform=None, pre_transform=None):
+    def __init__(self,
+                 root,
+                 raw_file_name,
+                 test_split: float = 0.2,
+                 onehot_targets: bool = True,
+                 transform=None,
+                 pre_transform=None,
+                 random_seed=None):
         self.raw_file_name = raw_file_name
         self.test_split = test_split
+        self.random_seed = random_seed
+        self.onehot_targets = onehot_targets
         super(GraphDataset, self).__init__(root, transform, pre_transform)
 
     @property
@@ -63,7 +73,7 @@ class GraphDataset(Dataset):
         edge_index = torch.tensor(np.argwhere(adjectency_matrix == 1).T, dtype=torch.long)
 
         # Create the node features in tensor
-        x = df.drop(['centroid_x', 'centroid_y', 'Term_Dead', 'Term_Healthy', 'Term_Sclerotic', 'patient'], axis=1)
+        x = df.drop(['centroid_x', 'centroid_y', 'Term', 'patient'], axis=1)
         x = x.to_numpy()
         x = torch.tensor(x, dtype=torch.float)
 
@@ -71,14 +81,21 @@ class GraphDataset(Dataset):
         target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
 
         # Create the target labels in tensor
-        y = df[target_labels]
-        y = torch.tensor(y.to_numpy(), dtype=torch.long)
+        if self.onehot_targets:
+            df = pd.get_dummies(df, columns=['Term'])
+            y = df[target_labels]
+            y = torch.tensor(y.to_numpy(), dtype=torch.float)
+        else:
+            y = df['Term']
+            y.replace({'Healthy': 0, 'Sclerotic': 1, 'Dead': 2}, inplace=True)
+            y = torch.tensor(y.to_numpy(), dtype=torch.long)
 
         # Create the data object for each graph
         data = Data(x=x, edge_index=edge_index, y=y)
 
         # Add random train and test masks to the data object #TODO: Does this make sense here?
         data.train_mask = torch.zeros(data.num_nodes, dtype=torch.bool)
+        random.seed(self.random_seed)
         train_indices = random.sample(range(data.num_nodes), int(data.num_nodes * (1-self.test_split)))
         data.train_mask[train_indices] = True
         data.test_mask = ~data.train_mask

@@ -120,8 +120,6 @@ def generate_raw_data(feature_list: list,
     # Drop unnessecary columns from df_target
     df.drop(columns=['Center X', 'Center Y', 'match_index', 'staining'], inplace=True)
 
-    df = pd.get_dummies(df, columns=['Term'])
-
     # Save as csv
     # TODO: fix conflic with root param in config
     path = os.path.join(os.getcwd(), RAW_DIR_PATH, raw_file_name)

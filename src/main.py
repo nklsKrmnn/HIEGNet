@@ -107,8 +107,7 @@ def main() -> None:
         dataset.process()
 
     if args.pipeline == TRAIN_COMMAND:
-        model = ModelService.create_model(device=device,
-                                          model_name=model_name,
+        model = ModelService.create_model(model_name=model_name,
                                           model_attributes=model_attributes)
 
         trainer = Trainer(

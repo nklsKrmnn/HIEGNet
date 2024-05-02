@@ -7,15 +7,16 @@ model_parameters:
 training_parameters:
   batch_size: 1
   test_split: 0.2
-  epochs: 100
+  epochs: 500
   learning_rate: 0.003
   #lr_scheduler_params:
   #  scheduler: "ReduceLROnPlateau" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
   #  params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
   #    mode: "min"
-  loss: "crossentropy" # Options: "mse", "rmse", "rmsle"
+  loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.0
+  balance_classes: true
   momentum: 0.1
   seed: 42
   batch_shuffle: false
@@ -38,7 +39,9 @@ dataset_parameters:
     class_name: "graph_dataset"
     root: "/home/dascim/repos/histograph/data/input"
     raw_file_name: "test_data.csv"
-    test_split: 0.2
+    test_split: 0.3
+    random_seed: 35
+    onehot_targets: true
   process: true
   input_paths:
     feature_dir: "/home/dascim/repos/from_odyssee/resultats/features/"
