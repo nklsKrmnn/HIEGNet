@@ -343,7 +343,7 @@ class Trainer:
             # Move data to device
             input_graph_feature = graph_data.x.to(self.device)
             input_graph_edge_index = graph_data.edge_index.to(self.device)
-            target = graph_data.y.float().to(self.device)
+            target = graph_data.y.to(self.device)
 
             # Get predictions and train loss
             prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
@@ -397,19 +397,27 @@ class Trainer:
 
                 prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
 
-                accuracy = accuracy_score(target[graph_data.test_mask].cpu().argmax(dim=1),
-                                          prediction[graph_data.test_mask].cpu().argmax(dim=1))
+                if len(graph_data.y.shape) == 1:
+                    pred = prediction.cpu().argmax(dim=1)
+                    targ = target.cpu()
+                elif graph_data.y.shape[1] > 1:
+                    pred = prediction.argmax(dim=1).cpu()
+                    targ = target.argmax(dim=1).cpu()
 
-                self.logger.save_confusion_matrix(target[graph_data.train_mask].cpu().argmax(dim=1),
-                                                  prediction[graph_data.train_mask].cpu().argmax(dim=1),
+                accuracy = accuracy_score(targ[graph_data.test_mask],
+                                          pred[graph_data.test_mask])
+
+                self.logger.save_confusion_matrix(targ[graph_data.train_mask],
+                                                  pred[graph_data.train_mask],
                                                   labels=graph_data.target_labels,
                                                   epoch=epoch,
-                                                  set='Train')
+                                                  set='1_Train')
 
-                self.logger.save_confusion_matrix(target[graph_data.test_mask].cpu().argmax(dim=1),
-                                                  prediction[graph_data.test_mask].cpu().argmax(dim=1),
+                self.logger.save_confusion_matrix(targ[graph_data.test_mask],
+                                                  pred[graph_data.test_mask],
                                                   labels=graph_data.target_labels,
-                                                  epoch=epoch)
+                                                  epoch=epoch,
+                                                  set='2_Test')
 
                 total_accuracy += accuracy
                 step_count += 1
