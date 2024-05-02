@@ -27,11 +27,10 @@ FIG_OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 @dataclass
 class Trainer:
     """
-    A class used to represent a Trainer for a PyTorch model.
+    A class used to represent a Trainer for a PyTorch Geometric model.
 
-    This class handles the training process for a PyTorch model, including setting up the
-    model, loss function, and optimizer from a configuration, moving the model and loss
-    function to the GPU if available, setting up the training and validation data loaders,
+    This class handles the training process for a PyTorch Geometric model, initialising the loss and the optimizer
+    moving the model and loss function to the GPU if available, setting up the data loaders,
     and training the model for a specified number of epochs.
 
     Attributes:
@@ -39,12 +38,20 @@ class Trainer:
         test_split (float): The fraction of the data to use for test.
         epochs (int): The number of epochs to train for.
         learning_rate (float): The learning rate for the optimizer.
+        lr_scheduler (optim.lr_scheduler.ReduceLROnPlateau | optim.lr_scheduler.CyclicLR | optim.lr_scheduler.OneCycleLR): The learning rate scheduler to use.
         loss (nn.MSELoss | nn.CrossEntropyLoss | RMSELoss | RMSLELoss | ExpMSELoss): The loss function to use.
+        weight_decay (float): The weight decay for the optimizer.
         optimizer (optim.SGD | optim.Adam): The optimizer to use.
         device (torch.device): Whether to use the CPU or the GPU.
         model (nn.Module): The PyTorch model to train.
         logger (Logger): The logger to use for logging training information.
         eval_mode (bool): Is set to True, if the evaluation function is called.
+        seed (int): The seed for the random number generator.
+        batch_shuffle (bool): Whether to shuffle the batches.
+        patience (int): The number of epochs to wait for improvement before stopping.
+        log_image_frequency (int): The frequency of logging images.
+        dataset (Dataset): The dataset to use for training and validation.
+        test_split (float): The fraction of the data to use for testing.
     """
     batch_size: int
     test_split: float
@@ -89,7 +96,7 @@ class Trainer:
     ):
         """
         Creates a Trainer instance from an unpacked configuration file.
-        This method sets up the loss function, model, and optimizer based on the provided
+        This method sets up the loss function, optimizer and the lr scheduler based on the provided
         parameters. The other parameters from the config are simply passed through to the Trainer instance.
 
         Args:
@@ -191,9 +198,8 @@ class Trainer:
         """
         This is the entrypoint method to start the training process for the model.
 
-        This method first moves the model and loss function to the GPU if `gpu_activated`
-        is True. It then logs the trainer configuration and the model architecture. The
-        method sets up the training and validation data loaders using the `setup_dataloaders`
+        This method first moves the model and loss function to the device. The
+        method sets up the data loaders using the `setup_dataloaders`
         method. Afterward, it starts the actual training using the `train_model` method and
         logs the reason for finishing the training. After the training process is finished,
         the method closes the logger.
@@ -212,18 +218,14 @@ class Trainer:
 
     def setup_dataloaders(self) -> DataLoader:
         """
-        Sets up the data loaders holding the training and validation datasets.
-
-        This method splits the dataset into training and validation subsets using the dataset's
-        `get_subset_indices` method. It then creates data loaders for the training and validation
-        subsets with the specified batch size and without shuffling.
+        Sets up the data loaders holding the graph dataset.
 
         Returns:
             DataLoader: The training and test data loader.
         """
 
         # Create torch data loaders
-        dataloader = DataLoader(self.dataset, batch_size=self.batch_size, shuffle=self.batch_shuffle)
+        dataloader = DataLoader(self.dataset, batch_size=self.batch_size)
 
         return dataloader
 
@@ -258,7 +260,7 @@ class Trainer:
 
                 # Calculating and logging evaluation results
                 if epoch % self.log_image_frequency == 0:
-                    validation_score = self.calculate_validation_score(dataloader, epoch)
+                    validation_score = self.test_step(dataloader, epoch)
                     self.logger.log_accuracy_score(validation_score, epoch)
 
                 # Logging learning rate (getter-function only works with torch2.2 or higher)
@@ -279,8 +281,8 @@ class Trainer:
                             finish_reason = "Training finished because of early stopping."
                             self.save_model()
                             break
-
                 self.save_model()
+
             except KeyboardInterrupt:
                 finish_reason = "Training interrupted by user input."
                 break
@@ -296,14 +298,11 @@ class Trainer:
         """
         Calculates the training loss for the model. This method is called during each epoch.
 
-        This method iterates over each batch in the training loader. For each batch, it
-        resets the optimizer, calculates the loss between the predictions and the actual
-        targets, performs backpropagation, and updates the model's parameters.
-        The method accumulates the total training loss and returns the average training
-        loss per batch.
-
-        If `gpu_activated` is True, the method moves the batch to the GPU before computing the
-        predictions and loss.
+        This method iterates over each batch in the training loader. For each batch, it resets the optimizer,
+        calculates the loss between the predictions and the actual targets, performs backpropagation, and updates the
+        model's parameters. The forward function is computed for the whole dataset. The train and test mask are used
+        to separate the dataset into training and test data. The method accumulates the total training loss and
+        returns the average training loss per batch.
 
         Returns:
             float: The average training loss per batch.
@@ -319,16 +318,20 @@ class Trainer:
             # Reset optimizer
             self.optimizer.zero_grad()
 
+            # Move data to device
             input_graph_feature = graph_data.x.to(self.device)
             input_graph_edge_index = graph_data.edge_index.to(self.device)
             target = graph_data.y.float().to(self.device)
 
+            # Get predictions and train loss
             prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
             train_loss = self.loss(prediction[graph_data.train_mask], target[graph_data.train_mask])
 
+            # Backpropagation
             train_loss.backward()
             self.optimizer.step()
 
+            # Get test loss
             test_loss = self.loss(prediction[graph_data.test_mask], target[graph_data.test_mask])
 
             total_train_loss += train_loss.item()
@@ -345,20 +348,17 @@ class Trainer:
 
         return total_train_loss, total_test_loss
 
-    def calculate_validation_score(self, validation_loader, epoch: int) -> float:
+    def test_step(self, validation_loader, epoch: int) -> float:
         """
-        Calculates the validation loss for the model. This method is called during each epoch.
+        Calculates the target metric for the test set and generates visualisations for the train and the test set. This method is called in the frequency given in the config.
 
-        This method iterates over each batch in the validation loader, computes the model's
-        predictions for the batch, calculates the loss between the predictions and the actual
-        targets, and accumulates the total validation loss. The method returns the average
-        validation loss per batch.
-
-        If `gpu_activated` is True, the method moves the batch to the GPU before computing the
-        predictions and loss.
+        This method iterates over each batch in the dataloader, computes the model's
+        predictions for the batch, calculates the accuracy between the predictions and the actual
+        targets, and accumulates the total accuracy. The method returns the average
+        accuracy over all batches.
 
         Returns:
-            float: The average validation loss per batch.
+            float: The accuracy over all batches.
         """
         self.model.eval()
         total_accuracy: float = 0
@@ -423,7 +423,7 @@ class Trainer:
         self.validation_split = 1
         train_loader, validation_loader = self.setup_dataloaders()
 
-        loss, results = self.calculate_validation_score(validation_loader)
+        loss, results = self.test_step(validation_loader)
 
         predictions = results[0]
         targets = results[1]

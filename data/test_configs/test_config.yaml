@@ -30,8 +30,8 @@ pre_processing_parameters:
       x: 380
       y: 1001
     rotation: 90
-    mirror_x: false # Mirror the image over the x-axis
-    mirror_y: false # Mirror the image over the y-axis
+    mirror_x: false # Mirror the image over the y-axis
+    mirror_y: false # Mirror the image over the x-axis
     magnification: 0.0625
 dataset_parameters:
   class_attributes:

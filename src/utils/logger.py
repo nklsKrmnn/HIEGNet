@@ -173,17 +173,17 @@ class Logger():
         """
         self._summary_writer.add_scalar("lr", lr, epoch)
 
-    def save_confusion_matrix(self, y_true, y_pred, labels, epoch: int, set='Test'):
+    def save_confusion_matrix(self, y_true: np.array, y_pred: np.array, labels: list[str], epoch: int, set='Test'):
         """
-        Saves a chart of the predictions and targets for each feature to the TensorBoard log file.
+        Saves a confusion matrix to the TensorBoard log file.
         Args:
             targets (np.array): Targets of the model.
             predictions (np.array): Predictions of the model.
+            labels (list[str]): List of class labels.
             epoch (int): Epoch, in which the predictions were made.
             name (str): Name of the chart. Defaults to "validation_set".
 
         Returns: None
-
         """
         title = f'Confusion Matrix: {set} Set'
         cmap = 'Blues'

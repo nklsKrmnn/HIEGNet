@@ -28,17 +28,14 @@ class ModelService():
 
     @classmethod
     def create_model(cls,
-                     device: torch.device,
                      model_name: str,
                      model_attributes: dict) -> nn.Module:
         """
         Creates a new model from a configuration.
 
         This method creates a new model of the specified type with the specified attributes.
-        The model is moved to the GPU if `gpu_activated` is True.
 
         Args:
-            device (torch.device): Whether to use the GPU or CPU.
             model_name (str): The name of the model to create.
             model_attributes (dict): The attributes to use when creating the model.
 
@@ -50,8 +47,7 @@ class ModelService():
             nn.Module: The created model.
         """
         try:
-            model = MODEL_NAME_MAPPING[model_name](**model_attributes,
-                                                   device=device)
+            model = MODEL_NAME_MAPPING[model_name](**model_attributes)
         except KeyError as parse_error:
             raise (
                 KeyError(f"The model '{model_name}' does not exist!")

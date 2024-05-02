@@ -12,17 +12,28 @@ from src.preprocessing.knn_graph_constructor import knn_graph_constructor
 
 
 class GraphDataset(Dataset):
+    """
+    Dataset class for the graph data.
+
+    The dataset class is used to load the data from the raw file and process it to the graph data format with node
+    features and target. Only usable for homogeneous graphs.
+
+    Args:
+        root (str): The root directory of the dataset.
+        raw_file_name (str): The name of the raw file containing the data.
+        test_split (float): The fraction of the data that is used for testing. Default is 0.2.
+    """
     def __init__(self, root, raw_file_name, test_split: float = 0.2, transform=None, pre_transform=None):
         self.raw_file_name = raw_file_name
         self.test_split = test_split
         super(GraphDataset, self).__init__(root, transform, pre_transform)
 
     @property
-    def raw_file_names(self):
+    def raw_file_names(self) -> list[str]:
         return [self.raw_file_name]
 
     @property
-    def processed_file_names(self):
+    def processed_file_names(self) -> list[str]:
         try:
             with open(os.path.join(self.processed_dir, 'processed_filenames.pkl'), 'rb') as handle:
                 file_names = pickle.load(handle)
@@ -34,7 +45,16 @@ class GraphDataset(Dataset):
     def download(self):
         pass
 
-    def process(self):
+    def process(self) -> None:
+        """
+        Process the raw data to the graph data format.
+
+        The raw data is loaded from the raw file and a graph is constructed from the point cloud with the knn graph
+        algorithm. Afterward, node fatures and note-wise targets for node classification are added. A train and test
+        mask is added to the graph data object. Finally, the data object is saved to the processed directory.
+
+        :return: None
+        """
         df = pd.read_csv(self.raw_paths[0])
 
         # Create the graph from point cloud and generate the edge index
@@ -70,11 +90,10 @@ class GraphDataset(Dataset):
         print(f'[Dataset]: Saves {file_name}')
         file_names = [file_name]
 
-
         with open(os.path.join(self.processed_dir, 'processed_filenames.pkl'), 'wb') as handle:
             pickle.dump(file_names, handle)
 
-    def len(self):
+    def len(self) -> int:
         return len(self.processed_file_names)
 
     def get(self, idx):

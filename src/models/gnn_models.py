@@ -5,7 +5,7 @@ from torch_geometric.nn import GCNConv
 
 # Define the GCN model
 class TestGNN(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, device):
+    def __init__(self, input_dim, hidden_dim, output_dim):
         super(TestGNN, self).__init__()
         self.conv1 = GCNConv(input_dim, hidden_dim)
         self.conv2 = GCNConv(hidden_dim, hidden_dim)

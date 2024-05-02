@@ -7,9 +7,20 @@ from sklearn.metrics import confusion_matrix
 import matplotlib
 matplotlib.use('Agg')
 
-def plot_confusion_matrix(y_true, y_pred, labels, title='Confusion matrix', cmap='Blues'):
+def plot_confusion_matrix(y_true: np.array,
+                          y_pred: np.array,
+                          labels: list,
+                          title: str='Confusion matrix',
+                          cmap: str='Blues') -> plt.Figure:
     """
-    Plot confusion matrix
+    Plots a confusion matrix
+
+    :param y_true: True labels
+    :param y_pred: Predicted labels
+    :param labels: List of class labels
+    :param title: Title of the plot
+    :param cmap: Color map
+    :return: Figure
     """
 
     cm = confusion_matrix(y_true, y_pred).astype(int)

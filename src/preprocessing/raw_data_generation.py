@@ -35,7 +35,11 @@ def generate_raw_data(feature_list: list,
                       raw_file_name: str,
                       coordinate_transformation: dict = None):
     """
-    Generate raw data file from input paths and feature list
+    Generate raw data file from input paths and feature list.
+
+    Get DataFrames for matching results, extracted features, centroids and annotations. Merge them and apply
+    coordinate transformation for the matching with the annotation. Afterward, the raw data is saved as a csv file.
+
     :param feature_list: list of features to be extracted
     :param input_paths: dictionary of input paths
     :param raw_file_name: file name to save the raw data
@@ -107,7 +111,7 @@ def generate_raw_data(feature_list: list,
     # Get indices to match to df
     transformation_results = coord_transformer.match_coordinates(df_targets[['Center X', 'Center Y']].to_numpy(),
                                                                 df[['centroid_x', 'centroid_y']].to_numpy())
-
+    # Add match index to df_targets
     df_targets['match_index'] = np.array(transformation_results)[:, 0]
 
     # Merge targets into df wit determined indeces
