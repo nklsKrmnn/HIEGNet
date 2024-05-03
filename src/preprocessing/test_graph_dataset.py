@@ -68,46 +68,59 @@ class GraphDataset(Dataset):
         :return: None
         """
         df = pd.read_csv(self.raw_paths[0])
+        patients = df['patient'].unique()
 
-        # Create the graph from point cloud and generate the edge index
-        coords = df[['centroid_x', 'centroid_y']].to_numpy()
-        adjectency_matrix = knn_graph_constructor(coords, 5)
-        edge_index = torch.tensor(np.argwhere(adjectency_matrix == 1).T, dtype=torch.long)
+        file_names = []
 
-        # Create the node features in tensor
-        x = df[self.feature_list]
-        x = x.to_numpy()
-        x = torch.tensor(x, dtype=torch.float)
+        for patient in patients:
+            df_patient = df[df['patient'] == patient]
 
-        # Target labels
-        target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
+            # threshold for minimum number of data points
+            if df_patient.shape[0] > 10:
 
-        # Create the target labels in tensor
-        if self.onehot_targets:
-            df = pd.get_dummies(df, columns=['Term'])
-            y = df[target_labels]
-            y = torch.tensor(y.to_numpy(), dtype=torch.float)
-        else:
-            y = df['Term']
-            y.replace({'Healthy': 0, 'Sclerotic': 1, 'Dead': 2}, inplace=True)
-            y = torch.tensor(y.to_numpy(), dtype=torch.long)
+                # Create the graph from point cloud and generate the edge index
+                coords = df_patient[['centroid_x', 'centroid_y']].to_numpy()
+                adjectency_matrix = knn_graph_constructor(coords, 5)
+                edge_index = torch.tensor(np.argwhere(adjectency_matrix == 1).T, dtype=torch.long)
 
-        # Create the data object for each graph
-        data = Data(x=x, edge_index=edge_index, y=y)
+                # Create the node features in tensor
+                x = df_patient[self.feature_list]
+                x = x.to_numpy()
+                x = torch.tensor(x, dtype=torch.float)
 
-        # Add random train and test masks to the data object #TODO: Does this make sense here?
-        data.train_mask = torch.zeros(data.num_nodes, dtype=torch.bool)
-        random.seed(self.random_seed)
-        train_indices = random.sample(range(data.num_nodes), int(data.num_nodes * (1-self.test_split)))
-        data.train_mask[train_indices] = True
-        data.test_mask = ~data.train_mask
-        data.target_labels = target_labels
+                # Target labels
+                target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
 
-        file_name = self.raw_file_name.split('.')[0] + '.pt'
+                # Create the target labels in tensor
+                if self.onehot_targets:
+                    df_patient = pd.get_dummies(df_patient, columns=['Term'])
+                    # Add missing target columns if not represented in the data
+                    for target in target_labels:
+                        if target not in df_patient.columns:
+                            df_patient[target] = False
+                    y = df_patient[target_labels]
+                    y = torch.tensor(y.to_numpy(), dtype=torch.float)
+                else:
+                    y = df_patient['Term']
+                    y.replace({'Healthy': 0, 'Sclerotic': 1, 'Dead': 2}, inplace=True)
+                    y = torch.tensor(y.to_numpy(), dtype=torch.long)
 
-        torch.save(data, os.path.join(self.processed_dir, file_name))
-        print(f'[Dataset]: Saves {file_name}')
-        file_names = [file_name]
+                # Create the data object for each graph
+                data = Data(x=x, edge_index=edge_index, y=y)
+
+                # Add random train and test masks to the data object #TODO: Does this make sense here?
+                data.train_mask = torch.zeros(data.num_nodes, dtype=torch.bool)
+                random.seed(self.random_seed)
+                train_indices = random.sample(range(data.num_nodes), int(data.num_nodes * (1-self.test_split)))
+                data.train_mask[train_indices] = True
+                data.test_mask = ~data.train_mask
+                data.target_labels = target_labels
+
+                file_name = f"{self.raw_file_name.split('.')[0]}_{patient}.pt"
+
+                torch.save(data, os.path.join(self.processed_dir, file_name))
+                print(f'[Dataset]: Saves {file_name}')
+                file_names.append(file_name)
 
         with open(os.path.join(self.processed_dir, 'processed_filenames.pkl'), 'wb') as handle:
             pickle.dump(file_names, handle)

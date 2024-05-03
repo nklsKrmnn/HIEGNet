@@ -24,12 +24,16 @@ def plot_confusion_matrix(y_true: np.array,
     """
 
     cm = confusion_matrix(y_true, y_pred).astype(int)
-    df_cm = pd.DataFrame(cm, index=labels, columns=labels)
+    try:
+        df_cm = pd.DataFrame(cm, index=labels, columns=labels)
+    except:
+        df_cm = pd.DataFrame(cm)
     fig = plt.figure(figsize=(10,7))
     sns.heatmap(df_cm,
                 annot=True,
                 cmap=cmap,
-                annot_kws={"fontsize": 16, "weight": 'bold'}
+                annot_kws={"fontsize": 16, "weight": 'bold'},
+                fmt='g'
                 )
     plt.title(title)
     plt.ylabel('True label')

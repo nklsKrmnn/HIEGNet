@@ -388,6 +388,11 @@ class Trainer:
 
         loder_len = len(validation_loader)
 
+        complete_predictions = []
+        complete_targets = []
+        complete_train_mask = []
+        complete_test_mask = []
+
         with torch.no_grad():
             for graph_data in validation_loader:
 
@@ -404,20 +409,14 @@ class Trainer:
                     pred = prediction.argmax(dim=1).cpu()
                     targ = target.argmax(dim=1).cpu()
 
+                complete_predictions.append(pred)
+                complete_targets.append(targ)
+                complete_train_mask.append(graph_data.train_mask)
+                complete_test_mask.append(graph_data.test_mask)
+
                 accuracy = accuracy_score(targ[graph_data.test_mask],
                                           pred[graph_data.test_mask])
 
-                self.logger.save_confusion_matrix(targ[graph_data.train_mask],
-                                                  pred[graph_data.train_mask],
-                                                  labels=graph_data.target_labels,
-                                                  epoch=epoch,
-                                                  set='1_Train')
-
-                self.logger.save_confusion_matrix(targ[graph_data.test_mask],
-                                                  pred[graph_data.test_mask],
-                                                  labels=graph_data.target_labels,
-                                                  epoch=epoch,
-                                                  set='2_Test')
 
                 total_accuracy += accuracy
                 step_count += 1
@@ -427,6 +426,23 @@ class Trainer:
                         f'[TRAINER]: Batch {step_count}/{loder_len} accuracy: {accuracy}')
 
         total_accuracy = total_accuracy / step_count
+
+        complete_predictions = torch.cat(complete_predictions)
+        complete_targets = torch.cat(complete_targets)
+        complete_train_mask = torch.cat(complete_train_mask)
+        complete_test_mask = torch.cat(complete_test_mask)
+
+        self.logger.save_confusion_matrix(complete_targets[complete_train_mask],
+                                          complete_predictions[complete_train_mask],
+                                          labels=graph_data.target_labels,
+                                          epoch=epoch,
+                                          set='1_Train')
+
+        self.logger.save_confusion_matrix(complete_targets[complete_test_mask],
+                                          complete_predictions[complete_test_mask],
+                                          labels=graph_data.target_labels,
+                                          epoch=epoch,
+                                          set='2_Test')
 
         return total_accuracy
 

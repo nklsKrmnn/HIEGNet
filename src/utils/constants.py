@@ -13,3 +13,14 @@ DATASET_NAME_MAPPING: Final[dict[str, any]] = {
     "graph_dataset": GraphDataset
 }
 
+REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {
+    "001": {
+        "origin": (16038.24, 69265.17),
+        "target": (380, 1001)
+    },
+    "002": {
+        "origin": (20212.06, 59714.98),
+        "target": (632, 1261)
+    }
+}
+

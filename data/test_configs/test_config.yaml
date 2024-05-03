@@ -36,9 +36,12 @@ pre_processing_parameters:
     magnification: 0.0625
   input_paths:
     feature_dir: "/home/dascim/repos/from_odyssee/resultats/features/"
-    df_matchings: '/home/dascim/repos/from_odyssee/resultats/matching_across_stainings_001_from_segmentation.npy'
-    df_centroids: '/home/dascim/repos/from_odyssee/resultats/IFTA_EXC_001_25_centroids_from_gt.npy'
+    df_matchings: '/home/dascim/repos/from_odyssee/resultats/'
+    df_centroids: '/home/dascim/repos/from_odyssee/resultats/'
     df_annotations: '/home/dascim/repos/histograph/data/input/annotations_exc.csv'
+  patient_list:
+    #- '001'
+    - '002'
 dataset_parameters:
   class_name: "graph_dataset"
   root: "/home/dascim/repos/histograph/data/input"
