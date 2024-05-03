@@ -27,6 +27,7 @@ class GraphDataset(Dataset):
     def __init__(self,
                  root,
                  raw_file_name,
+                 feature_list:list,
                  test_split: float = 0.2,
                  onehot_targets: bool = True,
                  transform=None,
@@ -34,6 +35,7 @@ class GraphDataset(Dataset):
                  random_seed=None):
         self.raw_file_name = raw_file_name
         self.test_split = test_split
+        self.feature_list = feature_list
         self.random_seed = random_seed
         self.onehot_targets = onehot_targets
         super(GraphDataset, self).__init__(root, transform, pre_transform)
@@ -73,7 +75,7 @@ class GraphDataset(Dataset):
         edge_index = torch.tensor(np.argwhere(adjectency_matrix == 1).T, dtype=torch.long)
 
         # Create the node features in tensor
-        x = df.drop(['centroid_x', 'centroid_y', 'Term', 'patient'], axis=1)
+        x = df[self.feature_list]
         x = x.to_numpy()
         x = torch.tensor(x, dtype=torch.float)
 

@@ -83,25 +83,19 @@ def main() -> None:
     model_parameters = config.pop("model_parameters")
     model_name, model_attributes = model_parameters.popitem()
 
-
-    # TODO: clean up  raw params and dataset params
     # Create graph dataset
     # Extracting dataset parameters from config
     dataset_parameters = config.pop("dataset_parameters")
-    dataset_attributes = dataset_parameters.pop("class_attributes")
-    dataset_name = dataset_attributes.pop("class_name")
+    dataset_name = dataset_parameters.pop("class_name")
     process_dataset = dataset_parameters.pop("process")
 
     # Generate raw data file
-    generate_raw_data(raw_file_name=dataset_attributes['raw_file_name'],
-                      coordinate_transformation=config.pop('pre_processing_parameters')['coordinate_transformation'],
-                      **dataset_parameters)
+    generate_raw_data(raw_file_name=dataset_parameters['raw_file_name'],
+                      **config['pre_processing_parameters'])
 
     # Create instance for dataset and process if given in config
-    try:
-        dataset = DATASET_NAME_MAPPING[dataset_name](**dataset_attributes)
-    except KeyError as parse_error:
-        raise (KeyError(f"The dataset '{dataset_name}' does not exist!")) from parse_error
+    dataset = DATASET_NAME_MAPPING[dataset_name](**dataset_parameters)
+
 
     if process_dataset:
         dataset.process()

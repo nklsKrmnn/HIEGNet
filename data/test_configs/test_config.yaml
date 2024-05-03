@@ -34,20 +34,19 @@ pre_processing_parameters:
     mirror_x: false # Mirror the image over the y-axis
     mirror_y: false # Mirror the image over the x-axis
     magnification: 0.0625
-dataset_parameters:
-  class_attributes:
-    class_name: "graph_dataset"
-    root: "/home/dascim/repos/histograph/data/input"
-    raw_file_name: "test_data.csv"
-    test_split: 0.3
-    random_seed: 35
-    onehot_targets: true
-  process: true
   input_paths:
     feature_dir: "/home/dascim/repos/from_odyssee/resultats/features/"
     df_matchings: '/home/dascim/repos/from_odyssee/resultats/matching_across_stainings_001_from_segmentation.npy'
     df_centroids: '/home/dascim/repos/from_odyssee/resultats/IFTA_EXC_001_25_centroids_from_gt.npy'
     df_annotations: '/home/dascim/repos/histograph/data/input/annotations_exc.csv'
+dataset_parameters:
+  class_name: "graph_dataset"
+  root: "/home/dascim/repos/histograph/data/input"
+  raw_file_name: "test_data.csv"
+  test_split: 0.3
+  random_seed: 35
+  onehot_targets: true
+  process: true
   feature_list:
     - 'tcell _25_in'
     - 'tcell _25_out'
