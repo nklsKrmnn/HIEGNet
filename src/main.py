@@ -10,7 +10,7 @@ from src.utils.model_service import ModelService
 from src.pipelines.trainer import Trainer
 from torch import cuda
 
-from src.preprocessing.test_graph_dataset import GraphDataset
+from src.preprocessing.graph_dataset import GraphDataset
 from src.utils.logger import Logger
 
 TRAIN_COMMAND: Final[str] = "train"

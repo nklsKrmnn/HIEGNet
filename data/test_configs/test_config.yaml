@@ -7,7 +7,7 @@ model_parameters:
 training_parameters:
   batch_size: 1
   test_split: 0.2
-  epochs: 500
+  epochs: 50
   learning_rate: 0.003
   #lr_scheduler_params:
   #  scheduler: "ReduceLROnPlateau" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
@@ -16,40 +16,35 @@ training_parameters:
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.0
-  balance_classes: true
+  balance_classes: false
   momentum: 0.1
   seed: 42
   batch_shuffle: false
   patience: 10000
-  log_image_frequency: 5
+  log_image_frequency: 1
 pre_processing_parameters:
   coordinate_transformation:
-    reference_point_annotation:
-      x: 16038.24
-      y: 69265.17
-    reference_point_image:
-      x: 380
-      y: 1001
     rotation: 90
     mirror_x: false # Mirror the image over the y-axis
     mirror_y: false # Mirror the image over the x-axis
     magnification: 0.0625
   input_paths:
-    feature_dir: "/home/dascim/repos/from_odyssee/resultats/features/"
-    df_matchings: '/home/dascim/repos/from_odyssee/resultats/'
-    df_centroids: '/home/dascim/repos/from_odyssee/resultats/'
+    feature_dir: "/home/dascim/repos/from_odyssee/resultats_all_stainings/features"
+    df_matchings: '/home/dascim/repos/from_odyssee/resultats_all_stainings/'
+    df_centroids: '/home/dascim/repos/from_odyssee/resultats_all_stainings/'
     df_annotations: '/home/dascim/repos/histograph/data/input/annotations_exc.csv'
   patient_list:
-    #- '001'
-    - '002'
+    - '001'
+    #- '002'
 dataset_parameters:
   class_name: "graph_dataset"
   root: "/home/dascim/repos/histograph/data/input"
   raw_file_name: "test_data.csv"
-  test_split: 0.3
+  test_split: 0.05
   random_seed: 35
   onehot_targets: true
   process: true
+  path_image_inputs: "/home/dascim/repos/histograph/data/input/glom_crop_images/"
   feature_list:
     - 'tcell _25_in'
     - 'tcell _25_out'

@@ -1,7 +1,9 @@
+import cv2
 import pandas as pd
 import numpy as np
 import pickle
 import torch
+from PIL.Image import Image
 from torch_geometric.data import Dataset, Data
 from torch_geometric.loader import DataLoader
 import os
@@ -32,12 +34,15 @@ class GraphDataset(Dataset):
                  onehot_targets: bool = True,
                  transform=None,
                  pre_transform=None,
-                 random_seed=None):
+                 random_seed=None,
+                 path_image_inputs=None):
+
         self.raw_file_name = raw_file_name
         self.test_split = test_split
         self.feature_list = feature_list
         self.random_seed = random_seed
         self.onehot_targets = onehot_targets
+        self.path_image_inputs = path_image_inputs
         super(GraphDataset, self).__init__(root, transform, pre_transform)
 
     @property
@@ -84,9 +89,15 @@ class GraphDataset(Dataset):
                 edge_index = torch.tensor(np.argwhere(adjectency_matrix == 1).T, dtype=torch.long)
 
                 # Create the node features in tensor
-                x = df_patient[self.feature_list]
-                x = x.to_numpy()
-                x = torch.tensor(x, dtype=torch.float)
+                if self.path_image_inputs is None:
+                    x = df_patient[self.feature_list]
+                    x = x.to_numpy()
+                    x = torch.tensor(x, dtype=torch.float)
+                else:
+                    x = self.load_neighborhood_images(patient)
+                    x = np.array(x)
+                    x = torch.tensor(x, dtype=torch.float)
+                    x = x.permute(0,3,1,2)
 
                 # Target labels
                 target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
@@ -124,6 +135,23 @@ class GraphDataset(Dataset):
 
         with open(os.path.join(self.processed_dir, 'processed_filenames.pkl'), 'wb') as handle:
             pickle.dump(file_names, handle)
+
+    def load_neighborhood_images(self, patient):
+        """
+        Load the neighborhood images for a patient.
+
+        The neighborhood images are loaded from the path_image_inputs directory and the images.
+
+        :param patient: The patient id
+        :return: The neighborhood images
+        """
+        path = os.path.join(self.path_image_inputs, f"patient_00{patient}")
+        images = []
+        for image in os.listdir(path):
+            img = cv2.imread(os.path.join(path, image))
+            images.append(img)
+
+        return images
 
     def len(self) -> int:
         return len(self.processed_file_names)
