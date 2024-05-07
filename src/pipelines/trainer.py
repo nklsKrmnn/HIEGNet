@@ -341,7 +341,10 @@ class Trainer:
             self.optimizer.zero_grad()
 
             # Move data to device
-            input_graph_feature = graph_data.x.to(self.device)
+            if isinstance(graph_data.x, torch.Tensor):
+                input_graph_feature = graph_data.x.to(self.device)
+            else:
+                input_graph_feature = graph_data.x
             input_graph_edge_index = graph_data.edge_index.to(self.device)
             target = graph_data.y.to(self.device)
 
@@ -396,7 +399,10 @@ class Trainer:
         with torch.no_grad():
             for graph_data in validation_loader:
 
-                input_graph_feature = graph_data.x.to(self.device)
+                if isinstance(graph_data.x, torch.Tensor):
+                    input_graph_feature = graph_data.x.to(self.device)
+                else:
+                    input_graph_feature = graph_data.x
                 input_graph_edge_index = graph_data.edge_index.to(self.device)
                 target = graph_data.y.float().to(self.device)
 

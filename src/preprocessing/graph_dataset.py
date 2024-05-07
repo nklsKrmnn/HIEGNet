@@ -94,10 +94,10 @@ class GraphDataset(Dataset):
                     x = x.to_numpy()
                     x = torch.tensor(x, dtype=torch.float)
                 else:
+                    existing_indices = df_patient['glom_matching_index'].tolist()
                     x = self.load_neighborhood_images(patient)
-                    x = np.array(x)
-                    x = torch.tensor(x, dtype=torch.float)
-                    x = x.permute(0,3,1,2)
+                    x = np.array(x)[existing_indices]
+                    image_size = cv2.imread(x[0]).shape[0]
 
                 # Target labels
                 target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
@@ -127,6 +127,9 @@ class GraphDataset(Dataset):
                 data.test_mask = ~data.train_mask
                 data.target_labels = target_labels
 
+                if self.path_image_inputs is not None:
+                    data.image_size = image_size
+
                 file_name = f"{self.raw_file_name.split('.')[0]}_{patient}.pt"
 
                 torch.save(data, os.path.join(self.processed_dir, file_name))
@@ -136,22 +139,22 @@ class GraphDataset(Dataset):
         with open(os.path.join(self.processed_dir, 'processed_filenames.pkl'), 'wb') as handle:
             pickle.dump(file_names, handle)
 
-    def load_neighborhood_images(self, patient):
+    def load_neighborhood_images(self, patient) -> list[str]:
         """
         Load the neighborhood images for a patient.
 
         The neighborhood images are loaded from the path_image_inputs directory and the images.
 
         :param patient: The patient id
-        :return: The neighborhood images
+        :return: List of paths of the neighborhood images for one graph
         """
         path = os.path.join(self.path_image_inputs, f"patient_00{patient}")
-        images = []
+        image_paths = []
         for image in os.listdir(path):
-            img = cv2.imread(os.path.join(path, image))
-            images.append(img)
+            img = os.path.join(path, image)
+            image_paths.append(img)
 
-        return images
+        return image_paths
 
     def len(self) -> int:
         return len(self.processed_file_names)

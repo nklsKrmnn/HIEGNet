@@ -96,9 +96,11 @@ def main() -> None:
     # Create instance for dataset and process if given in config
     dataset = DATASET_NAME_MAPPING[dataset_name](**dataset_parameters)
 
-
     if process_dataset:
         dataset.process()
+
+    model_attributes["image_size"] = dataset[0]["image_size"]
+    model_attributes["device"] = device
 
     if args.pipeline == TRAIN_COMMAND:
         model = ModelService.create_model(model_name=model_name,

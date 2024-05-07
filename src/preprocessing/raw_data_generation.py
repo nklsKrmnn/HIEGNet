@@ -134,6 +134,7 @@ def generate_raw_data(input_paths: dict,
 
         # Merge targets into df wit determined indeces
         df = pd.merge(df, df_targets, left_index=True, right_on='match_index', how='left')
+        df["glom_matching_index"] = range(df.shape[0])
 
         n_pre_drop = df.shape[0]
         df.dropna(inplace=True)

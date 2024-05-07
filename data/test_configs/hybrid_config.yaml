@@ -1,0 +1,61 @@
+use_gpu: true
+model_parameters:
+  hybrid:
+    hidden_channels: [16, 32]
+    kernel_size: 5
+    stride: 5
+    g_input_dim: 10
+    g_hidden_dim: 16
+    g_output_dim: 3
+training_parameters:
+  batch_size: 1
+  test_split: 0.2
+  epochs: 50
+  learning_rate: 0.003
+  #lr_scheduler_params:
+  #  scheduler: "ReduceLROnPlateau" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
+  #  params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
+  #    mode: "min"
+  loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
+  optimizer: "adam" # Options: "adam", "sgd"
+  weight_decay: 0.0
+  balance_classes: false
+  momentum: 0.1
+  seed: 42
+  batch_shuffle: false
+  patience: 10000
+  log_image_frequency: 1
+pre_processing_parameters:
+  coordinate_transformation:
+    rotation: 90
+    mirror_x: false # Mirror the image over the y-axis
+    mirror_y: false # Mirror the image over the x-axis
+    magnification: 0.0625
+  input_paths:
+    feature_dir: "/home/dascim/repos/from_odyssee/resultats_all_stainings/features"
+    df_matchings: '/home/dascim/repos/from_odyssee/resultats_all_stainings/'
+    df_centroids: '/home/dascim/repos/from_odyssee/resultats_all_stainings/'
+    df_annotations: '/home/dascim/repos/histograph/data/input/annotations_exc.csv'
+  patient_list:
+    - '001'
+    #- '002'
+dataset_parameters:
+  class_name: "graph_dataset"
+  root: "/home/dascim/repos/histograph/data/input"
+  raw_file_name: "test_data.csv"
+  test_split: 0.05
+  random_seed: 35
+  onehot_targets: true
+  process: true
+  path_image_inputs: "/home/dascim/repos/histograph/data/input/glom_crop_images/"
+  feature_list:
+    - 'tcell _25_in'
+    - 'tcell _25_out'
+    - 'cd68_in'
+    - 'cd163_in'
+    - 'cd206_in'
+    - 'ms4a4a_in'
+    - 'cd68_out'
+    - 'cd163_out'
+    - 'cd206_out'
+    - 'ms4a4a_out'

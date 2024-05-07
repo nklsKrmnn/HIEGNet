@@ -134,7 +134,7 @@ class CoordinateTransformater:
             best_match = np.argmin(distances)
             best_match_distance = np.min(distances)
 
-            if best_match_distance < 5:
+            if best_match_distance < 10:
                 # Check if the target point is already matched
                 i = 0
                 stop_counter = 0
