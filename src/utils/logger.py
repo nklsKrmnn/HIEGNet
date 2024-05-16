@@ -29,20 +29,6 @@ class Logger():
     finished.
     """
 
-    @classmethod
-    def log_text(cls, text: str) -> None:
-        """
-        This method prints a text message to the console. The message is prefixed with "[LOGGER]".
-
-        Args:
-            text (str): The text message to log.
-
-        Returns:
-            None
-        """
-        file_name = os.path.basename(inspect.stack()[1].filename)
-        print(f"[LOGGER]: {text} ({file_name})")
-
     def __init__(self) -> None:
         """
         Initializes the Logger.
@@ -218,4 +204,155 @@ class Logger():
         if first_name_logging:
             self._summary_writer.add_text("model/mode_path", model_path)
             first_name_logging = False
+
+
+
+class CrossValidationLogger(Logger):
+    """
+    A class used to log training information for each run of a cross validation.
+
+    It logs the start and end times of the training, the training and validation losses for each
+    epoch, and the model architecture. Additionally, it handles closing the logger after training is
+    finished. This class inherits from the Logger class and extends it by adding lists attributes to store the
+    values logged during training to be accessible after training is finished.
+    """
+
+    def __init__(self, fold: int, current_time_string) -> None:
+
+        self.start_time_str = current_time_string
+        self._summary_writer = SummaryWriter(f"runs/{current_time_string}_fold{fold}")
+        self._training_start: Optional[datetime] = None
+
+        self.train_loss = {}
+        self.test_loss = {}
+        self.acc = {}
+        self.text = {}
+
+    def write_text(self, tag: str, text: str) -> None:
+        """
+        Writes a custom text to a custom tag in the TensorBoard log file and as class attribute.
+
+        Args:
+            tag (str): The tag for the text.
+            text (str): The text to write.
+        """
+        super().write_text(tag, text)
+        self.text[tag] = text
+
+    def write_model(self, model: nn.Module) -> None:
+        """
+        Writes the model architecture formatted as text to the TensorBoard log file and as class attribute.
+
+        Args:
+            model (nn.Module): The model.
+        """
+        super().write_model(model)
+        self.model = str(model)
+
+    def log_training_loss(self, value: float, epoch: int):
+        """
+        Logs the training loss for an epoch.
+
+        This method writes a message to the console, writes the train loss to the
+        TensorBoard log file and into a list as class attribute.
+
+        Args:
+            value (float): The training loss.
+            epoch (int): The epoch number.
+        """
+        super().log_training_loss(value, epoch)
+        self.train_loss[epoch] = value
+
+    def log_test_loss(self, value: float, epoch: int) -> None:
+        """
+        Logs the test loss for an epoch.
+
+        This method writes a message to the console, writes the test loss to the
+        TensorBoard log file and into a list as class attribute.
+
+        Args:
+            value (float): The test loss.
+            epoch (int): The epoch number.
+        """
+        super().log_test_loss(value, epoch)
+        self.test_loss[epoch] = value
+
+    def log_accuracy_score(self, value: float, epoch: int, set: str = 'val') -> None:
+        """
+        Logs the accuracy for an epoch.
+
+        This method writes a message to the console, writes the accuracy to the
+        TensorBoard log file and into a list as class attribute.
+
+        Args:
+            value (float): The accuracy.
+            epoch (int): The epoch number.
+            set (str): The set for which the accuracy is logged. Defaults to 'val'.
+        """
+        super().log_accuracy_score(value, epoch, set)
+        self.acc[epoch] = value
+
+
+    def log_model_path(self, model_path: str) -> None:
+        """
+        Logs the path of the saved model.
+        Args:
+            model_path (str): Path of the saved model.
+
+        Returns: None
+
+        """
+        global first_name_logging
+
+        if first_name_logging:
+            self._summary_writer.add_text("model/mode_path", model_path)
+            self.text["model/mode_path"] = model_path
+            first_name_logging = False
+
+class CrossValLoggerSummary():
+
+    """
+    A class used to summarize the training information for all folds of a cross validation.
+
+    It copies text information from a logger and calculates the mean values of the training
+    loss, test loss, and accuracy of multiple loggers
+    """
+
+
+    def __init__(self, logger: CrossValidationLogger) -> None:
+        self.start_time_str = logger.start_time_str
+        self._summary_writer = SummaryWriter(f"runs/{self.start_time_str}_summary")
+        self._training_start: Optional[datetime] = None
+
+        for key, value in logger.text.items():
+            self._summary_writer.add_text(key, value)
+
+        if hasattr(logger, 'model'):
+            self._summary_writer.add_text("model", logger.model)
+        self._summary_writer.add_text('model/mode_path', logger.text['model/mode_path'])
+
+    def summarize_mean_values(self, loggers: list[CrossValidationLogger]) -> None:
+        """
+        Summarizes the mean training loss for all folds.
+
+        This method calculates the mean training loss, test loss, and accuracy for each epoch
+        that is saved in a list of loggers and writes the mean values to the TensorBoard log file.
+        :param loggers: A list of loggers for each fold of a cross validation.
+        """
+
+        for row in loggers[0].train_loss.keys():
+            mean_train_loss = np.mean([fold.train_loss[row] for fold in loggers])
+            self._summary_writer.add_scalar("loss/1_train", mean_train_loss, row)
+
+            if row in loggers[0].test_loss.keys():
+                mean_test_loss = np.mean([fold.test_loss[row] for fold in loggers])
+                self._summary_writer.add_scalar("loss/2_test", mean_test_loss, row)
+
+            if row in loggers[0].acc.keys():
+                mean_acc = np.mean([fold.acc[row] for fold in loggers])
+                self._summary_writer.add_scalar("accuracy/val", mean_acc, row)
+
+    def close(self):
+        self._summary_writer.close()
+
 

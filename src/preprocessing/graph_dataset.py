@@ -3,11 +3,13 @@ import pandas as pd
 import numpy as np
 import pickle
 import torch
+import os
+import random
+
 from PIL.Image import Image
 from torch_geometric.data import Dataset, Data
 from torch_geometric.loader import DataLoader
-import os
-import random
+from sklearn.model_selection import StratifiedKFold
 
 from src.preprocessing.knn_graph_constructor import knn_graph_constructor
 
@@ -156,6 +158,77 @@ class GraphDataset(Dataset):
 
         return image_paths
 
+    def create_folds(self, n_folds: int) -> None:
+        """
+        Create the n folds for the dataset.
+
+        Generates folds with equal distribution of the target labels for the whole dataset. For each graph a list of
+        train and test masks is generated for each fold. Class labels are stratified over the whole dataset not on
+        each graph. The random seed of the dataset determines the fold generation. The folds are saved into each
+        graph data object and save under the same file name.
+
+        :param n_folds: Number of folds
+        """
+
+        file_paths = [os.path.join(self.processed_dir, self.processed_file_names[idx]) for idx in
+                  range(self.len())]
+
+        graphs = [torch.load(fp) for fp in file_paths]
+
+        # Get y data for stratified kfold
+        y_data = [graph.y for graph in graphs]
+        y_data = torch.cat(y_data, dim=0)
+        y_data = pd.DataFrame(y_data.numpy(), columns=graphs[0].target_labels)
+        y_data = y_data.idxmax(axis=1)
+
+        # Create StratifiedKFold object
+        skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=self.random_seed)
+
+        # Generate the train index masks for each fold based on all graphs
+        masks = []
+        for train_index, _ in skf.split(y_data, y_data):
+            mask = torch.zeros(len(y_data), dtype=torch.bool)
+            mask[train_index] = True
+            masks.append(mask)
+
+        # Split the fold masks for each graph
+        for idx, graph in enumerate(graphs):
+            # Get train and test masks for each fold for the graph
+            len_graph = graph.num_nodes
+            graph.train_folds = [mask[:len_graph] for mask in masks]
+            graph.test_folds = [~mask[:len_graph] for mask in masks]
+
+            # Remove mask for this graph from the list
+            masks = [mask[len_graph:] for mask in masks]
+
+            # Save graph after adding the fold masks
+            torch.save(graph, file_paths[idx])
+
+    def activate_fold(self, fold: int) -> None:
+        """
+        Activate the fold for the dataset.
+
+        Iterates over all graphs in the dataset and sets the train and test mask for the corresponding mask in the
+        given fold.
+
+        :param fold: The fold to activate
+        """
+
+        # Load graph data objects
+        file_paths = [os.path.join(self.processed_dir, self.processed_file_names[idx]) for idx in
+                      range(self.len())]
+        graphs = [torch.load(fp) for fp in file_paths]
+
+        for idx, graph in enumerate(graphs):
+            # Set train and test mask for the given fold
+            graph.train_mask = graph.train_folds[fold]
+            graph.test_mask = graph.test_folds[fold]
+
+            # Save graph after adding the fold masks
+            torch.save(graph, file_paths[idx])
+
+
+
     def len(self) -> int:
         return len(self.processed_file_names)
 
@@ -225,7 +298,8 @@ class TestGraphDataset(Dataset):
                     x = torch.tensor(x, dtype=torch.float)
 
                     # Create the target labels in tensor
-                    y = df_patient_staining[["Term_Dead", "Term_Healthy", "Term_Sclerotic"]] #TODO: Test onehot encoding
+                    y = df_patient_staining[
+                        ["Term_Dead", "Term_Healthy", "Term_Sclerotic"]]  # TODO: Test onehot encoding
                     y = torch.tensor(y.to_numpy(), dtype=torch.long)
 
                     # Create the data object for each graph
@@ -233,7 +307,7 @@ class TestGraphDataset(Dataset):
 
                     # Add random train and test masks to the data object #TODO: Does this make sense here?
                     data.train_mask = torch.zeros(data.num_nodes, dtype=torch.bool)
-                    train_indices = random.sample(range(data.num_nodes), int(data.num_nodes * (1-self.test_split)))
+                    train_indices = random.sample(range(data.num_nodes), int(data.num_nodes * (1 - self.test_split)))
                     data.train_mask[train_indices] = True
                     data.test_mask = ~data.train_mask
 
@@ -253,7 +327,6 @@ class TestGraphDataset(Dataset):
 
     def get(self, idx):
         return torch.load(os.path.join(self.processed_dir, self.processed_file_names[idx]))
-
 
 
 if __name__ == "__main__":

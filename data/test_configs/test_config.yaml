@@ -7,7 +7,7 @@ model_parameters:
 training_parameters:
   batch_size: 1
   test_split: 0.2
-  epochs: 50
+  epochs: 10
   learning_rate: 0.003
   #lr_scheduler_params:
   #  scheduler: "ReduceLROnPlateau" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
@@ -21,7 +21,8 @@ training_parameters:
   seed: 42
   batch_shuffle: false
   patience: 10000
-  log_image_frequency: 1
+  log_image_frequency: 5
+  n_folds: 0
 pre_processing_parameters:
   coordinate_transformation:
     rotation: 90
@@ -35,7 +36,7 @@ pre_processing_parameters:
     df_annotations: '/home/dascim/repos/histograph/data/input/annotations_exc.csv'
   patient_list:
     - '001'
-    #- '002'
+    - '002'
 dataset_parameters:
   class_name: "graph_dataset"
   root: "/home/dascim/repos/histograph/data/input"
@@ -44,7 +45,6 @@ dataset_parameters:
   random_seed: 35
   onehot_targets: true
   process: true
-  path_image_inputs: "/home/dascim/repos/histograph/data/input/glom_crop_images/"
   feature_list:
     - 'tcell _25_in'
     - 'tcell _25_out'

@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime
 from typing import Final
 
 import torch
@@ -10,8 +11,7 @@ from src.utils.model_service import ModelService
 from src.pipelines.trainer import Trainer
 from torch import cuda
 
-from src.preprocessing.graph_dataset import GraphDataset
-from src.utils.logger import Logger
+from src.utils.logger import Logger, CrossValidationLogger, CrossValLoggerSummary
 
 TRAIN_COMMAND: Final[str] = "train"
 EVAL_COMMAND: Final[str] = "evaluate"
@@ -59,8 +59,18 @@ def main() -> None:
     with open(args.config, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
-    logger = Logger()
-    logger.write_text("Config", str(config))
+    n_folds = config["training_parameters"].pop("n_folds")
+
+    if n_folds == 0:
+        logger = Logger()
+        logger.write_text("Config", str(config))
+    else:
+        loggers = []
+        for fold in range(n_folds):
+            current_time_string = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            logger = CrossValidationLogger(fold, current_time_string)
+            logger.write_text("Config", str(config))
+            loggers.append(logger)
 
 
     # Setting up GPU based on availability and usage preference
@@ -99,10 +109,11 @@ def main() -> None:
     if process_dataset:
         dataset.process()
 
-    model_attributes["image_size"] = dataset[0]["image_size"]
-    model_attributes["device"] = device
+    if 'path_image_inputs' in dataset_parameters.keys():
+        model_attributes["image_size"] = dataset[0]["image_size"]
+        model_attributes["device"] = device
 
-    if args.pipeline == TRAIN_COMMAND:
+    if (args.pipeline == TRAIN_COMMAND) & (n_folds == 0):
         model = ModelService.create_model(model_name=model_name,
                                           model_attributes=model_attributes)
 
@@ -115,6 +126,33 @@ def main() -> None:
 
         trainer.start_training()
         trainer.save_model()
+
+    if (args.pipeline == TRAIN_COMMAND) & (n_folds > 0):
+
+        dataset.create_folds(n_folds)
+
+        for fold in range(n_folds):
+            model = ModelService.create_model(model_name=model_name,
+                                              model_attributes=model_attributes)
+
+            dataset.activate_fold(fold)
+
+            trainer = Trainer(
+                dataset=dataset,
+                model=model,
+                device=device,
+                logger=loggers[fold],
+                **config["training_parameters"])
+
+            trainer.start_training()
+            trainer.save_model()
+
+        log_summary = CrossValLoggerSummary(loggers[0])
+        log_summary.summarize_mean_values(loggers)
+        log_summary.close()
+
+
+        print('stop here')
     if args.pipeline == EVAL_COMMAND:
         pass
     elif args.pipeline == PREDICT_COMMAND:
