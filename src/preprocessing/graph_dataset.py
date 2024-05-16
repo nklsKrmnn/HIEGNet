@@ -12,7 +12,6 @@ import random
 from src.preprocessing.knn_graph_constructor import knn_graph_constructor
 
 
-
 class GraphDataset(Dataset):
     """
     Dataset class for the graph data.
@@ -26,10 +25,11 @@ class GraphDataset(Dataset):
         test_split (float): The fraction of the data that is used for testing. Default is 0.2.
         random_seed (int, optional): The random seed for the train-test split. Default is None.
     """
+
     def __init__(self,
                  root,
                  raw_file_name,
-                 feature_list:list,
+                 feature_list: list,
                  test_split: float = 0.2,
                  onehot_targets: bool = True,
                  transform=None,
@@ -95,7 +95,7 @@ class GraphDataset(Dataset):
                     x = torch.tensor(x, dtype=torch.float)
                 else:
                     existing_indices = df_patient['glom_matching_index'].tolist()
-                    x = self.load_neighborhood_images(patient)
+                    x = self.load_neighborhood_image_paths(patient)
                     x = np.array(x)[existing_indices]
                     image_size = cv2.imread(x[0]).shape[0]
 
@@ -122,7 +122,7 @@ class GraphDataset(Dataset):
                 # Add random train and test masks to the data object #TODO: Does this make sense here?
                 data.train_mask = torch.zeros(data.num_nodes, dtype=torch.bool)
                 random.seed(self.random_seed)
-                train_indices = random.sample(range(data.num_nodes), int(data.num_nodes * (1-self.test_split)))
+                train_indices = random.sample(range(data.num_nodes), int(data.num_nodes * (1 - self.test_split)))
                 data.train_mask[train_indices] = True
                 data.test_mask = ~data.train_mask
                 data.target_labels = target_labels
@@ -139,7 +139,7 @@ class GraphDataset(Dataset):
         with open(os.path.join(self.processed_dir, 'processed_filenames.pkl'), 'wb') as handle:
             pickle.dump(file_names, handle)
 
-    def load_neighborhood_images(self, patient) -> list[str]:
+    def load_neighborhood_image_paths(self, patient) -> list[str]:
         """
         Load the neighborhood images for a patient.
 
@@ -160,7 +160,20 @@ class GraphDataset(Dataset):
         return len(self.processed_file_names)
 
     def get(self, idx):
-        return torch.load(os.path.join(self.processed_dir, self.processed_file_names[idx]))
+        item = torch.load(os.path.join(self.processed_dir, self.processed_file_names[idx]))
+
+        # Load images, if image features are used and transform to tensor
+        if not isinstance(item.x[0], torch.Tensor):
+            images = []
+            for image in item.x:
+                img = cv2.imread(image)
+                images.append(img)
+            item.x = np.array(images)
+            item.x = torch.tensor(item.x, dtype=torch.float)
+            item.x = item.x.permute(0, 3, 1, 2)
+
+        return item
+
 
 class TestGraphDataset(Dataset):
     def __init__(self, root, raw_file_name, test_split: float = 0.2, transform=None, pre_transform=None):

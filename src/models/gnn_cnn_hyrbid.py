@@ -58,23 +58,15 @@ class GnnCnnHybrid(nn.Module):
         self.readout = nn.Linear(g_hidden_dim, g_output_dim)
 
     def forward(self, x, edge_index):
+        # CNN
+        x = self.cnn_encoder(x)
 
-        input_x = x[0]
-        x = []
-        i = 0
-        for x_i in input_x:
-            x_i = cv2.imread(x_i)
-            x_i = torch.tensor(x_i, dtype=torch.float)
-            x_i = x_i.to(self.device).float().permute(2, 0, 1).unsqueeze(0)
+        # FC
+        x = torch.flatten(x, start_dim=1)
+        x = self.connention_fc(x)
+        x = F.relu(x)
 
-            x_i = self.cnn_encoder(x_i)
-            x_i = x_i.flatten(start_dim=1)
-            x_i = self.connention_fc(x_i)
-
-            x.append(x_i)
-
-        x = torch.stack(x).squeeze(1)
-
+        # GNN
         x = self.gconv1(x, edge_index)
         x = F.relu(x)
         x = F.dropout(x, training=self.training)

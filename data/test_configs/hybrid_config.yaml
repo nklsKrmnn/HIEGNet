@@ -1,16 +1,15 @@
 use_gpu: true
 model_parameters:
   hybrid:
-    hidden_channels: [16, 32]
+    hidden_channels: [16, 32, 64]
     kernel_size: 5
-    stride: 5
+    stride: 3
     g_input_dim: 10
     g_hidden_dim: 16
     g_output_dim: 3
 training_parameters:
   batch_size: 1
-  test_split: 0.2
-  epochs: 50
+  epochs: 1000
   learning_rate: 0.003
   #lr_scheduler_params:
   #  scheduler: "ReduceLROnPlateau" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
@@ -19,12 +18,12 @@ training_parameters:
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.0
-  balance_classes: false
+  balance_classes: true
   momentum: 0.1
   seed: 42
   batch_shuffle: false
   patience: 10000
-  log_image_frequency: 1
+  log_image_frequency: 5
 pre_processing_parameters:
   coordinate_transformation:
     rotation: 90
@@ -43,8 +42,8 @@ dataset_parameters:
   class_name: "graph_dataset"
   root: "/home/dascim/repos/histograph/data/input"
   raw_file_name: "test_data.csv"
-  test_split: 0.05
-  random_seed: 35
+  test_split: 0.1
+  random_seed: 123
   onehot_targets: true
   process: true
   path_image_inputs: "/home/dascim/repos/histograph/data/input/glom_crop_images/"

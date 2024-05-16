@@ -81,11 +81,11 @@ class Trainer:
             dataset,
             model: nn.Module,
             batch_size: int,
-            test_split: float,
             epochs: int,
             learning_rate: float,
             device: torch.device,
             logger: Logger,
+            test_split: float = 0.2,
             loss: str = "mse",
             optimizer: str = "adam",
             lr_scheduler_params: dict = None,
@@ -423,7 +423,6 @@ class Trainer:
                 accuracy = accuracy_score(targ[graph_data.test_mask],
                                           pred[graph_data.test_mask])
 
-
                 total_accuracy += accuracy
                 step_count += 1
 
@@ -460,7 +459,7 @@ class Trainer:
         """
         path = ModelService.save_model(self.model)
         self.logger.log_model_path(model_path=path)
-        Logger.log_text(f"Model saved to '{path}'.")
+        print(f"Model saved to '{path}'.")
 
     def evaluate(self) -> None:
         """
