@@ -50,6 +50,19 @@ class Logger():
         """
         self._summary_writer.add_text(tag, text)
 
+
+    def write_config(self, config: dict) -> None:
+        """
+        Logs the configuration of the training.
+
+        This method writes for each first level item in the config a text of its contents with the dict key as subtag.
+
+        Args:
+            config (dict): The configuration of the training.
+        """
+        for key, value in config.items():
+            self.write_text(f'config/{key}', str(value))
+
     def write_model(self, model: nn.Module) -> None:
         """
         Writes the model architecture formatted as text to the TensorBoard log file.
@@ -238,6 +251,19 @@ class CrossValidationLogger(Logger):
         """
         super().write_text(tag, text)
         self.text[tag] = text
+
+    def write_config(self, config: dict) -> None:
+        """
+        Logs the configuration of the training.
+
+        This method writes for each first level item in the config a text of its contents with the dict key as subtag.
+
+        Args:
+            config (dict): The configuration of the training.
+        """
+        super().write_config(config)
+        for key, value in config.items():
+            self.text[f'config/{key}'] = str(value)
 
     def write_model(self, model: nn.Module) -> None:
         """

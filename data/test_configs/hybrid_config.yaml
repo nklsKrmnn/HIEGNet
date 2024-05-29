@@ -24,6 +24,7 @@ training_parameters:
   batch_shuffle: false
   patience: 10000
   log_image_frequency: 5
+  n_folds: 0
 pre_processing_parameters:
   coordinate_transformation:
     rotation: 90

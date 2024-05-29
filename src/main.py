@@ -63,13 +63,13 @@ def main() -> None:
 
     if n_folds == 0:
         logger = Logger()
-        logger.write_text("Config", str(config))
+        logger.write_config(config)
     else:
         loggers = []
         for fold in range(n_folds):
             current_time_string = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             logger = CrossValidationLogger(fold, current_time_string)
-            logger.write_text("Config", str(config))
+            logger.write_config(config)
             loggers.append(logger)
 
 
@@ -100,14 +100,21 @@ def main() -> None:
     process_dataset = dataset_parameters.pop("process")
 
     # Generate raw data file
-    generate_raw_data(raw_file_name=dataset_parameters['raw_file_name'],
-                      **config['pre_processing_parameters'])
+    #generate_raw_data(raw_file_name=dataset_parameters['raw_file_name'],
+     #                 **config['pre_processing_parameters'])
 
     # Create instance for dataset and process if given in config
     dataset = DATASET_NAME_MAPPING[dataset_name](**dataset_parameters)
 
     if process_dataset:
         dataset.process()
+
+    # Log which patients are used in the dataset
+    if n_folds == 0:
+        logger.write_text("patient_settings",str(dataset.patient_settings))
+    else:
+        for logger in loggers:
+            logger.write_text("patient_settings",str(dataset.patient_settings))
 
     if 'path_image_inputs' in dataset_parameters.keys():
         model_attributes["image_size"] = dataset[0]["image_size"]

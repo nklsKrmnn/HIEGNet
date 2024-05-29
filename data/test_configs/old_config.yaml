@@ -1,0 +1,50 @@
+use_gpu: true
+model_parameters:
+  mlp:
+    input_dim: 8
+    hidden_dim: 16
+    output_dim: 3
+training_parameters:
+  batch_size: 1
+  test_split: 0.2
+  epochs: 10
+  learning_rate: 0.003
+  #lr_scheduler_params:
+  #  scheduler: "ReduceLROnPlateau" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
+  #  params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
+  #    mode: "min"
+  loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
+  optimizer: "adam" # Options: "adam", "sgd"
+  weight_decay: 0.0
+  balance_classes: false
+  momentum: 0.1
+  seed: 42
+  batch_shuffle: false
+  patience: 10000
+  log_image_frequency: 5
+  n_folds: 0
+dataset_parameters:
+  class_name: "glom_graph_dataset"
+  root: "/home/dascim/repos/histograph/data/input"
+  feature_file_path: " "
+  annotations_path: " "
+  test_split: 0.05
+  processed_file_name: "test_data"
+  train_patients:
+    - 001
+  test_patients:
+    - 002
+  random_seed: 35
+  onehot_targets: true
+  process: false
+  feature_list:
+    - 'tcell _25_in'
+    - 'tcell _25_out'
+    - 'cd68_in'
+    - 'cd163_in'
+    - 'cd206_in'
+    - 'ms4a4a_in'
+    - 'cd68_out'
+    - 'cd163_out'
+    - 'cd206_out'
+    - 'ms4a4a_out'

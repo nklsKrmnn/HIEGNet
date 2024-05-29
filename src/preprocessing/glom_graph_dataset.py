@@ -6,15 +6,15 @@ import torch
 import os
 import random
 
-from PIL.Image import Image
 from torch_geometric.data import Dataset, Data
 from torch_geometric.loader import DataLoader
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, train_test_split
 
+from src.preprocessing.feature_preprocessing import feature_preprocessing
 from src.preprocessing.knn_graph_constructor import knn_graph_constructor
 
 
-class GraphDataset(Dataset):
+class GlomGraphDataset(Dataset):
     """
     Dataset class for the graph data.
 
@@ -30,36 +30,63 @@ class GraphDataset(Dataset):
 
     def __init__(self,
                  root,
-                 raw_file_name,
+                 processed_file_name: str,
+                 feature_file_path: str,
+                 annotations_path: str,
                  feature_list: list,
                  test_split: float = 0.2,
+                 train_patients: list[str] = [],
+                 test_patients: list[str] = [],
                  onehot_targets: bool = True,
+                 preprocessing_params: dict = None,
                  transform=None,
                  pre_transform=None,
                  random_seed=None,
                  path_image_inputs=None):
 
-        self.raw_file_name = raw_file_name
-        self.test_split = test_split
+        self.processed_file_name = processed_file_name
+        self.feature_file_path = feature_file_path
+        self.test_split = test_split if test_patients == [] else 0
+        self.train_patients = train_patients
+        self.test_patients = test_patients if test_patients != [] else train_patients
         self.feature_list = feature_list
         self.random_seed = random_seed
         self.onehot_targets = onehot_targets
         self.path_image_inputs = path_image_inputs
-        super(GraphDataset, self).__init__(root, transform, pre_transform)
+        self.annot_path = str(annotations_path)
+        self.preprocessing_params = preprocessing_params
+
+        # Dict to save settings of patients in config later
+        self.patient_settings = {
+            "0_train_from_config": self.train_patients,
+            "1_test_from_config": self.test_patients,
+            "2_train_in_dataset": [],
+            "3_test_in_dataset": [],
+            "4_not_in_raw_data": [],
+            "5_to_small": []
+        }
+
+        super(GlomGraphDataset, self).__init__(root, transform, pre_transform)
 
     @property
     def raw_file_names(self) -> list[str]:
-        return [self.raw_file_name]
+        raw_files = [self.feature_file_path]
+        for root, _, files in os.walk(self.annot_path):
+            for file in files:
+                if file.endswith('.csv'):
+                    raw_files.append(os.path.join(root, file))
+
+        return raw_files
 
     @property
     def processed_file_names(self) -> list[str]:
         try:
-            with open(os.path.join(self.processed_dir, 'test_data_filenames.pkl'), 'rb') as handle:
+            with open(os.path.join(self.processed_dir, f'{self.processed_file_name}_filenames.pkl'), 'rb') as handle:
                 file_names = pickle.load(handle)
         except:
             file_names = []
 
-        return file_names
+        return [item['file_name'] for item in file_names]
 
     def download(self):
         pass
@@ -69,37 +96,29 @@ class GraphDataset(Dataset):
         Process the raw data to the graph data format.
 
         The raw data is loaded from the raw file and a graph is constructed from the point cloud with the knn graph
-        algorithm. Afterward, node fatures and note-wise targets for node classification are added. A train and test
+        algorithm. Afterward, node features and note-wise targets for node classification are added. A train and test
         mask is added to the graph data object. Finally, the data object is saved to the processed directory.
 
         :return: None
         """
         df = pd.read_csv(self.raw_paths[0])
-        patients = df['patient'].unique()
+        df_annotations = pd.concat([pd.read_csv(path) for path in self.raw_paths[1:]])
+        df = pd.merge(df, df_annotations, left_on="glom_index", right_on="ID", how="left")
+        patients_in_raw_data = df['patient'].unique()
 
         file_names = []
 
-        for patient in patients:
+        for patient in patients_in_raw_data:
             df_patient = df[df['patient'] == patient]
 
-            # threshold for minimum number of data points
-            if df_patient.shape[0] > 10:
+            # threshold for minimum number of data points and check if patient is in train or test set
+            if (df_patient.shape[0] > 10) and (patient in self.train_patients+self.test_patients):
 
                 # Create the graph from point cloud and generate the edge index
-                coords = df_patient[['centroid_x', 'centroid_y']].to_numpy()
+                coords = df_patient[['Center X', 'Center Y']].to_numpy()
                 adjectency_matrix = knn_graph_constructor(coords, 5)
                 edge_index = torch.tensor(np.argwhere(adjectency_matrix == 1).T, dtype=torch.long)
 
-                # Create the node features in tensor
-                if self.path_image_inputs is None:
-                    x = df_patient[self.feature_list]
-                    x = x.to_numpy()
-                    x = torch.tensor(x, dtype=torch.float)
-                else:
-                    existing_indices = df_patient['glom_matching_index'].tolist()
-                    x = self.load_neighborhood_image_paths(patient)
-                    x = np.array(x)[existing_indices]
-                    image_size = cv2.imread(x[0]).shape[0]
 
                 # Target labels
                 target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
@@ -118,28 +137,71 @@ class GraphDataset(Dataset):
                     y.replace({'Healthy': 0, 'Sclerotic': 1, 'Dead': 2}, inplace=True)
                     y = torch.tensor(y.to_numpy(), dtype=torch.long)
 
+                # Generate stratified train and test indices
+                train_indices, test_indices = train_test_split(np.arange(len(y)),
+                                                               test_size=self.test_split,
+                                                               random_state=self.random_seed,
+                                                               stratify=y.numpy())
+
+                # Create the node features in tensor
+                if self.path_image_inputs is None:
+                    x = df_patient[self.feature_list]
+                    x = feature_preprocessing(x, train_indices, **self.preprocessing_params)
+                    x = x.to_numpy()
+                    x = torch.tensor(x, dtype=torch.float)
+                else:
+                    existing_indices = df_patient['glom_matching_index'].tolist()
+                    x = self.load_neighborhood_image_paths(patient)
+                    x = np.array(x)[existing_indices]
+                    image_size = cv2.imread(x[0]).shape[0]
+
                 # Create the data object for each graph
                 data = Data(x=x, edge_index=edge_index, y=y)
 
-                # Add random train and test masks to the data object #TODO: Does this make sense here?
+                # Add train masks based on random seed and test split
                 data.train_mask = torch.zeros(data.num_nodes, dtype=torch.bool)
-                random.seed(self.random_seed)
-                train_indices = random.sample(range(data.num_nodes), int(data.num_nodes * (1 - self.test_split)))
                 data.train_mask[train_indices] = True
-                data.test_mask = ~data.train_mask
+
+                # Set test mask to the rest of the nodes if graph is split in train and test set
+                data.test_mask = ~data.train_mask if self.test_split > 0 else data.train_mask
                 data.target_labels = target_labels
 
                 if self.path_image_inputs is not None:
                     data.image_size = image_size
 
-                file_name = f"{self.raw_file_name.split('.')[0]}_{patient}.pt"
+                file_name = f"{self.processed_file_name}_p{patient}.pt"
 
+                # Save graph data object
                 torch.save(data, os.path.join(self.processed_dir, file_name))
                 print(f'[Dataset]: Saves {file_name}')
-                file_names.append(file_name)
 
-        with open(os.path.join(self.processed_dir, 'test_data_filenames.pkl'), 'wb') as handle:
+                # Save file names of processed files and if patient is in train/test set and save in settings dict
+                if patient in self.train_patients:
+                    self.patient_settings["2_train_in_dataset"].append(patient)
+                    set = 'train'
+                else:
+                    self.patient_settings["3_test_in_dataset"].append(patient)
+                    set = 'test'
+                file_names.append({"file_name": file_name, "set": set})
+
+            elif df_patient.shape[0] < 10:
+                self.patient_settings["5_to_small"].append(patient)
+            else:
+                self.patient_settings["4_not_in_config"].append(patient)
+
+        with open(os.path.join(self.processed_dir, f"{self.processed_file_name}_filenames.pkl"), 'wb') as handle:
             pickle.dump(file_names, handle)
+
+    def get_train_test_indices(self) -> tuple[list[int], list[int]]:
+        """
+        Get the indices of the train and test graphs.
+        :return: Tuple of lists with the indices of the train and test graphs
+        """
+        with open(os.path.join(self.processed_dir, f"{self.processed_file_name}_filenames.pkl"), 'rb') as handle:
+            file_names = pickle.load(handle)
+        train_indices = [i for i, file in enumerate(file_names) if file['set'] == 'train']
+        test_indices = [i for i, file in enumerate(file_names) if file['set'] == 'test']
+        return train_indices, test_indices
 
     def load_neighborhood_image_paths(self, patient) -> list[str]:
         """
@@ -247,98 +309,3 @@ class GraphDataset(Dataset):
 
         return item
 
-
-class TestGraphDataset(Dataset):
-    def __init__(self, root, raw_file_name, test_split: float = 0.2, transform=None, pre_transform=None):
-        self.raw_file_name = raw_file_name
-        self.test_split = test_split
-        super(GraphDataset, self).__init__(root, transform, pre_transform)
-
-    @property
-    def raw_file_names(self):
-        return [self.raw_file_name]
-
-    @property
-    def processed_file_names(self):
-        try:
-            with open(os.path.join(self.processed_dir, 'test_data_filenames.pkl'), 'rb') as handle:
-                file_names = pickle.load(handle)
-        except:
-            file_names = []
-
-        return file_names
-
-    def download(self):
-        pass
-
-    def process(self):
-        df = pd.read_csv(self.raw_paths[0])
-
-        patients = df['patient'].unique()
-        stainings = df['staining'].unique()
-        file_names = []
-
-        i = 0
-
-        for patient in patients:
-            for staining in stainings:
-                df_patient_staining = df[(df['patient'] == patient) & (df['staining'] == staining)]
-
-                # threshold for minimum number of data points
-                if df_patient_staining.shape[0] > 10:
-                    # Create the graph from point cloud and generate the edge index
-                    coords = df_patient_staining[['Center X', 'Center Y']].to_numpy()
-                    adjectency_matrix = knn_graph_constructor(coords, 5)
-                    edge_index = torch.tensor(np.argwhere(adjectency_matrix == 1).T, dtype=torch.long)
-
-                    # Create the node features in tensor
-                    x = df_patient_staining[['Center X', 'Center Y', 'patient', 'staining', 'Perimeter', 'Area']]
-                    x = x.replace({True: 1, False: 0})
-                    x = x.to_numpy()
-                    x = torch.tensor(x, dtype=torch.float)
-
-                    # Create the target labels in tensor
-                    y = df_patient_staining[
-                        ["Term_Dead", "Term_Healthy", "Term_Sclerotic"]]  # TODO: Test onehot encoding
-                    y = torch.tensor(y.to_numpy(), dtype=torch.long)
-
-                    # Create the data object for each graph
-                    data = Data(x=x, edge_index=edge_index, y=y)
-
-                    # Add random train and test masks to the data object #TODO: Does this make sense here?
-                    data.train_mask = torch.zeros(data.num_nodes, dtype=torch.bool)
-                    train_indices = random.sample(range(data.num_nodes), int(data.num_nodes * (1 - self.test_split)))
-                    data.train_mask[train_indices] = True
-                    data.test_mask = ~data.train_mask
-
-                    file_name = f'{i}_p{patient}_s{staining}.pt'
-
-                    torch.save(data, os.path.join(self.processed_dir, file_name))
-                    print(f'Saves {file_name}')
-                    file_names.append(file_name)
-
-                    i += 1
-
-        with open(os.path.join(self.processed_dir, 'test_data_filenames.pkl'), 'wb') as handle:
-            pickle.dump(file_names, handle)
-
-    def len(self):
-        return len(self.processed_file_names)
-
-    def get(self, idx):
-        return torch.load(os.path.join(self.processed_dir, self.processed_file_names[idx]))
-
-
-if __name__ == "__main__":
-    dataset = GraphDataset(root='/home/dascim/repos/histograph/data/input', raw_file_name='annotations_cleaned.csv')
-    dataset.process()
-
-    test = dataset[1]
-    print(test)
-
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
-
-    test = next(iter(dataloader))
-    print(test)
-
-    print('done')
