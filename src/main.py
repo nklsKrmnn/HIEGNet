@@ -75,7 +75,6 @@ def main() -> None:
 
     # Setting up GPU based on availability and usage preference
     gpu_activated = config.pop("use_gpu") and cuda.is_available()
-    device = torch.device('cuda')
 
     if gpu_activated:
         device = torch.device('cuda')
@@ -83,6 +82,7 @@ def main() -> None:
     else:
         device = torch.device('cpu')
         print("[MAIN]: GPU was either deactivated or is not available, using the CPU for the started pipeline.")
+    device = torch.device('cuda')
 
     # Setting random seed for torch
     seed = config["training_parameters"]["seed"]
@@ -103,7 +103,7 @@ def main() -> None:
 
     # Generate raw data file
     #generate_raw_data(raw_file_name=dataset_parameters['raw_file_name'],
-     #                 **config['pre_processing_parameters'])
+    #                 **config['pre_processing_parameters'])
 
     # Create instance for dataset and process if given in config
     dataset = DATASET_NAME_MAPPING[dataset_name](**dataset_parameters)
