@@ -456,10 +456,10 @@ class Trainer:
                 prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
 
                 if len(graph_data.y.shape) == 1:
-                    pred = prediction.argmax(dim=1)
+                    pred = prediction.detach().to(torch.device('cpu')).argmax(dim=1)
                     targ = target
                 elif graph_data.y.shape[1] > 1:
-                    pred = prediction.argmax(dim=1)
+                    pred = prediction.detach().to(torch.device('cpu')).argmax(dim=1)
                     targ = target.argmax(dim=1)
 
                 mask = graph_data.test_mask if mask_str == "test" else graph_data.val_mask if mask_str == "val" else graph_data.train_mask
@@ -467,8 +467,8 @@ class Trainer:
                 predictions.append(pred[mask])
                 targets.append(targ[mask])
 
-        predictions = torch.cat(predictions).to(self.device)
-        targets = torch.cat(targets).to(self.device)
+        predictions = torch.cat(predictions)
+        targets = torch.cat(targets)
 
         scores = calc_test_scores(targets, predictions)
 
