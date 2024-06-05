@@ -40,9 +40,9 @@ class GCN2(nn.Module):
         x = self.readout(x)
         return F.softmax(x, dim=1)
 
-class GCNJumpingKnowledge(nn.Module):
+class GCNJumpingKnowledge2(nn.Module):
     def __init__(self, input_dim, hidden_dims:list[int], output_dim, dropout=0.5):
-        super(GCNJumpingKnowledge, self).__init__()
+        super(GCNJumpingKnowledge2, self).__init__()
         self.conv_layers = nn.ModuleList()
         self.conv_layers.append(GCNConv(input_dim, hidden_dims[0]))
         for i in range(1, len(hidden_dims)):
@@ -59,20 +59,109 @@ class GCNJumpingKnowledge(nn.Module):
         x = self.readout(torch.cat(hidden_states, dim=1))
         return F.softmax(x, dim=1)
 
-
-class GATv2(nn.Module):
-    def __init__(self, input_dim, hidden_dims:list[int], output_dim, dropout=0.5):
-        super(GATv2, self).__init__()
-        self.conv_layers = nn.ModuleList()
-        self.conv_layers.append(GATv2Conv(input_dim, hidden_dims[0]))
-        for i in range(1, len(hidden_dims)):
-            self.conv_layers.append(GATv2Conv(hidden_dims[i-1], hidden_dims[i]))
-        self.readout = nn.Linear(hidden_dims[-1], output_dim)
+class GCNJumpingKnowledge(nn.Module):
+    def __init__(self, input_dim,
+                 hidden_dims:list[int],
+                 output_dim,
+                 dropout=0.5,
+                 n_fc_layers:int=0):
+        super(GCNJumpingKnowledge, self).__init__()
+        self.gat_layers = nn.ModuleList()
+        self.fc_layers = nn.ModuleList()
         self.dropout_rate = dropout
+        self.n_fc_layers = n_fc_layers
+
+        # First GAT layer
+        self.gat_layers.append(GCNConv(input_dim, hidden_dims[0]))
+
+        # Intermediate GAT and FC layers
+        for i in range(1, len(hidden_dims)):
+            for _ in range(n_fc_layers):
+                self.fc_layers.append(nn.Sequential(
+                    nn.Linear(hidden_dims[i - 1], hidden_dims[i - 1]),
+                    nn.ReLU(),
+                    nn.Dropout(p=dropout)
+                ))
+            self.gat_layers.append(GCNConv(hidden_dims[i - 1], hidden_dims[i]))
+
+        # Fully connected layers after the last GAT layer
+        for _ in range(n_fc_layers):
+            self.fc_layers.append(nn.Sequential(
+                nn.Linear(hidden_dims[-1], hidden_dims[-1]),
+                nn.ReLU(),
+                nn.Dropout(p=dropout)
+            ))
+
+        # Output layer
+        self.readout = nn.Linear(hidden_dims[-1]*len(hidden_dims), output_dim)
 
     def forward(self, x, edge_index):
-        for conv in self.conv_layers:
-            x = torch.relu(conv(x, edge_index))
+        fc_layer_index = 0
+        hidden_states = []
+
+        for i, gat_layer in enumerate(self.gat_layers):
+            x = torch.relu(gat_layer(x, edge_index))
             x = F.dropout(x, p=self.dropout_rate, training=self.training)
-        x = self.readout(x)
-        return F.softmax(x, dim=1)
+
+            # Apply fully connected layers between GAT layers
+            for _ in range(self.n_fc_layers):
+                x = self.fc_layers[fc_layer_index](x)
+                fc_layer_index += 1
+
+            hidden_states.append(x)
+
+        x = self.readout(torch.cat(hidden_states, dim=1))
+        return F.log_softmax(x, dim=1)
+
+
+class GATv2(nn.Module):
+    def __init__(self, input_dim,
+                 hidden_dims:list[int],
+                 output_dim,
+                 dropout=0.5,
+                 n_fc_layers:int=0):
+        super(GATv2, self).__init__()
+        self.gat_layers = nn.ModuleList()
+        self.fc_layers = nn.ModuleList()
+        self.dropout_rate = dropout
+        self.n_fc_layers = n_fc_layers
+
+        # First GAT layer
+        self.gat_layers.append(GATv2Conv(input_dim, hidden_dims[0]))
+
+        # Intermediate GAT and FC layers
+        for i in range(1, len(hidden_dims)):
+            for _ in range(n_fc_layers):
+                self.fc_layers.append(nn.Sequential(
+                    nn.Linear(hidden_dims[i - 1], hidden_dims[i - 1]),
+                    nn.ReLU(),
+                    nn.Dropout(p=dropout)
+                ))
+            self.gat_layers.append(GATv2Conv(hidden_dims[i - 1], hidden_dims[i]))
+
+        # Fully connected layers after the last GAT layer
+        for _ in range(n_fc_layers):
+            self.fc_layers.append(nn.Sequential(
+                nn.Linear(hidden_dims[-1], hidden_dims[-1]),
+                nn.ReLU(),
+                nn.Dropout(p=dropout)
+            ))
+
+        # Output layer
+        self.output_layer = nn.Linear(hidden_dims[-1], output_dim)
+
+    def forward(self, x, edge_index):
+        fc_layer_index = 0
+
+        for i, gat_layer in enumerate(self.gat_layers):
+            x = torch.relu(gat_layer(x, edge_index))
+            x = F.dropout(x, p=self.dropout_rate, training=self.training)
+
+            # Apply fully connected layers between GAT layers
+            for _ in range(self.n_fc_layers):
+                x = self.fc_layers[fc_layer_index](x)
+                fc_layer_index += 1
+
+        x = self.output_layer(x)
+        return F.log_softmax(x, dim=1)
+

@@ -289,7 +289,7 @@ class Trainer:
                 val_loss = self.validation_step(validation_loader)
                 self.logger.log_loss(val_loss, epoch, "2_validation")
 
-                test_scores = self.test_step(test_loader)
+                test_scores = self.test_step(train_loader, "train")
                 for score, score_dict in test_scores.items():
                     for class_label, value in score_dict.items():
                         self.logger.log_test_score(value, epoch, class_label, score)
@@ -425,7 +425,7 @@ class Trainer:
 
         return total_val_loss
 
-    def test_step(self, test_loader) -> dict[str, dict[str, float]]:
+    def test_step(self, test_loader, mask_str: str = "test") -> dict[str, dict[str, float]]:
         """
         Calculates the target metric for the test set and generates visualisations for the train and the test set. This method is called in the frequency given in the config.
 
@@ -462,9 +462,10 @@ class Trainer:
                     pred = prediction.argmax(dim=1).cpu()
                     targ = target.argmax(dim=1).cpu()
 
-                predictions.append(pred[graph_data.test_mask])
-                targets.append(targ[graph_data.test_mask])
+                mask = graph_data.test_mask if mask_str == "test" else graph_data.val_mask if mask_str == "val" else graph_data.train_mask
 
+                predictions.append(pred[mask])
+                targets.append(targ[mask])
 
         predictions = torch.cat(predictions)
         targets = torch.cat(targets)
