@@ -14,6 +14,10 @@ def calc_accuracy(targets: torch.tensor, predictions: torch.tensor) -> dict[str,
     :return: Dictionary of the total and separate accuracy for each class
     """
     # TODO doc string
+
+    print(f"Predictions device in calc_accuracy: {predictions.device}")
+    print(f"Targets device in calc_accuracy: {targets.device}")
+
     total = accuracy_score(predictions,
                            targets)
 
