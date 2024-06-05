@@ -24,9 +24,9 @@ def calc_accuracy(targets: torch.tensor, predictions: torch.tensor) -> dict[str,
     predictions_np = predictions.numpy()
     targets_np = targets.numpy()
 
-    accuracy_healthy = accuracy_score(targets_np, predictions_np, sample_weight=(targets_np == 0).astype(np.int))
-    accuracy_sclerotic = accuracy_score(targets_np, predictions_np, sample_weight=(targets_np == 1).astype(np.int))
-    accuracy_dead = accuracy_score(targets_np, predictions_np, sample_weight=(targets_np == 2).astype(np.int))
+    accuracy_healthy = accuracy_score(targets_np, predictions_np, sample_weight=(targets_np == 0).astype(np.int32))
+    accuracy_sclerotic = accuracy_score(targets_np, predictions_np, sample_weight=(targets_np == 1).astype(np.int32))
+    accuracy_dead = accuracy_score(targets_np, predictions_np, sample_weight=(targets_np == 2).astype(np.int32))
 
 
     score_dict = {
