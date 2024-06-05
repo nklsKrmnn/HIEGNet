@@ -82,7 +82,6 @@ def main() -> None:
     else:
         device = torch.device('cpu')
         print("[MAIN]: GPU was either deactivated or is not available, using the CPU for the started pipeline.")
-    device = torch.device('cuda')
 
     # Setting random seed for torch
     seed = config["training_parameters"]["seed"]
