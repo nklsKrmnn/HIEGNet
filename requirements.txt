@@ -9,3 +9,5 @@ tqdm
 tensorboard
 torch_geometric
 opencv-python
+pandas
+PyYAML
