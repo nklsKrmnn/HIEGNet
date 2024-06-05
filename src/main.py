@@ -75,6 +75,8 @@ def main() -> None:
 
     # Setting up GPU based on availability and usage preference
     gpu_activated = config.pop("use_gpu") and cuda.is_available()
+    device = torch.device('cuda')
+
     if gpu_activated:
         device = torch.device('cuda')
         print(f"[MAIN]: Using the device '{cuda.get_device_name(device)}' for the started pipeline.")
