@@ -1,0 +1,54 @@
+use_gpu: true
+model_parameters:
+  gcn_jk:
+    input_dim: 8
+    hidden_dims: [32,32,32,32]
+    output_dim: 3
+    dropout: 0.5
+training_parameters:
+  batch_size: 1
+  epochs: 1000
+  learning_rate: 0.003
+  #lr_scheduler_params:
+  #  scheduler: "ReduceLROnPlateau" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
+  #  params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
+  #    mode: "min"
+  loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
+  optimizer: "adam" # Options: "adam", "sgd"
+  weight_decay: 0.001
+  balance_classes: true
+  momentum: 0.1
+  seed: 69
+  batch_shuffle: false
+  patience: 10000
+  log_image_frequency: 50
+  n_folds: 0
+dataset_parameters:
+  class_name: glom_graph_dataset
+  root: "/home/dascim/repos/histograph/data/input"
+  feature_file_path: "/home/dascim/data/3_extracted_features/EXC/cell_features.csv"
+  annotations_path: "/home/dascim/data/1_cytomine_downloads/EXC/annotations/25/"
+  test_split: 0.2 # Is ignored if test_patients is set
+  processed_file_name: "glom_graph"
+  n_neighbours: 15
+  train_patients:
+    - 001
+    - 003
+  test_patients:
+    - 002
+    - 004
+  random_seed: 123
+  onehot_targets: true
+  process: true
+  preprocessing_params:
+    scaler: 'MinMaxScaler'
+  feature_list:
+    - 'Area (microns²)'
+    - 'Perimeter (mm)'
+    - 'cell_counts'
+    - 'cell_ares'
+    - 'cell_counts_radius_300'
+    - 'cell_counts_radius_600'
+    - 'cell_counts_radius_900'
+    - 'cell_counts_radius_1200'
+
