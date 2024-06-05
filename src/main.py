@@ -123,6 +123,7 @@ def main() -> None:
     if (args.pipeline == TRAIN_COMMAND) & (n_folds == 0):
         model = ModelService.create_model(model_name=model_name,
                                           model_attributes=model_attributes)
+        logger.write_model(model)
 
         trainer = Trainer(
             dataset=dataset,
@@ -141,7 +142,7 @@ def main() -> None:
         for fold in range(n_folds):
             model = ModelService.create_model(model_name=model_name,
                                               model_attributes=model_attributes)
-
+            loggers[fold].write_model(model)
             dataset.activate_fold(fold)
 
             trainer = Trainer(

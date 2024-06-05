@@ -17,6 +17,7 @@ from sklearn.utils.class_weight import compute_class_weight
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score
 
+from src.evaluation.test_scores import calc_test_scores
 from src.utils.model_service import ModelService
 from src.utils.logger import Logger
 
@@ -131,16 +132,7 @@ class Trainer:
 
         # Compute class weights
         if balance_classes:
-            if loss != 'nll':
-                y_labels = torch.cat([dataset[i].y.argmax(dim=1) for i in range(len(dataset))]).numpy()
-                label_classes = torch.unique(dataset[0].y.argmax(dim=1)).numpy()
-            else:
-                y_labels = torch.cat([dataset[i].y for i in range(len(dataset))]).numpy()
-                label_classes = torch.unique(dataset[0].y).numpy()
-            class_weights = compute_class_weight('balanced',
-                                                 classes=label_classes,
-                                                 y=y_labels)
-            class_weights_tensor = torch.tensor(class_weights, dtype=torch.float)
+            class_weights_tensor = dataset.get_class_weights()
         else:
             class_weights_tensor = None
 
@@ -232,14 +224,14 @@ class Trainer:
 
         # Creating training and validation data loaders from the given data
         # source
-        train_loader, test_loader = self.setup_dataloaders()
+        train_loader, validation_loader, test_loader = self.setup_dataloaders()
 
         # Perform model training
         self.logger.write_training_start()
-        finish_reason = self.train_model(train_loader, test_loader)
+        finish_reason = self.train_model(train_loader, validation_loader, test_loader)
         self.logger.write_training_end(finish_reason)
 
-    def setup_dataloaders(self) -> tuple[DataLoader, DataLoader]:
+    def setup_dataloaders(self) -> tuple[DataLoader, DataLoader, DataLoader]:
         """
         Sets up the data loaders holding the graph dataset.
 
@@ -247,19 +239,23 @@ class Trainer:
             DataLoader: The training and test data loader.
         """
         # get indices of train and test patients
-        train_indices, test_indices = self.dataset.get_train_test_indices()
+        train_indices, validation_indices, test_indices = self.dataset.get_set_indices()
+        if validation_indices == []:
+            validation_indices = train_indices
         if test_indices == []:
-            test_indices = train_indices
+            test_indices = validation_indices
         train_dataset = Subset(self.dataset, train_indices)
+        validation_dataset = Subset(self.dataset, validation_indices)
         test_dateset = Subset(self.dataset, test_indices)
 
         # Create torch data loaders
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size)
+        validation_loader = DataLoader(validation_dataset, batch_size=self.batch_size)
         test_loader = DataLoader(test_dateset, batch_size=self.batch_size)
 
-        return train_loader, test_loader
+        return train_loader, validation_loader, test_loader
 
-    def train_model(self, train_loader: DataLoader, test_loader: DataLoader) -> str:
+    def train_model(self, train_loader: DataLoader, validation_loader: DataLoader, test_loader: DataLoader) -> str:
         """
         Trains the model for a specified number of epochs. For each epoch, the method calculates
         the training loss and validation loss, logs these losses, and saves the current state
@@ -271,6 +267,7 @@ class Trainer:
 
         Args:
             train_loader (DataLoader): DataLoader for the training graphs.
+            validation_loader (DataLoader): DataLoader for the validation graphs.
             test_loader (DataLoader): DataLoader for the test graphs.
 
         Returns:
@@ -286,16 +283,20 @@ class Trainer:
                 train_loss, test_loss = self.train_step(train_loader)
 
                 # Logging loss of results
-                self.logger.log_training_loss(train_loss, epoch)
-                #self.logger.log_test_loss(test_loss, epoch)
+                self.logger.log_loss(train_loss, epoch, "1_train")
 
-                # Calculating and logging test results
-                test_loss, test_score = self.test_step(test_loader, epoch)
-                self.logger.log_test_loss(test_loss, epoch)
-                self.logger.log_accuracy_score(test_score, epoch)
+                # Calculating validation loss
+                val_loss = self.validation_step(validation_loader)
+                self.logger.log_loss(val_loss, epoch, "2_validation")
+
+                test_scores = self.test_step(test_loader)
+                for score, score_dict in test_scores.items():
+                    for class_label, value in score_dict.items():
+                        self.logger.log_test_score(value, epoch, class_label, score)
 
                 if epoch % self.log_image_frequency == 0:
                     self.visualize(train_loader, 'train', epoch)
+                    self.visualize(validation_loader, "val", epoch)
                     self.visualize(test_loader, 'test', epoch)
 
                 # Logging learning rate (getter-function only works with torch2.2 or higher)
@@ -386,7 +387,7 @@ class Trainer:
 
         return total_train_loss, total_test_loss
 
-    def test_step(self, validation_loader, epoch: int) -> tuple[float, float]:
+    def validation_step(self, validation_loader) -> float:
         """
         Calculates the target metric for the test set and generates visualisations for the train and the test set. This method is called in the frequency given in the config.
 
@@ -398,13 +399,11 @@ class Trainer:
         Returns:
             float: The loss over all batches.
             float: The accuracy over all batches.
+            float: Validation loss
         """
         self.model.eval()
-        total_accuracy: float = 0
-        total_test_loss: float = 0
+        total_val_loss: float = 0
         step_count: int = 0
-
-        loder_len = len(validation_loader)
 
         with torch.no_grad():
             for graph_data in validation_loader:
@@ -417,7 +416,44 @@ class Trainer:
                 target = graph_data.y.float().to(self.device)
 
                 prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
-                test_loss = self.loss(prediction[graph_data.test_mask], target[graph_data.test_mask])
+                val_loss = self.loss(prediction[graph_data.val_mask], target[graph_data.val_mask])
+
+                total_val_loss += val_loss.item()
+                step_count += 1
+
+        total_val_loss = total_val_loss / step_count
+
+        return total_val_loss
+
+    def test_step(self, test_loader) -> dict[str, dict[str, float]]:
+        """
+        Calculates the target metric for the test set and generates visualisations for the train and the test set. This method is called in the frequency given in the config.
+
+        This method iterates over each batch in the dataloader, computes the model's
+        predictions for the batch, calculates the accuracy between the predictions and the actual
+        targets, and accumulates the total accuracy. The method returns the average
+        accuracy over all batches.
+
+        Returns:
+            float: The loss over all batches.
+            float: The accuracy over all batches.
+            dict[str, float]: The partial accuracies for each class.
+        """
+        self.model.eval()
+        predictions = []
+        targets = []
+
+        with torch.no_grad():
+            for graph_data in test_loader:
+
+                if isinstance(graph_data.x, torch.Tensor):
+                    input_graph_feature = graph_data.x.to(self.device)
+                else:
+                    input_graph_feature = graph_data.x
+                input_graph_edge_index = graph_data.edge_index.to(self.device)
+                target = graph_data.y.float().to(self.device)
+
+                prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
 
                 if len(graph_data.y.shape) == 1:
                     pred = prediction.cpu().argmax(dim=1)
@@ -426,22 +462,16 @@ class Trainer:
                     pred = prediction.argmax(dim=1).cpu()
                     targ = target.argmax(dim=1).cpu()
 
-                accuracy = accuracy_score(targ[graph_data.test_mask],
-                                          pred[graph_data.test_mask])
-
-                total_test_loss += test_loss.item()
-                total_accuracy += accuracy
-                step_count += 1
-
-                if step_count % 10 == 0:
-                    print(
-                        f'[TRAINER]: Batch {step_count}/{loder_len} accuracy: {accuracy}')
-
-        total_accuracy = total_accuracy / step_count
-        total_test_loss = total_test_loss / step_count
+                predictions.append(pred[graph_data.test_mask])
+                targets.append(targ[graph_data.test_mask])
 
 
-        return total_test_loss, total_accuracy
+        predictions = torch.cat(predictions)
+        targets = torch.cat(targets)
+
+        scores = calc_test_scores(targets, predictions)
+
+        return scores
 
     def visualize(self, data_loader: DataLoader, mask: str, epoch: int) -> None:
         """
@@ -483,6 +513,8 @@ class Trainer:
                 complete_targets.append(targ)
                 if mask == 'train':
                     complete_mask.append(graph_data.train_mask)
+                elif mask == 'val':
+                    complete_mask.append(graph_data.val_mask)
                 elif mask == 'test':
                     complete_mask.append(graph_data.test_mask)
 
@@ -490,16 +522,13 @@ class Trainer:
         complete_targets = torch.cat(complete_targets)
         complete_mask = torch.cat(complete_mask)
 
-        set_idx = 1 if mask == 'train' else 2
+        set_idx = 1 if mask == 'train' else 2 if mask == 'val' else 3
 
         self.logger.save_confusion_matrix(complete_targets[complete_mask],
                                           complete_predictions[complete_mask],
                                           labels=graph_data.target_labels,
                                           epoch=epoch,
                                           set=f'{set_idx}_{mask}')
-
-
-
 
     def save_model(self) -> None:
         """

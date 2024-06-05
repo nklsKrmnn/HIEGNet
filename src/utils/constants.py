@@ -1,7 +1,7 @@
 from typing import Final
 
 from src.models.gnn_cnn_hyrbid import GnnCnnHybrid
-from src.models.gnn_models import GCNN
+from src.models.gnn_models import GCN, GCNJumpingKnowledge, GATv2
 from src.models.test_model import TestModel
 from src.preprocessing.graph_dataset import GraphDataset
 from src.preprocessing.glom_graph_dataset import GlomGraphDataset
@@ -9,9 +9,11 @@ from src.models.mlp import MLP
 
 MODEL_NAME_MAPPING: Final[dict[str, any]] = {
     "test": TestModel,
-    "gcnn": GCNN,
+    "gcn": GCN,
     "hybrid": GnnCnnHybrid,
-    "mlp": MLP
+    "mlp": MLP,
+    "gcn_jk": GCNJumpingKnowledge,
+    "gat_v2": GATv2
 }
 
 DATASET_NAME_MAPPING: Final[dict[str, any]] = {

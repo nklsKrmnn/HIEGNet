@@ -86,7 +86,7 @@ class ModelService():
         # Split off the substrings before the v and after the . in the file
         # name
         version_numbers = list(
-            map(lambda f: int(f.split('v')[1].split('.')[0]), relevant_file_names))
+            map(lambda f: int(f.split('v')[-1].split('.')[0]), relevant_file_names))
 
         if version_numbers:
             return max(version_numbers)

@@ -70,7 +70,7 @@ class Logger():
         Args:
             model (nn.Module): The model.
         """
-        self._summary_writer.add_text("model", str(model))
+        self._summary_writer.add_text("model/model_class", str(model))
 
     def write_training_start(self) -> None:
         """
@@ -116,6 +116,21 @@ class Logger():
         tqdm.write("[LOGGER]: Closing logger.")
         self._summary_writer.close()
 
+    def log_loss(self, value: float, epoch: int, set: str = 'train') -> None:
+        """
+        Logs the loss for an epoch.
+
+        This method writes a message to the console and writes the loss to the
+        TensorBoard log file.
+
+        Args:
+            value (float): The loss.
+            epoch (int): The epoch number.
+            set (str): The set for which the loss is logged. Defaults to 'train'.
+        """
+        tqdm.write(f"[LOGGER]: Epoch {epoch}: {set.split('_')[1]} Loss = {value}")
+        self._summary_writer.add_scalar(f"loss/{set}", value, epoch)
+
     def log_training_loss(self, value: float, epoch: int):
         """
         Logs the training loss for an epoch.
@@ -144,7 +159,7 @@ class Logger():
         tqdm.write(f"[LOGGER]: Epoch {epoch}: Test Loss = {value}")
         self._summary_writer.add_scalar("loss/2_test", value, epoch)
 
-    def log_accuracy_score(self, value: float, epoch: int, set: str = 'val') -> None:
+    def log_test_score(self, value: float, epoch: int, class_label: str = '0_total', score:str = "Accuracy") -> None:
         """
         Logs the accuracy for an epoch.
 
@@ -154,10 +169,9 @@ class Logger():
         Args:
             value (float): The accuracy.
             epoch (int): The epoch number.
-            set (str): The set for which the accuracy is logged. Defaults to 'val'.
+            class_label (str): The set for which the accuracy is logged. Defaults to 'val'.
         """
-        tqdm.write(f"[LOGGER]: Epoch {epoch}: Accuracy = {value}")
-        self._summary_writer.add_scalar(f"accuracy/{set}", value, epoch)
+        self._summary_writer.add_scalar(f"{score}/{class_label}", value, epoch)
 
     def log_lr(self, lr: float, epoch: int) -> None:
         """
@@ -237,8 +251,9 @@ class CrossValidationLogger(Logger):
         self._training_start: Optional[datetime] = None
 
         self.train_loss = {}
+        self.val_loss = {}
         self.test_loss = {}
-        self.acc = {}
+        self.scores = {}
         self.text = {}
 
     def write_text(self, tag: str, text: str) -> None:
@@ -275,6 +290,26 @@ class CrossValidationLogger(Logger):
         super().write_model(model)
         self.model = str(model)
 
+    def log_loss(self, value: float, epoch: int, set: str = 'train') -> None:
+        """
+        Logs the loss for an epoch.
+
+        This method writes a message to the console and writes the loss to the
+        TensorBoard log file.
+
+        Args:
+            value (float): The loss.
+            epoch (int): The epoch number.
+            set (str): The set for which the loss is logged. Defaults to 'train'.
+        """
+        super().log_loss(value, epoch, set)
+        if set == '1_train':
+            self.train_loss[epoch] = value
+        elif set == '2_validation':
+            self.val_loss[epoch] = value
+        elif set == '3_test':
+            self.test_loss[epoch] = value
+
     def log_training_loss(self, value: float, epoch: int):
         """
         Logs the training loss for an epoch.
@@ -303,7 +338,7 @@ class CrossValidationLogger(Logger):
         super().log_test_loss(value, epoch)
         self.test_loss[epoch] = value
 
-    def log_accuracy_score(self, value: float, epoch: int, set: str = 'val') -> None:
+    def log_test_score(self, value: float, epoch: int, class_label: str = '0_total', score:str="Accuracy") -> None:
         """
         Logs the accuracy for an epoch.
 
@@ -313,10 +348,14 @@ class CrossValidationLogger(Logger):
         Args:
             value (float): The accuracy.
             epoch (int): The epoch number.
-            set (str): The set for which the accuracy is logged. Defaults to 'val'.
+            class_label (str): The set for which the accuracy is logged. Defaults to 'val'.
         """
-        super().log_accuracy_score(value, epoch, set)
-        self.acc[epoch] = value
+        super().log_test_score(value, epoch, class_label, score)
+        if score not in self.scores.keys():
+            self.scores[score] = {}
+        if class_label not in self.scores[score].keys():
+            self.scores[score][class_label] = {}
+        self.scores[score][class_label][epoch] = value
 
 
     def log_model_path(self, model_path: str) -> None:
@@ -334,6 +373,7 @@ class CrossValidationLogger(Logger):
             self._summary_writer.add_text("model/mode_path", model_path)
             self.text["model/mode_path"] = model_path
             first_name_logging = False
+
 
 class CrossValLoggerSummary():
 
@@ -370,13 +410,20 @@ class CrossValLoggerSummary():
             mean_train_loss = np.mean([fold.train_loss[row] for fold in loggers])
             self._summary_writer.add_scalar("loss/1_train", mean_train_loss, row)
 
+            if row in loggers[0].val_loss.keys():
+                mean_val_loss = np.mean([fold.val_loss[row] for fold in loggers])
+                self._summary_writer.add_scalar("loss/1_val", mean_val_loss, row)
+
             if row in loggers[0].test_loss.keys():
                 mean_test_loss = np.mean([fold.test_loss[row] for fold in loggers])
                 self._summary_writer.add_scalar("loss/2_test", mean_test_loss, row)
 
-            if row in loggers[0].acc.keys():
-                mean_acc = np.mean([fold.acc[row] for fold in loggers])
-                self._summary_writer.add_scalar("accuracy/val", mean_acc, row)
+            for score in loggers[0].scores.keys():
+                for class_label in loggers[0].scores[score].keys():
+                    if row in loggers[0].scores[score][class_label].keys():
+                        mean_acc = np.mean([fold.scores[score][class_label][row] for fold in loggers])
+                        self._summary_writer.add_scalar(f"{score}/{class_label}", mean_acc, row)
+
 
     def close(self):
         self._summary_writer.close()
