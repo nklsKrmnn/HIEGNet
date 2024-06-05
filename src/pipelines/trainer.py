@@ -456,11 +456,11 @@ class Trainer:
                 prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
 
                 if len(graph_data.y.shape) == 1:
-                    pred = prediction.cpu().argmax(dim=1)
-                    targ = target.cpu()
+                    pred = prediction.argmax(dim=1)
+                    targ = target
                 elif graph_data.y.shape[1] > 1:
-                    pred = prediction.argmax(dim=1).cpu()
-                    targ = target.argmax(dim=1).cpu()
+                    pred = prediction.argmax(dim=1)
+                    targ = target.argmax(dim=1)
 
                 mask = graph_data.test_mask if mask_str == "test" else graph_data.val_mask if mask_str == "val" else graph_data.train_mask
 
