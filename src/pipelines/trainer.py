@@ -467,8 +467,8 @@ class Trainer:
                 predictions.append(pred[mask])
                 targets.append(targ[mask])
 
-        predictions = torch.cat(predictions)
-        targets = torch.cat(targets)
+        predictions = torch.cat(predictions).to(self.device)
+        targets = torch.cat(targets).to(self.device)
 
         scores = calc_test_scores(targets, predictions)
 
