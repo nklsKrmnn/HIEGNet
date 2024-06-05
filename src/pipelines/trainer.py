@@ -456,11 +456,11 @@ class Trainer:
                 prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
 
                 if len(graph_data.y.shape) == 1:
-                    pred = prediction.detach().to(torch.device('cpu')).argmax(dim=1)
-                    targ = target
+                    pred = prediction.detach().argmax(dim=1).cpu()
+                    targ = target.detach().cpu()
                 elif graph_data.y.shape[1] > 1:
-                    pred = prediction.detach().to(torch.device('cpu')).argmax(dim=1)
-                    targ = target.argmax(dim=1)
+                    pred = prediction.detach().argmax(dim=1).cpu()
+                    targ = target.detach().argmax(dim=1).cpu()
 
                 mask = graph_data.test_mask if mask_str == "test" else graph_data.val_mask if mask_str == "val" else graph_data.train_mask
 
