@@ -17,8 +17,8 @@ def binning_image(image: np.ndarray, binning_factor: int) -> np.ndarray:
     return image
 
 
-path_original_images = "../data/input/glom_crop_images/patient_001_full_resolution/"
-path_binned_images = "../data/input/glom_crop_images/patient_001/"
+path_original_images = "/home/dascim/data/2_images_preprocessed/EXC/patches/25"
+path_binned_images = "/home/dascim/data/2_images_preprocessed/EXC/patches_low_resolution/25"
 
 # Create output directory if it does not exist
 os.makedirs(path_binned_images, exist_ok=True)

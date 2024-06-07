@@ -55,7 +55,7 @@ class ModelService():
         except TypeError as model_error:
             raise (
                 TypeError(
-                    f"The creation of the {model_name} model failed with the following error message {model_error}."
+                    f"The creation of the {model_name} model failed with the following error message: {model_error}."
                 )
             ) from model_error
 

@@ -13,6 +13,7 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 
 from src.preprocessing.feature_preprocessing import feature_preprocessing
 from src.preprocessing.knn_graph_constructor import knn_graph_constructor
+from src.utils.file_name_utils import get_glom_index
 
 
 class GlomGraphDataset(Dataset):
@@ -170,14 +171,21 @@ class GlomGraphDataset(Dataset):
 
                 # Create the node features in tensor
                 if self.path_image_inputs is None:
+                    # Get numerical features
                     x = df_patient[self.feature_list]
                     x = feature_preprocessing(x, train_indices, **self.preprocessing_params)
                     x = x.to_numpy()
                     x = torch.tensor(x, dtype=torch.float)
                 else:
-                    existing_indices = df_patient['glom_matching_index'].tolist()
+                    # Get image paths
+                    existing_indices = df_patient['glom_index'].tolist()
                     x = self.load_neighborhood_image_paths(patient)
-                    x = np.array(x)[existing_indices]
+                    x = [(get_glom_index(im_p), im_p) for im_p in x if get_glom_index(im_p) in existing_indices]
+
+                    # Sort paths by index
+                    x.sort(key=lambda x: existing_indices.index(x[0]))
+                    x = [s for _, s in x]
+
                     image_size = cv2.imread(x[0]).shape[0]
 
                 # Create the data object for each graph
@@ -272,11 +280,12 @@ class GlomGraphDataset(Dataset):
         :param patient: The patient id
         :return: List of paths of the neighborhood images for one graph
         """
-        path = os.path.join(self.path_image_inputs, f"patient_00{patient}")
+        dir = os.path.join(self.path_image_inputs)
         image_paths = []
-        for image in os.listdir(path):
-            img = os.path.join(path, image)
-            image_paths.append(img)
+        for im_file_name in os.listdir(dir):
+            img_path = os.path.join(dir, im_file_name)
+            if f"p00{patient}" in img_path:
+                image_paths.append(img_path)
 
         return image_paths
 

@@ -1,20 +1,27 @@
+from typing import Final
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv
-import cv2
-import gc
 
+from src.models.gnn_models import GCN, GCNJumpingKnowledge, GATv2
+from src.models.mlp import MLP
 from src.utils.shape_calculation import calc_conv_output_size
+
+SUBMODEL_NAME_MAPPING: Final[dict[str, any]] = {
+    "gcn": GCN,
+    "mlp": MLP,
+    "gcn_jk": GCNJumpingKnowledge,
+    "gat_v2": GATv2
+}
 
 
 # Define the GCN model
 class GnnCnnHybrid(nn.Module):
-    def __init__(self, g_input_dim,
-                 g_hidden_dim,
-                 g_output_dim,
+    def __init__(self,
                  hidden_channels,
                  image_size,
+                 gnn_params,
                  input_channels=3,
                  kernel_size=3,
                  stride=3,
@@ -49,13 +56,11 @@ class GnnCnnHybrid(nn.Module):
 
         self.cnn_encoder = nn.Sequential(*modules)
 
-        # Fully connected layer
-        self.connention_fc = nn.Linear(self.hidden_channels[-1] * last_dim ** 2, g_input_dim)
+        # Fully connection layer
+        self.connention_fc = nn.Linear(self.hidden_channels[-1] * last_dim ** 2, gnn_params["input_dim"])
 
         # GNN layer
-        self.gconv1 = GCNConv(g_input_dim, g_hidden_dim)
-        self.gconv2 = GCNConv(g_hidden_dim, g_hidden_dim)
-        self.readout = nn.Linear(g_hidden_dim, g_output_dim)
+        self.gnn = SUBMODEL_NAME_MAPPING[gnn_params.pop("class_name")](**gnn_params)
 
     def forward(self, x, edge_index):
         # CNN
@@ -67,10 +72,5 @@ class GnnCnnHybrid(nn.Module):
         x = F.relu(x)
 
         # GNN
-        x = self.gconv1(x, edge_index)
-        x = F.relu(x)
-        x = F.dropout(x, training=self.training)
-        x = self.gconv2(x, edge_index)
-        x = F.relu(x)
-        x = self.readout(x)
+        x = self.gnn(x, edge_index)
         return F.softmax(x, dim=1)

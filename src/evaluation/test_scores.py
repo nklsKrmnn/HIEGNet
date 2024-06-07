@@ -1,7 +1,9 @@
 import numpy as np
 import torch
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+import warnings
 
+warnings.filterwarnings("ignore")
 
 def calc_accuracy(targets: torch.tensor, predictions: torch.tensor) -> dict[str, float]:
     """
@@ -14,10 +16,6 @@ def calc_accuracy(targets: torch.tensor, predictions: torch.tensor) -> dict[str,
     :return: Dictionary of the total and separate accuracy for each class
     """
     # TODO doc string
-
-    print(f"Predictions device in calc_accuracy: {predictions.device}")
-    print(f"Targets device in calc_accuracy: {targets.device}")
-
     total = accuracy_score(predictions,
                            targets)
 
