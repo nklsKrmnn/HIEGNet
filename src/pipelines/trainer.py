@@ -289,7 +289,7 @@ class Trainer:
                 val_loss = self.validation_step(validation_loader)
                 self.logger.log_loss(val_loss, epoch, "2_validation")
 
-                test_scores = self.test_step(train_loader, "train")
+                test_scores = self.test_step(test_loader, "test")
                 for score, score_dict in test_scores.items():
                     for class_label, value in score_dict.items():
                         self.logger.log_test_score(value, epoch, class_label, score)

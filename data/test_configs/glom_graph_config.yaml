@@ -1,19 +1,19 @@
 use_gpu: true
 model_parameters:
-  gcn_jk:
+  gat_v2:
     input_dim: 8
-    hidden_dims: [300,300,300]
-    n_fc_layers: 4
+    hidden_dims: [100,100,100]
+    n_fc_layers: 2
     output_dim: 3
-    dropout: 0.0
+    dropout: 0.6
 training_parameters:
   batch_size: 1
-  epochs: 10000
-  learning_rate: 0.0003
+  epochs: 1000000
+  learning_rate: 0.000001
   #lr_scheduler_params:
-  #  scheduler: "ReduceLROnPlateau" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
+  #  scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
   #  params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-  #    mode: "min"
+  #    max_lr: 0.00002
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000
@@ -21,8 +21,8 @@ training_parameters:
   momentum: 0.1
   seed: 69
   batch_shuffle: false
-  patience: 10000
-  log_image_frequency: 50
+  patience: 100000000
+  log_image_frequency: 5000
   n_folds: 0
 dataset_parameters:
   class_name: glom_graph_dataset
