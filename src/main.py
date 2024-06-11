@@ -61,14 +61,16 @@ def main() -> None:
 
     n_folds = config["training_parameters"].pop("n_folds")
 
+    run_name = config.pop("run_name")
+
     if n_folds == 0:
-        logger = Logger()
+        logger = Logger(run_name)
         logger.write_config(config)
     else:
         loggers = []
         for fold in range(n_folds):
             current_time_string = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            logger = CrossValidationLogger(fold, current_time_string)
+            logger = CrossValidationLogger(fold, current_time_string, run_name)
             logger.write_config(config)
             loggers.append(logger)
 
@@ -156,7 +158,7 @@ def main() -> None:
             trainer.start_training()
             trainer.save_model()
 
-        log_summary = CrossValLoggerSummary(loggers[0])
+        log_summary = CrossValLoggerSummary(loggers[0], run_name)
         log_summary.summarize_mean_values(loggers)
         log_summary.close()
 

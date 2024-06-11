@@ -29,7 +29,7 @@ class Logger():
     finished.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, name: str = "") -> None:
         """
         Initializes the Logger.
 
@@ -37,7 +37,7 @@ class Logger():
         to the current date and time. It also initializes the training start time to None.
         """
         current_time_string = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self._summary_writer = SummaryWriter(f"runs/{current_time_string}")
+        self._summary_writer = SummaryWriter(f"runs/{current_time_string}_{name}")
         self._training_start: Optional[datetime] = None
 
     def write_text(self, tag: str, text: str) -> None:
@@ -244,10 +244,10 @@ class CrossValidationLogger(Logger):
     values logged during training to be accessible after training is finished.
     """
 
-    def __init__(self, fold: int, current_time_string) -> None:
+    def __init__(self, fold: int, current_time_string, name: str = "") -> None:
 
         self.start_time_str = current_time_string
-        self._summary_writer = SummaryWriter(f"runs/{current_time_string}_fold{fold}")
+        self._summary_writer = SummaryWriter(f"runs/{current_time_string}_{name}_fold{fold}")
         self._training_start: Optional[datetime] = None
 
         self.train_loss = {}
@@ -385,9 +385,9 @@ class CrossValLoggerSummary():
     """
 
 
-    def __init__(self, logger: CrossValidationLogger) -> None:
+    def __init__(self, logger: CrossValidationLogger, name:str="") -> None:
         self.start_time_str = logger.start_time_str
-        self._summary_writer = SummaryWriter(f"runs/{self.start_time_str}_summary")
+        self._summary_writer = SummaryWriter(f"runs/{self.start_time_str}_{name}_summary")
         self._training_start: Optional[datetime] = None
 
         for key, value in logger.text.items():
