@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "cnn_kernel3"
+run_name: "hybrid_gat"
 model_parameters:
   hybrid:
     hidden_channels: [20, 30, 40, 50] #output dim: 361
