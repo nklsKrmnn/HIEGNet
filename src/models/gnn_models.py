@@ -200,11 +200,12 @@ class GATv2(nn.Module):
                 dropout,
                 norm
             ))
+
         # Fully connected layers after the last GAT layer
         for _ in range(n_fc_layers):
             self.fc_layers.append(nn.Sequential(
                 nn.Linear(hidden_dims[-1], hidden_dims[-1]),
-                init_norm_layer(self.norm_fc_layers)(hidden_dims[i - 1]),
+                init_norm_layer(self.norm_fc_layers)(hidden_dims[-1]),
                 nn.ReLU()
                 #nn.Dropout(p=dropout)
             ))
