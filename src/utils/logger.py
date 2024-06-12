@@ -61,7 +61,7 @@ class Logger():
             config (dict): The configuration of the training.
         """
         for key, value in config.items():
-            self.write_text(f'config/{key}', str(value))
+            self.write_text(f'config_{key}/{key}', str(value))
 
     def write_model(self, model: nn.Module) -> None:
         """
@@ -278,7 +278,7 @@ class CrossValidationLogger(Logger):
         """
         super().write_config(config)
         for key, value in config.items():
-            self.text[f'config/{key}'] = str(value)
+            self.text[f'config_{key}/{key}'] = str(value)
 
     def write_model(self, model: nn.Module) -> None:
         """

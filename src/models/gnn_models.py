@@ -6,6 +6,26 @@ from torch_geometric.nn import GCNConv, GATv2Conv
 from src.models.model_utils import init_norm_layer
 
 
+class MessagePassingLayer(nn.Module):
+    def __init__(self, input_dim, output_dim, message_passing_class, dropout=0.5, norm:str=None):
+        super(MessagePassingLayer, self).__init__()
+        self.message_passing_layer = message_passing_class(input_dim, output_dim)
+        if norm == "batch":
+            self.norm = nn.BatchNorm1d(output_dim)
+        elif norm == "layer":
+            self.norm = nn.LayerNorm(output_dim)
+        else:
+            self.norm = nn.Identity()
+        self.dropout_rate = dropout
+
+    def forward(self, x, edge_index):
+        x = self.message_passing_layer(x, edge_index)
+        x = self.norm(x)
+        x = F.relu(x)
+        x = F.dropout(x, p=self.dropout_rate, training=self.training)
+
+        return x
+
 # Define the GCN model
 class GCN(nn.Module):
     def __init__(self, input_dim, hidden_dims: list[int], output_dim, dropout=0.5):
@@ -70,32 +90,49 @@ class GCNJumpingKnowledge(nn.Module):
                  hidden_dims: list[int],
                  output_dim,
                  dropout=0.5,
-                 n_fc_layers: int = 0):
+                 n_fc_layers: int = 0,
+                 norm: str = None,
+                 norm_fc_layers: str = None):
         super(GCNJumpingKnowledge, self).__init__()
-        self.gat_layers = nn.ModuleList()
+        self.gcn_layers = nn.ModuleList()
         self.fc_layers = nn.ModuleList()
         self.dropout_rate = dropout
         self.n_fc_layers = n_fc_layers
+        self.norm = norm
+        self.norm_fc_layers = norm_fc_layers
 
         # First GAT layer
-        self.gat_layers.append(GCNConv(input_dim, hidden_dims[0]))
+        self.gcn_layers.append(MessagePassingLayer(
+            input_dim,
+            hidden_dims[0],
+            GCNConv,
+            dropout,
+            self.norm))
 
         # Intermediate GAT and FC layers
         for i in range(1, len(hidden_dims)):
             for _ in range(n_fc_layers):
                 self.fc_layers.append(nn.Sequential(
                     nn.Linear(hidden_dims[i - 1], hidden_dims[i - 1]),
-                    nn.ReLU(),
-                    nn.Dropout(p=dropout)
+                    init_norm_layer(self.norm_fc_layers)(hidden_dims[i - 1]),
+                    nn.ReLU()
+                    #nn.Dropout(p=dropout)
                 ))
-            self.gat_layers.append(GCNConv(hidden_dims[i - 1], hidden_dims[i]))
+            self.gcn_layers.append(MessagePassingLayer(
+                hidden_dims[i - 1],
+                hidden_dims[i],
+                GCNConv,
+                dropout,
+                self.norm
+            ))
 
         # Fully connected layers after the last GAT layer
         for _ in range(n_fc_layers):
             self.fc_layers.append(nn.Sequential(
                 nn.Linear(hidden_dims[-1], hidden_dims[-1]),
-                nn.ReLU(),
-                nn.Dropout(p=dropout)
+                init_norm_layer(self.norm_fc_layers)(hidden_dims[i - 1]),
+                nn.ReLU()
+                #nn.Dropout(p=dropout)
             ))
 
         # Output layer
@@ -105,9 +142,8 @@ class GCNJumpingKnowledge(nn.Module):
         fc_layer_index = 0
         hidden_states = []
 
-        for i, gat_layer in enumerate(self.gat_layers):
-            x = torch.relu(gat_layer(x, edge_index))
-            x = F.dropout(x, p=self.dropout_rate, training=self.training)
+        for i, gcn_layer in enumerate(self.gcn_layers):
+            x = torch.relu(gcn_layer(x, edge_index))
 
             # Apply fully connected layers between GAT layers
             for _ in range(self.n_fc_layers):
@@ -120,45 +156,31 @@ class GCNJumpingKnowledge(nn.Module):
         return F.log_softmax(x, dim=1)
 
 
-
-
-class GAT_Layer(nn.Module):
-    def __init__(self, input_dim, output_dim, dropout=0.5, norm:str=None):
-        super(GAT_Layer, self).__init__()
-        self.conv_layer = GATv2Conv(input_dim, output_dim)
-        if norm == "batch":
-            self.norm = nn.BatchNorm1d(output_dim)
-        elif norm == "layer":
-            self.norm = nn.LayerNorm(output_dim)
-        else:
-            self.norm = nn.Identity()
-        self.dropout_rate = dropout
-
-    def forward(self, x, edge_index):
-        x = self.conv_layer(x, edge_index)
-        x = self.norm(x)
-        x = F.relu(x)
-        x = F.dropout(x, p=self.dropout_rate, training=self.training)
-
-        return x
-
-
 class GATv2(nn.Module):
     def __init__(self, input_dim,
                  hidden_dims: list[int],
                  output_dim,
                  dropout=0.5,
                  n_fc_layers: int = 0,
-                 norm: str = None):
+                 norm: str = None,
+                 norm_fc_layers: str = None):
         super(GATv2, self).__init__()
         self.gat_layers = nn.ModuleList()
         self.fc_layers = nn.ModuleList()
         self.dropout_rate = dropout
         self.n_fc_layers = n_fc_layers
         self.norm = norm
+        self.norm_fc_layers = norm_fc_layers
+
 
         # First GAT layer
-        self.gat_layers.append(GAT_Layer(input_dim, hidden_dims[0], dropout, norm))
+        self.gat_layers.append(MessagePassingLayer(
+            input_dim,
+            hidden_dims[0],
+            GATv2Conv,
+            dropout,
+            norm
+        ))
 
         # Intermediate GAT and FC layers
         for i in range(1, len(hidden_dims)):
@@ -166,20 +188,25 @@ class GATv2(nn.Module):
             for _ in range(n_fc_layers):
                 self.fc_layers.append(nn.Sequential(
                     nn.Linear(hidden_dims[i - 1], hidden_dims[i - 1]),
-                    init_norm_layer(self.norm)(hidden_dims[i - 1]),
-                    nn.ReLU(),
-                    nn.Dropout(p=dropout)
+                    init_norm_layer(self.norm_fc_layers)(hidden_dims[i - 1]),
+                    nn.ReLU()
+                    #nn.Dropout(p=dropout)
                 ))
             # Intermediate GAT layer
-            self.gat_layers.append(GAT_Layer(hidden_dims[i - 1], hidden_dims[i], dropout, norm))
-
+            self.gat_layers.append(MessagePassingLayer(
+                hidden_dims[i - 1],
+                hidden_dims[i],
+                GATv2Conv,
+                dropout,
+                norm
+            ))
         # Fully connected layers after the last GAT layer
         for _ in range(n_fc_layers):
             self.fc_layers.append(nn.Sequential(
                 nn.Linear(hidden_dims[-1], hidden_dims[-1]),
-                init_norm_layer(self.norm)(hidden_dims[i - 1]),
-                nn.ReLU(),
-                nn.Dropout(p=dropout)
+                init_norm_layer(self.norm_fc_layers)(hidden_dims[i - 1]),
+                nn.ReLU()
+                #nn.Dropout(p=dropout)
             ))
 
         # Output layer
