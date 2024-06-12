@@ -2,16 +2,15 @@ use_gpu: true
 run_name: "hybrid_gatv2"
 model_parameters:
   hybrid:
-    hidden_channels: [16, 32, 64]
+    hidden_channels: [16, 32, 64] #output dim: 361
     kernel_size: 5
     stride: 3
     gnn_params:
-      class_name: gat_v2
-      input_dim: 10
-      hidden_dims: [32,32,32]
-      n_fc_layers: 2
+      class_name: mlp
+      input_dim: 150
+      hidden_dims: [100,50,25]
       output_dim: 3
-      dropout: 0.5
+      dropout: 0.3
 training_parameters:
   batch_size: 1
   epochs: 10000
@@ -48,7 +47,7 @@ dataset_parameters:
   process: false
   preprocessing_params:
     scaler: 'MinMaxScaler'
-  path_image_inputs: "/home/nilkas/drive/2_images_preprocessed/25"
+  path_image_inputs: "/home/niklas/drive/2_images_preprocessed/25/"
   #path_image_inputs: "/home/dascim/data/2_images_preprocessed/EXC/patches_low_resolution/25"
   feature_list:
     - 'Area (microns²)'

@@ -1,34 +1,46 @@
-import torch
 from torch import nn
 import torch.nn.functional as F
 
+from src.models.model_utils import init_norm_layer
+
 class MLP(nn.Module):
-    def __init__(self, input_dim: int, hidden_dims: list[int], output_dim: int, dropout=0.0):
+
+    def __init__(self, input_dim,
+                 hidden_dims: list[int],
+                 output_dim,
+                 dropout=0.5,
+                 norm: str = None):
         super(MLP, self).__init__()
-        self.layers = nn.ModuleList()
-        self.layer_norms = nn.ModuleList()
-
-        # Add the first layer
-        self.layers.append(nn.Linear(input_dim, hidden_dims[0]))
-        self.layer_norms.append(nn.LayerNorm(hidden_dims[0]))
-
-        # Add subsequent layers
-        for i in range(1, len(hidden_dims)):
-            self.layers.append(nn.Linear(hidden_dims[i - 1], hidden_dims[i]))
-            self.layer_norms.append(nn.LayerNorm(hidden_dims[i]))
-
-        # Add the output layer
-        self.output_layer = nn.Linear(hidden_dims[-1], output_dim)
+        self.fc_layers = nn.ModuleList()
         self.dropout_rate = dropout
+        self.norm = norm
 
+        # First GAT layer
+        self.fc_layers.append(nn.Sequential(
+            nn.Linear(input_dim, hidden_dims[0]),
+            nn.Dropout(self.dropout_rate),
+            nn.ReLU(),
+            init_norm_layer(self.norm)(hidden_dims[0])
+        ))
+
+        # Intermediate GAT and FC layers
+        for i in range(1, len(hidden_dims)):
+            self.fc_layers.append(nn.Sequential(
+                nn.Linear(hidden_dims[i - 1], hidden_dims[i]),
+                init_norm_layer(self.norm)(hidden_dims[i]),
+                nn.ReLU(),
+                nn.Dropout(p=dropout)
+            ))
+
+        # Output layer
+        self.output_layer = nn.Linear(hidden_dims[-1], output_dim)
     def forward(self, x, _):
-        for layer, layer_norm in zip(self.layers, self.layer_norms):
+
+        for i, layer in enumerate(self.fc_layers):
             x = layer(x)
-            x = layer_norm(x)
-            x = torch.relu(x)
-            x = F.dropout(x, p=self.dropout_rate, training=self.training)
 
         x = self.output_layer(x)
-        return x
+
+        return F.log_softmax(x, dim=1)
 
 

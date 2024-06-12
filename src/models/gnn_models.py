@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, GATv2Conv
 
+from src.models.model_utils import init_norm_layer
+
 
 # Define the GCN model
 class GCN(nn.Module):
@@ -118,13 +120,7 @@ class GCNJumpingKnowledge(nn.Module):
         return F.log_softmax(x, dim=1)
 
 
-def init_norm_layer(norm: str):
-    if norm == "batch":
-        return nn.BatchNorm1d
-    elif norm == "layer":
-        return nn.LayerNorm
-    else:
-        return nn.Identity
+
 
 class GAT_Layer(nn.Module):
     def __init__(self, input_dim, output_dim, dropout=0.5, norm:str=None):
