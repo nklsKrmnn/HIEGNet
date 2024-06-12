@@ -8,7 +8,7 @@ model_parameters:
     gnn_params:
       class_name: gat_v2
       input_dim: 150
-      hidden_dims: [80,40]
+      hidden_dims: [80,80]
       n_fc_layers: 2
       norm_fc_layers: batch
       output_dim: 3
@@ -17,10 +17,10 @@ training_parameters:
   batch_size: 1
   epochs: 10000
   learning_rate: 0.0003
-  #lr_scheduler_params:
-  #  scheduler: "ReduceLROnPlateau" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
-  #  params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-  #    mode: "min"
+  lr_scheduler_params:
+    scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
+    params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
+      max_lr: 0.003
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000
