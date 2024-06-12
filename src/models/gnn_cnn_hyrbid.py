@@ -47,7 +47,7 @@ class GnnCnnHybrid(nn.Module):
                               kernel_size=kernel_size,
                               stride=stride,
                               padding=padding),
-                    nn.BatchNorm2d(h_channels),
+                    nn.LayerNorm(h_channels),
                     nn.LeakyReLU()
                 )
             )

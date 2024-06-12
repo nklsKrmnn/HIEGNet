@@ -10,7 +10,7 @@ model_parameters:
       input_dim: 150
       hidden_dims: [100,50,25]
       output_dim: 3
-      dropout: 0.3
+      dropout: 0.4
 training_parameters:
   batch_size: 1
   epochs: 10000
