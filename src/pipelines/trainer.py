@@ -242,8 +242,6 @@ class Trainer:
         train_indices, validation_indices, test_indices = self.dataset.get_set_indices()
         if validation_indices == []:
             validation_indices = train_indices
-        if test_indices == []:
-            test_indices = validation_indices
         train_dataset = Subset(self.dataset, train_indices)
         validation_dataset = Subset(self.dataset, validation_indices)
         test_dateset = Subset(self.dataset, test_indices)
@@ -251,7 +249,7 @@ class Trainer:
         # Create torch data loaders
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size)
         validation_loader = DataLoader(validation_dataset, batch_size=self.batch_size)
-        test_loader = DataLoader(test_dateset, batch_size=self.batch_size)
+        test_loader = DataLoader(test_dateset, batch_size=self.batch_size) if test_indices != [] else None
 
         return train_loader, validation_loader, test_loader
 
@@ -280,24 +278,28 @@ class Trainer:
         finish_reason = "Training terminated before training loop ran through."
         for epoch in tqdm(range(self.epochs)):
             try:
-                train_loss, test_loss = self.train_step(train_loader)
+                train_loss, train_results = self.train_step(train_loader)
 
                 # Logging loss of results
                 self.logger.log_loss(train_loss, epoch, "1_train")
 
                 # Calculating validation loss
-                val_loss = self.validation_step(validation_loader)
+                val_loss, val_results = self.validation_step(validation_loader)
                 self.logger.log_loss(val_loss, epoch, "2_validation")
 
-                test_scores = self.test_step(test_loader, "test")
+                if test_loader != None:
+                    test_scores, test_results = self.test_step(test_loader, "test")
+                else:
+                    test_results = (val_results[0], val_results[1])
+                    test_scores = calc_test_scores(val_results[1], val_results[0])
                 for score, score_dict in test_scores.items():
                     for class_label, value in score_dict.items():
                         self.logger.log_test_score(value, epoch, class_label, score)
 
                 if epoch % self.log_image_frequency == 0:
-                    self.visualize(train_loader, 'train', epoch)
-                    self.visualize(validation_loader, "val", epoch)
-                    self.visualize(test_loader, 'test', epoch)
+                    self.visualize(train_results[0], train_results[1], 'train', epoch)
+                    self.visualize(val_results[0], val_results[1], "val", epoch)
+                    self.visualize(test_results[0], test_results[1], 'test', epoch)
 
                 # Logging learning rate (getter-function only works with torch2.2 or higher)
                 if self.lr_scheduler is not None:
@@ -307,8 +309,8 @@ class Trainer:
                         self.logger.log_lr(lr=self.lr_scheduler.optimizer.param_groups[0]['lr'], epoch=epoch)
 
                 # Early stopping
-                if min_loss > test_loss:
-                    min_loss = test_loss
+                if min_loss > val_loss:
+                    min_loss = val_loss
                     cur_patience = 0
                 else:
                     if self.patience > 0:
@@ -346,8 +348,9 @@ class Trainer:
         """
         self.model.train()
         total_train_loss: float = 0
-        total_test_loss: float = 0
         step_count: int = 0
+        complete_predictions = []
+        complete_targets = []
 
         for graph_data in dataloader:
 
@@ -370,11 +373,7 @@ class Trainer:
             train_loss.backward()
             self.optimizer.step()
 
-            # Get test loss
-            test_loss = self.loss(prediction[graph_data.test_mask], target[graph_data.test_mask])
-
             total_train_loss += train_loss.item()
-            total_test_loss += test_loss.item()
             step_count += 1
 
             # Step for ReduceLROnPlateau schedule is done with validation loss
@@ -382,10 +381,23 @@ class Trainer:
                                                                 optim.lr_scheduler.ReduceLROnPlateau):
                 self.lr_scheduler.step()
 
-        total_train_loss = total_train_loss / step_count
-        total_test_loss = total_test_loss / step_count if total_test_loss != 0 else None
+            if len(graph_data.y.shape) == 1:
+                pred = prediction.detach().argmax(dim=1).cpu()
+                targ = target.detach().cpu()
+            elif graph_data.y.shape[1] > 1:
+                pred = prediction.detach().argmax(dim=1).cpu()
+                targ = target.detach().argmax(dim=1).cpu()
 
-        return total_train_loss, total_test_loss
+            complete_predictions.append(pred[graph_data.train_mask])
+            complete_targets.append(targ[graph_data.train_mask])
+
+        complete_predictions = torch.cat(complete_predictions)
+        complete_targets = torch.cat(complete_targets)
+
+        total_train_loss = total_train_loss / step_count
+
+
+        return total_train_loss, (complete_predictions, complete_targets)
 
     def validation_step(self, validation_loader) -> float:
         """
@@ -404,6 +416,8 @@ class Trainer:
         self.model.eval()
         total_val_loss: float = 0
         step_count: int = 0
+        complete_predictions = []
+        complete_targets = []
 
         with torch.no_grad():
             for graph_data in validation_loader:
@@ -421,9 +435,22 @@ class Trainer:
                 total_val_loss += val_loss.item()
                 step_count += 1
 
+                if len(graph_data.y.shape) == 1:
+                    pred = prediction.detach().argmax(dim=1).cpu()
+                    targ = target.detach().cpu()
+                elif graph_data.y.shape[1] > 1:
+                    pred = prediction.detach().argmax(dim=1).cpu()
+                    targ = target.detach().argmax(dim=1).cpu()
+
+                complete_predictions.append(pred[graph_data.val_mask])
+                complete_targets.append(targ[graph_data.val_mask])
+
+        complete_predictions = torch.cat(complete_predictions)
+        complete_targets = torch.cat(complete_targets)
+
         total_val_loss = total_val_loss / step_count
 
-        return total_val_loss
+        return total_val_loss, (complete_predictions, complete_targets)
 
     def test_step(self, test_loader, mask_str: str = "test") -> dict[str, dict[str, float]]:
         """
@@ -440,8 +467,8 @@ class Trainer:
             dict[str, float]: The partial accuracies for each class.
         """
         self.model.eval()
-        predictions = []
-        targets = []
+        complete_predictions = []
+        complete_targets = []
 
         with torch.no_grad():
             for graph_data in test_loader:
@@ -464,17 +491,17 @@ class Trainer:
 
                 mask = graph_data.test_mask if mask_str == "test" else graph_data.val_mask if mask_str == "val" else graph_data.train_mask
 
-                predictions.append(pred[mask])
-                targets.append(targ[mask])
+                complete_predictions.append(pred[mask])
+                complete_targets.append(targ[mask])
 
-        predictions = torch.cat(predictions)
-        targets = torch.cat(targets)
+        predictions = torch.cat(complete_predictions)
+        targets = torch.cat(complete_targets)
 
         scores = calc_test_scores(targets, predictions)
 
         return scores
 
-    def visualize(self, data_loader: DataLoader, mask: str, epoch: int) -> None:
+    def visualize(self, predictions, targets, set: str, epoch: int) -> None:
         """
         This method visualizes the results of the training and test set.
 
@@ -487,49 +514,13 @@ class Trainer:
 
         self.model.eval()
 
-        complete_predictions = []
-        complete_targets = []
-        complete_mask = []
+        set_idx = 1 if set == 'train' else 2 if set == 'val' else 3
 
-        with torch.no_grad():
-            for graph_data in data_loader:
-
-                if isinstance(graph_data.x, torch.Tensor):
-                    input_graph_feature = graph_data.x.to(self.device)
-                else:
-                    input_graph_feature = graph_data.x
-                input_graph_edge_index = graph_data.edge_index.to(self.device)
-                target = graph_data.y.float().to(self.device)
-
-                prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
-
-                if len(graph_data.y.shape) == 1:
-                    pred = prediction.cpu().argmax(dim=1)
-                    targ = target.cpu()
-                elif graph_data.y.shape[1] > 1:
-                    pred = prediction.argmax(dim=1).cpu()
-                    targ = target.argmax(dim=1).cpu()
-
-                complete_predictions.append(pred)
-                complete_targets.append(targ)
-                if mask == 'train':
-                    complete_mask.append(graph_data.train_mask)
-                elif mask == 'val':
-                    complete_mask.append(graph_data.val_mask)
-                elif mask == 'test':
-                    complete_mask.append(graph_data.test_mask)
-
-        complete_predictions = torch.cat(complete_predictions)
-        complete_targets = torch.cat(complete_targets)
-        complete_mask = torch.cat(complete_mask)
-
-        set_idx = 1 if mask == 'train' else 2 if mask == 'val' else 3
-
-        self.logger.save_confusion_matrix(complete_targets[complete_mask],
-                                          complete_predictions[complete_mask],
-                                          labels=graph_data.target_labels,
+        self.logger.save_confusion_matrix(targets,
+                                          predictions,
+                                          labels=self.dataset[0].target_labels,
                                           epoch=epoch,
-                                          set=f'{set_idx}_{mask}')
+                                          set=f'{set_idx}_{set}')
 
     def save_model(self) -> None:
         """

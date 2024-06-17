@@ -57,21 +57,18 @@ class GlomImageDataset(Dataset):
 
     def get_set_indices(self):
         # get indices of train and test patients
-        validation_split = 1 - self.val_split
-        test_split = self.test_split
-
         dataset_size = len(self)
 
         # random split
         indices = list(range(dataset_size))
         if self.test_split > 0:
-            train_indices, test_indices = train_test_split(indices, test_size=test_split, random_state=self.random_seed,
+            train_indices, test_indices = train_test_split(indices, test_size=self.test_split, random_state=self.random_seed,
                                                            stratify=self.targets)
         else:
             train_indices = indices
             test_indices = []
         val_split_correction = self.test_split * self.val_split
-        train_indices, validation_indices = train_test_split(train_indices, test_size=validation_split - val_split_correction,
+        train_indices, validation_indices = train_test_split(train_indices, test_size=self.val_split - val_split_correction,
                                                              random_state=self.random_seed,
                                                              stratify=self.targets[train_indices])
         if test_indices == []:
