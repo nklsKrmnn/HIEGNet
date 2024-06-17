@@ -359,6 +359,8 @@ class ImageTrainer:
             images.to(self.device)
             labels.to(self.device)
 
+            print(self.device)
+
             # Get predictions and train loss
             predictions = self.model.forward(images)
             train_loss = self.loss(predictions, labels)
