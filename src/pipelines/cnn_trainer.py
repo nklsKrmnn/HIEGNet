@@ -359,11 +359,6 @@ class ImageTrainer:
             images = images.to(self.device)
             labels = labels.to(self.device)
 
-            print(self.device)
-
-            print(f"Input is on Cuda: {images.is_cuda}")
-            print(f"Model is on Cuda: {next(self.model.parameters()).is_cuda}")
-
             # Get predictions and train loss
             predictions = self.model.forward(images)
             train_loss = self.loss(predictions, labels)
