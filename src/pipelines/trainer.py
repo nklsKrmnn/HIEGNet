@@ -540,25 +540,6 @@ class Trainer:
         self.model.to(self.device)
         self.loss.to(self.device)
 
-        # Creating training and validation data loaders from the given data
-        # source
-        self.validation_split = 1
-        train_loader, validation_loader = self.setup_dataloaders()
+        _, _, test_loader = self.setup_dataloaders()
 
-        loss, results = self.test_step(validation_loader)
-
-        predictions = results[0]
-        targets = results[1]
-
-        plot = plot_evaluation(targets, predictions)
-        plot.show()
-
-        now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-        path = Path(FIG_OUTPUT_PATH, f'plot{now}.png')
-
-        plot.savefig(path)
-
-        Logger.log_text(f"Evaluation plot saved to '{path}'.")
-
-        print(loss)
+        test_scores, test_results = self.test_step(test_loader, "test")

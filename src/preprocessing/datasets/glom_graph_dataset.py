@@ -181,7 +181,7 @@ class GlomGraphDataset(Dataset):
                     x.sort(key=lambda x: existing_indices.index(x[0]))
                     x = [s for _, s in x]
 
-                    self.image_size = cv2.imread(x[0]).shape[0]
+                    self.im_size = cv2.imread(x[0]).shape[0]
 
                 # Create the data object for each graph
                 data = Data(x=x, edge_index=edge_index, y=y)
@@ -226,7 +226,14 @@ class GlomGraphDataset(Dataset):
 
     @property
     def image_size(self):
-        return self.image_size
+        first_graph = torch.load(os.path.join(self.processed_dir, self.processed_file_names[0]))
+
+        # Load images, if image features are used and transform to tensor
+        if not isinstance(first_graph.x[0], torch.Tensor):
+            img = cv2.imread(first_graph.x[0])
+            return img.shape[0]
+        else:
+            return None
 
     def get_set_indices(self) -> tuple[list[int], list[int], list[int]]:
         """
