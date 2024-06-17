@@ -2,10 +2,11 @@ from typing import Final
 
 from src.models.gnn_cnn_hyrbid import GnnCnnHybrid
 from src.models.gnn_models import GCN, GCNJumpingKnowledge, GATv2
+from src.models.pretrained_cnn import initialize_resnet
 from src.models.test_model import TestModel
-from src.preprocessing.graph_dataset import GraphDataset
-from src.preprocessing.glom_graph_dataset import GlomGraphDataset
+from src.preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
 from src.models.mlp import MLP
+from src.preprocessing.datasets.image_dataset import GlomImageDataset
 
 MODEL_NAME_MAPPING: Final[dict[str, any]] = {
     "test": TestModel,
@@ -13,12 +14,13 @@ MODEL_NAME_MAPPING: Final[dict[str, any]] = {
     "hybrid": GnnCnnHybrid,
     "mlp": MLP,
     "gcn_jk": GCNJumpingKnowledge,
-    "gat_v2": GATv2
+    "gat_v2": GATv2,
+    "resnet": initialize_resnet,
 }
 
 DATASET_NAME_MAPPING: Final[dict[str, any]] = {
-    "graph_dataset": GraphDataset,
-    "glom_graph_dataset": GlomGraphDataset
+    "glom_graph_dataset": GlomGraphDataset,
+    "image_dataset": GlomImageDataset
 }
 
 REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {

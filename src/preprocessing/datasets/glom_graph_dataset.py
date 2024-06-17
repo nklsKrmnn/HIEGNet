@@ -4,15 +4,15 @@ import numpy as np
 import pickle
 import torch
 import os
-import random
 
 from sklearn.utils import compute_class_weight
 from torch_geometric.data import Dataset, Data
-from torch_geometric.loader import DataLoader
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
+from src.preprocessing.datasets.dataset_utils.dataset_utils import list_annotation_file_names, \
+    list_neighborhood_image_paths
 from src.preprocessing.feature_preprocessing import feature_preprocessing
-from src.preprocessing.knn_graph_constructor import knn_graph_constructor
+from src.preprocessing.graph_preprocessing.knn_graph_constructor import knn_graph_constructor
 from src.utils.file_name_utils import get_glom_index
 
 
@@ -80,12 +80,7 @@ class GlomGraphDataset(Dataset):
 
     @property
     def raw_file_names(self) -> list[str]:
-        raw_files = [self.feature_file_path]
-        for root, _, files in os.walk(self.annot_path):
-            for file in files:
-                if file.endswith('.csv'):
-                    raw_files.append(os.path.join(root, file))
-
+        raw_files = [self.feature_file_path] + list_annotation_file_names(self.annot_path)
         return raw_files
 
     @property
@@ -186,7 +181,7 @@ class GlomGraphDataset(Dataset):
                     x.sort(key=lambda x: existing_indices.index(x[0]))
                     x = [s for _, s in x]
 
-                    image_size = cv2.imread(x[0]).shape[0]
+                    self.image_size = cv2.imread(x[0]).shape[0]
 
                 # Create the data object for each graph
                 data = Data(x=x, edge_index=edge_index, y=y)
@@ -201,9 +196,6 @@ class GlomGraphDataset(Dataset):
                 data.test_mask = data.val_mask if (self.test_split == 0.0) and (self.test_patients==[]) else data.test_mask
 
                 data.target_labels = target_labels
-
-                if self.path_image_inputs is not None:
-                    data.image_size = image_size
 
                 file_name = f"{self.processed_file_name}_p{patient}.pt"
 
@@ -231,7 +223,12 @@ class GlomGraphDataset(Dataset):
         with open(os.path.join(self.processed_dir, f"{self.processed_file_name}_filenames.pkl"), 'wb') as handle:
             pickle.dump(file_names, handle)
 
-    def get_set_indices(self) -> tuple[list[int], list[int]]:
+
+    @property
+    def image_size(self):
+        return self.image_size
+
+    def get_set_indices(self) -> tuple[list[int], list[int], list[int]]:
         """
         Get the indices of the train, validation and test graphs.
         :return: Tuple of lists with the indices of the train and test graphs
@@ -280,14 +277,7 @@ class GlomGraphDataset(Dataset):
         :param patient: The patient id
         :return: List of paths of the neighborhood images for one graph
         """
-        dir = os.path.join(self.path_image_inputs)
-        image_paths = []
-        for im_file_name in os.listdir(dir):
-            img_path = os.path.join(dir, im_file_name)
-            if f"p00{patient}" in img_path:
-                image_paths.append(img_path)
-
-        return image_paths
+        return list_neighborhood_image_paths(patient, self.path_image_inputs)
 
     def create_folds(self, n_folds: int) -> None:
         """

@@ -5,7 +5,7 @@ from typing import Final
 import torch
 import yaml
 
-from src.preprocessing.raw_data_generation import generate_raw_data
+from src.pipelines.cnn_trainer import ImageTrainer
 from src.utils.constants import DATASET_NAME_MAPPING
 from src.utils.model_service import ModelService
 from src.pipelines.trainer import Trainer
@@ -14,6 +14,7 @@ from torch import cuda
 from src.utils.logger import Logger, CrossValidationLogger, CrossValLoggerSummary
 
 TRAIN_COMMAND: Final[str] = "train"
+TRAIN_IMAGE_COMMAND: Final[str] = "train_image"
 EVAL_COMMAND: Final[str] = "evaluate"
 PREDICT_COMMAND: Final[str] = "predict"
 
@@ -37,7 +38,7 @@ def setup_parser() -> argparse.ArgumentParser:
         "--pipeline",
         "-p",
         required=True,
-        choices=[TRAIN_COMMAND, PREDICT_COMMAND, EVAL_COMMAND],
+        choices=[TRAIN_COMMAND, TRAIN_IMAGE_COMMAND, PREDICT_COMMAND, EVAL_COMMAND],
         help="Pipeline to be started",
     )
 
@@ -102,10 +103,6 @@ def main() -> None:
     dataset_name = dataset_parameters.pop("class_name")
     process_dataset = dataset_parameters.pop("process")
 
-    # Generate raw data file
-    #generate_raw_data(raw_file_name=dataset_parameters['raw_file_name'],
-    #                 **config['pre_processing_parameters'])
-
     # Create instance for dataset and process if given in config
     dataset = DATASET_NAME_MAPPING[dataset_name](**dataset_parameters)
 
@@ -120,7 +117,7 @@ def main() -> None:
             logger.write_text("patient_settings",str(dataset.patient_settings))
 
     if 'path_image_inputs' in dataset_parameters.keys():
-        model_attributes["image_size"] = dataset[0]["image_size"]
+        model_attributes["image_size"] = dataset.image_size
         model_attributes["device"] = device
 
     if (args.pipeline == TRAIN_COMMAND) & (n_folds == 0):
@@ -161,6 +158,21 @@ def main() -> None:
         log_summary = CrossValLoggerSummary(loggers[0], run_name)
         log_summary.summarize_mean_values(loggers)
         log_summary.close()
+
+    if args.pipeline == TRAIN_IMAGE_COMMAND:
+        model = ModelService.create_model(model_name=model_name,
+                                          model_attributes=model_attributes)
+        logger.write_model(model)
+
+        trainer = ImageTrainer(
+            dataset=dataset,
+            model=model,
+            device=device,
+            logger=logger,
+            **config.pop("training_parameters"))
+
+        trainer.start_training()
+        trainer.save_model()
 
 
         print('stop here')
