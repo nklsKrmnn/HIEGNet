@@ -359,6 +359,8 @@ class ImageTrainer:
             images.to(self.device)
             labels.to(self.device)
 
+            print(self.device)
+
             print(f"Input is on Cuda: {images.is_cuda}")
             print(f"Model is on Cuda: {next(self.model.parameters()).is_cuda}")
 
