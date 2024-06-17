@@ -356,8 +356,8 @@ class ImageTrainer:
             self.optimizer.zero_grad()
 
             # Move data to device
-            images.to(self.device)
-            labels.to(self.device)
+            images = images.to(self.device)
+            labels = labels.to(self.device)
 
             print(self.device)
 
