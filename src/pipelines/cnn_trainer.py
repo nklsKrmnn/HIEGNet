@@ -417,8 +417,8 @@ class ImageTrainer:
                 self.optimizer.zero_grad()
 
                 # Move data to device
-                images.to(self.device)
-                labels.to(self.device)
+                images = images.to(self.device)
+                labels = labels.to(self.device)
 
                 # Get predictions and train loss
                 predictions = self.model.forward(images)
@@ -475,8 +475,8 @@ class ImageTrainer:
                 self.optimizer.zero_grad()
 
                 # Move data to device
-                images.to(self.device)
-                labels.to(self.device)
+                images = images.to(self.device)
+                labels = labels.to(self.device)
 
                 # Get predictions and train loss
                 predictions = self.model.forward(images)
