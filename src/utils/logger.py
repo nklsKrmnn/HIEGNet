@@ -412,11 +412,11 @@ class CrossValLoggerSummary():
 
             if row in loggers[0].val_loss.keys():
                 mean_val_loss = np.mean([fold.val_loss[row] for fold in loggers])
-                self._summary_writer.add_scalar("loss/1_val", mean_val_loss, row)
+                self._summary_writer.add_scalar("loss/2_validation", mean_val_loss, row)
 
             if row in loggers[0].test_loss.keys():
                 mean_test_loss = np.mean([fold.test_loss[row] for fold in loggers])
-                self._summary_writer.add_scalar("loss/2_test", mean_test_loss, row)
+                self._summary_writer.add_scalar("loss/3_test", mean_test_loss, row)
 
             for score in loggers[0].scores.keys():
                 for class_label in loggers[0].scores[score].keys():

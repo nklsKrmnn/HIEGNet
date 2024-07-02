@@ -46,6 +46,8 @@ class ModelService():
         Returns:
             nn.Module: The created model.
         """
+        model_path = model_attributes.pop("model_path") if "model_path" in model_attributes else None
+
         try:
             model = MODEL_NAME_MAPPING[model_name](**model_attributes)
         except KeyError as parse_error:
@@ -58,6 +60,9 @@ class ModelService():
                     f"The creation of the {model_name} model failed with the following error message: {model_error}."
                 )
             ) from model_error
+
+        if model_path is not None:
+            model.load_state_dict(torch.load(model_path))
 
         return model
 

@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Final, Union
 
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -16,10 +17,12 @@ from torch_geometric.loader import DataLoader
 from sklearn.utils.class_weight import compute_class_weight
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score
+import matplotlib.pyplot as plt
 
 from src.evaluation.test_scores import calc_test_scores
 from src.utils.model_service import ModelService
 from src.utils.logger import Logger
+from src.evaluation.vis_graph import visualize_graph
 
 FIG_OUTPUT_PATH: Final[Path] = Path("./data/output/eval_plot")
 
@@ -427,7 +430,7 @@ class Trainer:
                 else:
                     input_graph_feature = graph_data.x
                 input_graph_edge_index = graph_data.edge_index.to(self.device)
-                target = graph_data.y.float().to(self.device)
+                target = graph_data.y.to(self.device)
 
                 prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
                 val_loss = self.loss(prediction[graph_data.val_mask], target[graph_data.val_mask])
@@ -452,7 +455,7 @@ class Trainer:
 
         return total_val_loss, (complete_predictions, complete_targets)
 
-    def test_step(self, test_loader, mask_str: str = "test") -> dict[str, dict[str, float]]:
+    def test_step(self, test_loader, mask_str: str = "test", return_softmax:bool = False) -> dict[str, dict[str, float]]:
         """
         Calculates the target metric for the test set and generates visualisations for the train and the test set. This method is called in the frequency given in the config.
 
@@ -482,24 +485,31 @@ class Trainer:
 
                 prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
 
-                if len(graph_data.y.shape) == 1:
-                    pred = prediction.detach().argmax(dim=1).cpu()
-                    targ = target.detach().cpu()
-                elif graph_data.y.shape[1] > 1:
-                    pred = prediction.detach().argmax(dim=1).cpu()
-                    targ = target.detach().argmax(dim=1).cpu()
+                pred = prediction.detach().cpu()
+                targ = target.detach().cpu()
 
                 mask = graph_data.test_mask if mask_str == "test" else graph_data.val_mask if mask_str == "val" else graph_data.train_mask
 
                 complete_predictions.append(pred[mask])
                 complete_targets.append(targ[mask])
 
-        predictions = torch.cat(complete_predictions)
-        targets = torch.cat(complete_targets)
+        complete_predictions = torch.cat(complete_predictions)
+        complete_targets = torch.cat(complete_targets)
 
-        scores = calc_test_scores(targets, predictions)
+        softmax_results = (complete_predictions, complete_targets)
 
-        return scores
+        if len(graph_data.y.shape) == 1:
+            complete_predictions = complete_predictions.detach().argmax(dim=1).cpu()
+            complete_targets = complete_targets.detach().cpu()
+        elif graph_data.y.shape[1] > 1:
+            complete_predictions = complete_predictions.detach().argmax(dim=1).cpu()
+            complete_targets = complete_targets.detach().argmax(dim=1).cpu()
+
+        scores = calc_test_scores(complete_targets, complete_predictions)
+
+        results = softmax_results if return_softmax else (complete_predictions, complete_targets)
+
+        return scores, results
 
     def visualize(self, predictions, targets, set: str, epoch: int) -> None:
         """
@@ -540,6 +550,46 @@ class Trainer:
         self.model.to(self.device)
         self.loss.to(self.device)
 
-        _, _, test_loader = self.setup_dataloaders()
+        self.model.eval()
 
-        test_scores, test_results = self.test_step(test_loader, "test")
+        _, val_loader, test_loader = self.setup_dataloaders()
+
+        if test_loader is None:
+            test_loader = val_loader
+
+        test_scores, test_results = self.test_step(test_loader, "test", return_softmax=True)
+
+        # Dump softmax scores (test results) as csv file
+        df_test_predictions = pd.DataFrame(test_results[0].numpy())
+        df_test_predictions.columns = [f"prediction_{label}" for label in self.dataset[0].target_labels]
+        df_test_targets = pd.DataFrame(test_results[1].numpy())
+        df_test_targets.columns = [f"target_{label}" for label in self.dataset[0].target_labels]
+        df_test_results = pd.concat([df_test_predictions, df_test_targets], axis=1)
+
+
+        # Get images for test set
+        glomeruli_indices = []
+        inputs = []
+        for batch in test_loader:
+            glomeruli_indices.append(batch["glom_indices"][batch["test_mask"]])
+            inputs.append(batch["x"][batch["test_mask"]])
+        df_test_results["glomerulus_index"] = torch.cat(glomeruli_indices).numpy()
+
+        df_test_results.to_csv(f"./data/output/test_results.csv", index=False)
+
+        for batch in test_loader:
+            coordinates = batch["coords"].numpy()
+            adjacency_matrix = batch["adjacency_matrix"].numpy()
+            target_classes = batch['y']
+            with torch.no_grad():
+                prediction = self.model.forward(batch['x'].to(self.device), batch['edge_index'].to(self.device))
+
+            target_classes = target_classes.numpy().argmax(axis=1)
+            predicted_classes = prediction.numpy().argmax(axis=1)
+
+            class_labels = self.dataset[0].target_labels
+            fig = visualize_graph(coordinates, adjacency_matrix, target_classes, predicted_classes, class_labels)
+
+
+
+

@@ -177,7 +177,19 @@ def main() -> None:
 
         print('stop here')
     if args.pipeline == EVAL_COMMAND:
-        pass
+        model = ModelService.create_model(model_name=model_name,
+                                          model_attributes=model_attributes)
+        logger.write_model(model)
+
+        trainer = Trainer(
+            dataset=dataset,
+            model=model,
+            device=device,
+            logger=logger,
+            **config.pop("training_parameters"))
+
+        trainer.evaluate()
+        trainer.save_model()
     elif args.pipeline == PREDICT_COMMAND:
         pass
 

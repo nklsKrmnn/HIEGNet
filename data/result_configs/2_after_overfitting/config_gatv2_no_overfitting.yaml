@@ -1,35 +1,32 @@
 use_gpu: true
-run_name: "hybrid_gat"
+run_name: "gat_v2_real_softmax"
 model_parameters:
-  hybrid:
-    hidden_channels: [20, 30, 40, 50] #output dim: 361
-    kernel_size: 4
-    stride: 2
-    gnn_params:
-      class_name: gat_v2
-      input_dim: 150
-      hidden_dims: [80,80]
-      n_fc_layers: 2
-      norm_fc_layers: batch
-      output_dim: 3
-      dropout: 0.7
+  gat_v2:
+    input_dim: 8
+    hidden_dims: [100,100]
+    n_fc_layers: 2
+    norm_fc_layers: batch
+    output_dim: 3
+    dropout: 0.9
+    norm: none
+    model_path: "/home/dascim/repos/histograph/data/output/trained_models/GATv2_v169.pt"
 training_parameters:
   batch_size: 1
   epochs: 10000
-  learning_rate: 0.0003
+  learning_rate: 0.00003
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: 0.003
+      max_lr: 0.0003
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
-  weight_decay: 0.000
+  weight_decay: 0.000000
   balance_classes: true
   momentum: 0.1
   seed: 69
   batch_shuffle: false
-  patience: 10000
-  log_image_frequency: 20
+  patience: 100000000
+  log_image_frequency: 50
   n_folds: 0
 dataset_parameters:
   class_name: glom_graph_dataset
@@ -49,8 +46,6 @@ dataset_parameters:
   process: true
   preprocessing_params:
     scaler: 'MinMaxScaler'
-  #path_image_inputs: "/home/niklas/drive/2_images_preprocessed/25/"
-  path_image_inputs: "/home/dascim/data/2_images_preprocessed/EXC/patches_low_resolution/25"
   feature_list:
     - 'Area (microns²)'
     - 'Perimeter (mm)'
@@ -60,3 +55,4 @@ dataset_parameters:
     - 'cell_counts_radius_600'
     - 'cell_counts_radius_900'
     - 'cell_counts_radius_1200'
+

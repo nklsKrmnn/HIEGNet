@@ -12,7 +12,7 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 from src.preprocessing.datasets.dataset_utils.dataset_utils import list_annotation_file_names, \
     list_neighborhood_image_paths
 from src.preprocessing.feature_preprocessing import feature_preprocessing
-from src.preprocessing.graph_preprocessing.knn_graph_constructor import knn_graph_constructor
+from src.preprocessing.graph_preprocessing.knn_graph_constructor import knn_graph_construction
 from src.utils.file_name_utils import get_glom_index
 
 
@@ -121,7 +121,7 @@ class GlomGraphDataset(Dataset):
 
                 # Create the graph from point cloud and generate the edge index
                 coords = df_patient[['Center X', 'Center Y']].to_numpy()
-                adjectency_matrix = knn_graph_constructor(coords, self.n_neighbours)
+                adjectency_matrix = knn_graph_construction(coords, self.n_neighbours)
                 edge_index = torch.tensor(np.argwhere(adjectency_matrix == 1).T, dtype=torch.long)
 
                 # Target labels
@@ -191,11 +191,15 @@ class GlomGraphDataset(Dataset):
                 data.train_mask[train_indices] = True
                 data.val_mask = torch.zeros(data.num_nodes, dtype=torch.bool)
                 data.val_mask[val_indices] = True
-                data.test_mask = torch.zeros(data.num_nodes, dtype=torch.bool) #~(data.train_mask | data.val_mask) if self.test_split > 0 else data.val_mask
+                data.test_mask = torch.zeros(data.num_nodes, dtype=torch.bool)
                 data.test_mask[test_indices] = True
                 data.test_mask = data.val_mask if (self.test_split == 0.0) and (self.test_patients==[]) else data.test_mask
 
                 data.target_labels = target_labels
+                data.glom_indices = torch.tensor(df_patient['glom_index'].values)
+                data.coords = torch.tensor(coords, dtype=torch.float)
+                data.adjacency_matrix = torch.tensor(adjectency_matrix, dtype=torch.float)
+
 
                 file_name = f"{self.processed_file_name}_p{patient}.pt"
 

@@ -1,6 +1,6 @@
 import numpy as np
 
-def knn_graph_constructor(X: np.array, k: int) -> np.array:
+def knn_graph_construction(X: np.array, k: int) -> np.array:
     """
     Construct a k-nearest neighbor graph from the data points in X.
 
@@ -32,5 +32,5 @@ def knn_graph_constructor(X: np.array, k: int) -> np.array:
 if __name__ == "__main__":
     X = np.array([[0, 0], [1, 1], [2, 2], [3, 3], [2, 1]])
     k = 2
-    A = knn_graph_constructor(X, k)
+    A = knn_graph_construction(X, k)
     print(A)

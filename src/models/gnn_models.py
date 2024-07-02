@@ -22,7 +22,7 @@ class MessagePassingLayer(nn.Module):
         x = self.message_passing_layer(x, edge_index)
         x = self.norm(x)
         x = F.relu(x)
-        x = F.dropout(x, p=self.dropout_rate, training=self.training)
+        #x = F.dropout(x, p=self.dropout_rate, training=self.training)
 
         return x
 
@@ -153,7 +153,7 @@ class GCNJumpingKnowledge(nn.Module):
             hidden_states.append(x)
 
         x = self.readout(torch.cat(hidden_states, dim=1))
-        return F.log_softmax(x, dim=1)
+        return F.softmax(x, dim=1)
 
 
 class GATv2(nn.Module):
@@ -163,7 +163,8 @@ class GATv2(nn.Module):
                  dropout=0.5,
                  n_fc_layers: int = 0,
                  norm: str = None,
-                 norm_fc_layers: str = None):
+                 norm_fc_layers: str = None,
+                 softmax_function: "str" = "softmax"):
         super(GATv2, self).__init__()
         self.gat_layers = nn.ModuleList()
         self.fc_layers = nn.ModuleList()
@@ -171,6 +172,7 @@ class GATv2(nn.Module):
         self.n_fc_layers = n_fc_layers
         self.norm = norm
         self.norm_fc_layers = norm_fc_layers
+        self.softmax_function = softmax_function
 
 
         # First GAT layer
@@ -189,8 +191,8 @@ class GATv2(nn.Module):
                 self.fc_layers.append(nn.Sequential(
                     nn.Linear(hidden_dims[i - 1], hidden_dims[i - 1]),
                     init_norm_layer(self.norm_fc_layers)(hidden_dims[i - 1]),
-                    nn.ReLU()
-                    #nn.Dropout(p=dropout)
+                    nn.ReLU(),
+                    nn.Dropout(p=dropout)
                 ))
             # Intermediate GAT layer
             self.gat_layers.append(MessagePassingLayer(
@@ -206,8 +208,8 @@ class GATv2(nn.Module):
             self.fc_layers.append(nn.Sequential(
                 nn.Linear(hidden_dims[-1], hidden_dims[-1]),
                 init_norm_layer(self.norm_fc_layers)(hidden_dims[-1]),
-                nn.ReLU()
-                #nn.Dropout(p=dropout)
+                nn.ReLU(),
+                nn.Dropout(p=dropout)
             ))
 
         # Output layer
@@ -225,4 +227,8 @@ class GATv2(nn.Module):
                 fc_layer_index += 1
 
         x = self.output_layer(x)
-        return F.log_softmax(x, dim=1)
+        if self.softmax_function == "softmax":
+            x = F.softmax(x, dim=1)
+        elif self.softmax_function =="log_softmax":
+            x = F.log_softmax(x, dim=1)
+        return x
