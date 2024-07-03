@@ -116,6 +116,9 @@ class GlomGraphDataset(Dataset):
         for patient in patients_in_raw_data:
             df_patient = df[df['patient'] == patient]
 
+            # Drop rows where feature or image path is missing (most likely because no match through slices)
+            df_patient.dropna(subset=self.feature_list, inplace=True)
+
             # threshold for minimum number of data points and check if patient is in train or test set
             if (df_patient.shape[0] > 10) and (patient in self.train_patients + self.validation_patients + self.test_patients):
 
@@ -173,15 +176,16 @@ class GlomGraphDataset(Dataset):
                     x = torch.tensor(x, dtype=torch.float)
                 else:
                     # Get image paths
-                    existing_indices = df_patient['glom_index'].tolist()
-                    x = self.load_neighborhood_image_paths(patient)
-                    x = [(get_glom_index(im_p), im_p) for im_p in x if get_glom_index(im_p) in existing_indices]
+                    #existing_indices = df_patient['glom_index'].tolist()
+                    #x = self.load_neighborhood_image_paths(patient)
+                    #x = [(get_glom_index(im_p), im_p) for im_p in x if get_glom_index(im_p) in existing_indices]
 
                     # Sort paths by index
-                    x.sort(key=lambda x: existing_indices.index(x[0]))
-                    x = [s for _, s in x]
+                    #x.sort(key=lambda x: existing_indices.index(x[0]))
+                    #x = [s for _, s in x]
+                    x = [[df_patient[path].iloc[i] for path in self.feature_list] for i in range(df_patient.shape[0])]
 
-                    self.im_size = cv2.imread(x[0]).shape[0]
+                    self.im_size = cv2.imread(x[0][0]).shape[0]
 
                 # Create the data object for each graph
                 data = Data(x=x, edge_index=edge_index, y=y)
@@ -234,7 +238,7 @@ class GlomGraphDataset(Dataset):
 
         # Load images, if image features are used and transform to tensor
         if not isinstance(first_graph.x[0], torch.Tensor):
-            img = cv2.imread(first_graph.x[0])
+            img = cv2.imread(first_graph.x[0][0])
             return img.shape[0]
         else:
             return None
@@ -399,8 +403,11 @@ class GlomGraphDataset(Dataset):
         # Load images, if image features are used and transform to tensor
         if not isinstance(item.x[0], torch.Tensor):
             images = []
-            for image in item.x:
-                img = cv2.imread(image)
+            for paths in item.x:
+                slices=[]
+                for slice in paths:
+                    slices.append(cv2.imread(slice))
+                img = np.concatenate(slices, axis=2)
                 images.append(img)
             item.x = np.array(images)
             item.x = torch.tensor(item.x, dtype=torch.float)
