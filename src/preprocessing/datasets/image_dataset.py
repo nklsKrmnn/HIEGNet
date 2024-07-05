@@ -8,7 +8,7 @@ import numpy as np
 
 from src.preprocessing.datasets.dataset_utils.dataset_utils import list_annotation_file_names, \
     list_neighborhood_image_paths
-from src.utils.file_name_utils import get_glom_index
+from src.utils.path_io import get_glom_index
 
 
 class GlomImageDataset(Dataset):
