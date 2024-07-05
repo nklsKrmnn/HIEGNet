@@ -370,8 +370,8 @@ class Trainer:
                                                                 optim.lr_scheduler.ReduceLROnPlateau):
                 self.lr_scheduler.step()
 
-            complete_predictions.append(pred[graph_data.train_mask])
-            complete_targets.append(targ[graph_data.train_mask])
+            complete_predictions.append(pred[graph_data.train_mask.detach().cpu()])
+            complete_targets.append(targ[graph_data.train_mask.detach().cpu()])
 
         complete_predictions = torch.cat(complete_predictions)
         complete_targets = torch.cat(complete_targets)
@@ -445,8 +445,8 @@ class Trainer:
                 total_val_loss += val_loss.item()
                 step_count += 1
 
-                complete_predictions.append(pred[graph_data.val_mask])
-                complete_targets.append(targ[graph_data.val_mask])
+                complete_predictions.append(pred[graph_data.val_mask.detach().cpu()])
+                complete_targets.append(targ[graph_data.val_mask.detach().cpu()])
 
         complete_predictions = torch.cat(complete_predictions)
         complete_targets = torch.cat(complete_targets)
@@ -480,8 +480,8 @@ class Trainer:
 
                 mask = graph_data.test_mask if mask_str == "test" else graph_data.val_mask if mask_str == "val" else graph_data.train_mask
 
-                complete_predictions.append(pred[mask])
-                complete_targets.append(targ[mask])
+                complete_predictions.append(pred[mask.detach().cpu()])
+                complete_targets.append(targ[mask.detach().cpu()])
 
         complete_predictions = torch.cat(complete_predictions)
         complete_targets = torch.cat(complete_targets)
