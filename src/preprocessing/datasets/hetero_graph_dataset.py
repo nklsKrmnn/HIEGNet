@@ -18,12 +18,10 @@ from src.preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
 
 class HeteroGraphDataset(GlomGraphDataset):
     def __init__(self, **kwargs):
-        cell_node_dir_path = kwargs.pop('cell_node_dir_path')
-        cell_types = kwargs.pop('cell_types')
+        self.cell_node_dir_path = kwargs.pop('cell_node_dir_path')
+        self.cell_types = kwargs.pop('cell_types')
 
         super().__init__(**kwargs)
-        self.cell_node_dir_path = cell_node_dir_path
-        self.cell_types = cell_types
 
     def process(self) -> None:
         """
