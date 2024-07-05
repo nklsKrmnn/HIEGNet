@@ -12,7 +12,7 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 from src.preprocessing.feature_preprocessing import feature_preprocessing
 from src.preprocessing.graph_preprocessing.knn_graph_constructor import knn_graph_construction, \
     knn_weighted_graph_construction
-from src.utils.file_name_utils import get_glom_index
+from src.utils.path_io import get_glom_index
 from src.preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
 
 

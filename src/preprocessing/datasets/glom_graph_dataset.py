@@ -4,6 +4,7 @@ import numpy as np
 import pickle
 import torch
 import os
+from typing import Final
 
 from sklearn.utils import compute_class_weight
 from torch_geometric.data import Dataset, Data
@@ -13,7 +14,9 @@ from src.preprocessing.datasets.dataset_utils.dataset_utils import list_annotati
     list_neighborhood_image_paths
 from src.preprocessing.feature_preprocessing import feature_preprocessing
 from src.preprocessing.graph_preprocessing.knn_graph_constructor import knn_graph_construction
+from src.utils.path_io import get_path_up_to
 
+ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")
 
 class GlomGraphDataset(Dataset):
     """
@@ -180,7 +183,7 @@ class GlomGraphDataset(Dataset):
                     x = torch.tensor(x.to_numpy(), dtype=torch.float)
                 else:
                     # Get image paths
-                    x = [[df_patient[path].iloc[i] for path in self.feature_list] for i in range(df_patient.shape[0])]
+                    x = [[ROOT_DIR + df_patient[path].iloc[i] for path in self.feature_list] for i in range(df_patient.shape[0])]
 
                 data.x = x
                 data.y = y
