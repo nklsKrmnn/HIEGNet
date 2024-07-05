@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 import matplotlib
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
 
 def visualize_graph(coordinates, adjacency_matrix, target_classes, predicted_classes, class_labels):
     """
