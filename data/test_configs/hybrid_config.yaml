@@ -34,12 +34,12 @@ training_parameters:
   n_folds: 5
 dataset_parameters:
   class_name: glom_graph_dataset
-  #root: "/home/niklas/drive/4_input_data_graphs/"
-  root: "/home/dascim/data/4_input_data_graphs/glob_graphs/"
-  #feature_file_path: "/home/niklas/drive/4_input_data_graphs/cell_features.csv"
-  feature_file_path: "/home/dascim/data/3_extracted_features/EXC/image_paths.csv"
-  #annotations_path: "/home/niklas/drive/4_input_data_graphs/annotations/"
-  annotations_path: "/home/dascim/data/1_cytomine_downloads/EXC/annotations/25/"
+  root: "/home/niklas/drive/data/4_input_data_graphs/"
+  #root: "/home/dascim/data/4_input_data_graphs/glob_graphs/"
+  feature_file_path: "/home/niklas/drive/data/3_extracted_features/EXC/image_paths.csv"
+  #feature_file_path: "/home/dascim/data/3_extracted_features/EXC/image_paths.csv"
+  annotations_path: "/home/niklas/drive/data/1_cytomine_downloads/EXC/annotations/25/"
+  #annotations_path: "/home/dascim/data/1_cytomine_downloads/EXC/annotations/25/"
   validation_split: 0.25
   processed_file_name: "glom_graph"
   n_neighbours: 5
