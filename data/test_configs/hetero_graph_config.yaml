@@ -1,0 +1,51 @@
+use_gpu: true
+run_name: "first_test_hetero"
+model_parameters:
+  hetero_gat_v2:
+    hidden_dims: [16,16]
+    n_fc_layers: 1
+    norm_fc_layers: none
+    output_dim: 3
+    dropout: 0.85
+    norm: none
+    softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
+training_parameters:
+  batch_size: 1
+  epochs: 10000
+  learning_rate: 0.00003
+  lr_scheduler_params:
+    scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
+    params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
+      max_lr: 0.0003
+  loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
+  optimizer: "adam" # Options: "adam", "sgd"
+  weight_decay: 0.000000
+  balance_classes: true
+  momentum: 0.1
+  seed: 69
+  batch_shuffle: false
+  patience: 100000000
+  log_image_frequency: 5
+  n_folds: 0 # Set to 0 for no cross-validation
+dataset_parameters:
+  class_name: hetero_graph_dataset
+  root: "/home/dascim/data/4_input_data_graphs/glob_graphs/"
+  feature_file_path: "/home/dascim/data/3_extracted_features/EXC/cell_features.csv"
+  cell_node_dir_path: "/home/dascim/data/3_extracted_features/EXC/cell_nodes"
+  annotations_path: "/home/dascim/data/1_cytomine_downloads/EXC/annotations/25/"
+  validation_split: 0.15
+  processed_file_name: "glom_graph"
+  n_neighbours: 5
+  train_patients:
+    - 001
+  random_seed: 123
+  onehot_targets: true
+  process: true
+  preprocessing_params:
+    scaler: 'MinMaxScaler'
+  feature_list:
+    - 'Area (microns²)'
+    - 'Perimeter (mm)'
+  cell_types:
+    - "M0"
+

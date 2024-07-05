@@ -3,7 +3,6 @@ This module contains the Trainer class which is used to train a PyTorch model.
 """
 import math
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 from typing import Final, Union
 
@@ -12,12 +11,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Subset
-from torch_geometric.data import Dataset
+from torch_geometric.data import Dataset, HeteroData
 from torch_geometric.loader import DataLoader
-from sklearn.utils.class_weight import compute_class_weight
 from tqdm import tqdm
-from sklearn.metrics import accuracy_score
-import matplotlib.pyplot as plt
 
 from src.evaluation.test_scores import calc_test_scores
 from src.utils.model_service import ModelService
@@ -360,36 +356,19 @@ class Trainer:
             # Reset optimizer
             self.optimizer.zero_grad()
 
-            # Move data to device
-            if isinstance(graph_data.x, torch.Tensor):
-                input_graph_feature = graph_data.x.to(self.device)
-            else:
-                input_graph_feature = graph_data.x
-            input_graph_edge_index = graph_data.edge_index.to(self.device)
-            target = graph_data.y.to(self.device)
-
-            # Get predictions and train loss
-            prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
-            train_loss = self.loss(prediction[graph_data.train_mask], target[graph_data.train_mask])
+            pred, targ, loss = self.calc_batch(graph_data, graph_data.train_mask)
 
             # Backpropagation
-            train_loss.backward()
+            loss.backward()
             self.optimizer.step()
 
-            total_train_loss += train_loss.item()
+            total_train_loss += loss.item()
             step_count += 1
 
             # Step for ReduceLROnPlateau schedule is done with validation loss
             if self.lr_scheduler is not None and not isinstance(self.lr_scheduler,
                                                                 optim.lr_scheduler.ReduceLROnPlateau):
                 self.lr_scheduler.step()
-
-            if len(graph_data.y.shape) == 1:
-                pred = prediction.detach().argmax(dim=1).cpu()
-                targ = target.detach().cpu()
-            elif graph_data.y.shape[1] > 1:
-                pred = prediction.detach().argmax(dim=1).cpu()
-                targ = target.detach().argmax(dim=1).cpu()
 
             complete_predictions.append(pred[graph_data.train_mask])
             complete_targets.append(targ[graph_data.train_mask])
@@ -401,6 +380,42 @@ class Trainer:
 
 
         return total_train_loss, (complete_predictions, complete_targets)
+
+    def calc_batch(self, graph_data, mask) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Calculates the predictions and targets for a batch of data.
+
+        This method calculates the predictions and targets for a batch of data. The method is called during each epoch
+        for the training and validation data. The method returns the predictions and targets for the batch.
+
+        Args:
+            graph_data (DataLoader): DataLoader for the training and validation graphs.
+            mask_str (str): The mask to use for separating the dataset into training and validation data.
+
+        Returns:
+            torch.Tensor: The predictions for the batch.
+            torch.Tensor: The targets for the batch.
+        """
+        graph_data = graph_data.to(self.device)
+        # Determine model inputs as send to device
+        if not isinstance(graph_data[0], HeteroData):
+            input_graph_feature = graph_data.x if isinstance(graph_data.x, torch.Tensor) else graph_data.x
+        else:
+            input_graph_feature = graph_data.x_dict
+        input_graph_edge_index = graph_data.edge_index if not isinstance(graph_data[0], HeteroData) else graph_data.edge_index_dict
+        target = graph_data.y
+
+        prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
+        loss = self.loss(prediction[mask], target[mask])
+
+        if len(graph_data.y.shape) == 1:
+            pred = prediction.detach().argmax(dim=1).cpu()
+            targ = target.detach().cpu()
+        elif graph_data.y.shape[1] > 1:
+            pred = prediction.detach().argmax(dim=1).cpu()
+            targ = target.detach().argmax(dim=1).cpu()
+
+        return pred, targ, loss
 
     def validation_step(self, validation_loader) -> float:
         """
@@ -425,25 +440,10 @@ class Trainer:
         with torch.no_grad():
             for graph_data in validation_loader:
 
-                if isinstance(graph_data.x, torch.Tensor):
-                    input_graph_feature = graph_data.x.to(self.device)
-                else:
-                    input_graph_feature = graph_data.x
-                input_graph_edge_index = graph_data.edge_index.to(self.device)
-                target = graph_data.y.to(self.device)
-
-                prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
-                val_loss = self.loss(prediction[graph_data.val_mask], target[graph_data.val_mask])
+                pred, targ, val_loss = self.calc_batch(graph_data, graph_data.val_mask)
 
                 total_val_loss += val_loss.item()
                 step_count += 1
-
-                if len(graph_data.y.shape) == 1:
-                    pred = prediction.detach().argmax(dim=1).cpu()
-                    targ = target.detach().cpu()
-                elif graph_data.y.shape[1] > 1:
-                    pred = prediction.detach().argmax(dim=1).cpu()
-                    targ = target.detach().argmax(dim=1).cpu()
 
                 complete_predictions.append(pred[graph_data.val_mask])
                 complete_targets.append(targ[graph_data.val_mask])
@@ -476,17 +476,7 @@ class Trainer:
         with torch.no_grad():
             for graph_data in test_loader:
 
-                if isinstance(graph_data.x, torch.Tensor):
-                    input_graph_feature = graph_data.x.to(self.device)
-                else:
-                    input_graph_feature = graph_data.x
-                input_graph_edge_index = graph_data.edge_index.to(self.device)
-                target = graph_data.y.float().to(self.device)
-
-                prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
-
-                pred = prediction.detach().cpu()
-                targ = target.detach().cpu()
+                pred, targ, _ = self.calc_batch(graph_data, graph_data.test_mask if mask_str == "test" else graph_data.val_mask)
 
                 mask = graph_data.test_mask if mask_str == "test" else graph_data.val_mask if mask_str == "val" else graph_data.train_mask
 
@@ -497,13 +487,6 @@ class Trainer:
         complete_targets = torch.cat(complete_targets)
 
         softmax_results = (complete_predictions, complete_targets)
-
-        if len(graph_data.y.shape) == 1:
-            complete_predictions = complete_predictions.detach().argmax(dim=1).cpu()
-            complete_targets = complete_targets.detach().cpu()
-        elif graph_data.y.shape[1] > 1:
-            complete_predictions = complete_predictions.detach().argmax(dim=1).cpu()
-            complete_targets = complete_targets.detach().argmax(dim=1).cpu()
 
         scores = calc_test_scores(complete_targets, complete_predictions)
 

@@ -31,7 +31,7 @@ training_parameters:
   batch_shuffle: false
   patience: 10000
   log_image_frequency: 20
-  n_folds: 0
+  n_folds: 5
 dataset_parameters:
   class_name: glom_graph_dataset
   #root: "/home/niklas/drive/4_input_data_graphs/"
@@ -45,7 +45,6 @@ dataset_parameters:
   n_neighbours: 5
   train_patients:
     - 001
-    - 003
   random_seed: 123
   onehot_targets: true
   process: true

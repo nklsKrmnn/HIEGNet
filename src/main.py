@@ -96,6 +96,8 @@ def main() -> None:
     # Extracting model parameters from config
     model_parameters = config.pop("model_parameters")
     model_name, model_attributes = model_parameters.popitem()
+    if model_name.startswith("hetero"):
+        model_attributes['cell_types']=config['dataset_parameters']['cell_types']
 
     # Create graph dataset
     # Extracting dataset parameters from config

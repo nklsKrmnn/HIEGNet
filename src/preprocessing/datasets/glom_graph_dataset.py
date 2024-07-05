@@ -13,7 +13,6 @@ from src.preprocessing.datasets.dataset_utils.dataset_utils import list_annotati
     list_neighborhood_image_paths
 from src.preprocessing.feature_preprocessing import feature_preprocessing
 from src.preprocessing.graph_preprocessing.knn_graph_constructor import knn_graph_construction
-from src.utils.file_name_utils import get_glom_index
 
 
 class GlomGraphDataset(Dataset):
@@ -65,16 +64,7 @@ class GlomGraphDataset(Dataset):
         self.preprocessing_params = preprocessing_params
 
         # Dict to save settings of patients in config later
-        self.patient_settings = {
-            "0_train_from_config": self.train_patients,
-            "1_val_from_config": self.validation_patients,
-            "2_test_from_config": self.test_patients,
-            "3_train_in_dataset": [],
-            "4_val_in_dataset": [],
-            "5_test_in_dataset": [],
-            "6_not_in_config": [],
-            "7_to_small": []
-        }
+        self.patient_settings = 'not implemented anymore'
 
         super(GlomGraphDataset, self).__init__(root, transform, pre_transform)
 
@@ -122,27 +112,33 @@ class GlomGraphDataset(Dataset):
             # threshold for minimum number of data points and check if patient is in train or test set
             if (df_patient.shape[0] > 10) and (patient in self.train_patients + self.validation_patients + self.test_patients):
 
+                # Create the data object for each graph
+                data = Data()
+
+                # Target labels
+                data.target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
+
+
                 # Create the graph from point cloud and generate the edge index
                 coords = df_patient[['Center X', 'Center Y']].to_numpy()
                 adjectency_matrix = knn_graph_construction(coords, self.n_neighbours)
                 edge_index = torch.tensor(np.argwhere(adjectency_matrix == 1).T, dtype=torch.long)
-
-                # Target labels
-                target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
+                data.edge_index = edge_index
 
                 # Create the target labels in tensor
                 if self.onehot_targets:
                     df_patient = pd.get_dummies(df_patient, columns=['Term'])
                     # Add missing target columns if not represented in the data
-                    for target in target_labels:
+                    for target in data.target_labels:
                         if target not in df_patient.columns:
                             df_patient[target] = False
-                    y = df_patient[target_labels]
+                    y = df_patient[data.target_labels]
                     y = torch.tensor(y.to_numpy(), dtype=torch.float)
                 else:
                     y = df_patient['Term']
                     y.replace({'Healthy': 0, 'Sclerotic': 1, 'Dead': 2}, inplace=True)
                     y = torch.tensor(y.to_numpy(), dtype=torch.long)
+
 
                 # Generate stratified train, val and test indices
                 # Test set becomes equal to val set, if test split is 0
@@ -167,29 +163,6 @@ class GlomGraphDataset(Dataset):
                     train_indices = np.arange(len(y))
                     val_indices = np.arange(len(y)) if patient in self.val_patients else np.array([])
 
-                # Create the node features in tensor
-                if self.path_image_inputs is None:
-                    # Get numerical features
-                    x = df_patient[self.feature_list]
-                    x = feature_preprocessing(x, train_indices, **self.preprocessing_params)
-                    x = x.to_numpy()
-                    x = torch.tensor(x, dtype=torch.float)
-                else:
-                    # Get image paths
-                    #existing_indices = df_patient['glom_index'].tolist()
-                    #x = self.load_neighborhood_image_paths(patient)
-                    #x = [(get_glom_index(im_p), im_p) for im_p in x if get_glom_index(im_p) in existing_indices]
-
-                    # Sort paths by index
-                    #x.sort(key=lambda x: existing_indices.index(x[0]))
-                    #x = [s for _, s in x]
-                    x = [[df_patient[path].iloc[i] for path in self.feature_list] for i in range(df_patient.shape[0])]
-
-                    self.im_size = cv2.imread(x[0][0]).shape[0]
-
-                # Create the data object for each graph
-                data = Data(x=x, edge_index=edge_index, y=y)
-
                 # Add train, val and test masks based on random seed and split values
                 data.train_mask = torch.zeros(data.num_nodes, dtype=torch.bool)
                 data.train_mask[train_indices] = True
@@ -199,34 +172,33 @@ class GlomGraphDataset(Dataset):
                 data.test_mask[test_indices] = True
                 data.test_mask = data.val_mask if (self.test_split == 0.0) and (self.test_patients==[]) else data.test_mask
 
-                data.target_labels = target_labels
+                # Create the node features in tensor
+                if self.path_image_inputs is None:
+                    # Get numerical features
+                    x = df_patient[self.feature_list]
+                    x = feature_preprocessing(x, train_indices, **self.preprocessing_params)
+                    x = torch.tensor(x.to_numpy(), dtype=torch.float)
+                else:
+                    # Get image paths
+                    x = [[df_patient[path].iloc[i] for path in self.feature_list] for i in range(df_patient.shape[0])]
+
+                data.x = x
+                data.y = y
+
                 data.glom_indices = torch.tensor(df_patient['glom_index'].values)
                 data.coords = torch.tensor(coords, dtype=torch.float)
                 data.adjacency_matrix = torch.tensor(adjectency_matrix, dtype=torch.float)
 
 
-                file_name = f"{self.processed_file_name}_p{patient}.pt"
-
                 # Save graph data object
+                file_name = f"{self.processed_file_name}_p{patient}.pt"
                 torch.save(data, os.path.join(self.processed_dir, file_name))
                 print(f'[Dataset]: Saves {file_name}')
 
                 # Save file names of processed files and if patient is in train/test set and save in settings dict
-                if patient in self.train_patients:
-                    self.patient_settings["3_train_in_dataset"].append(patient)
-                    set = 'train'
-                elif patient in self.validation_patients:
-                    self.patient_settings["4_val_in_dataset"].append(patient)
-                    set = 'validation'
-                else:
-                    self.patient_settings["5_test_in_dataset"].append(patient)
-                    set = 'test'
+                set = 'train' if patient in self.train_patients else 'validation' if patient in self.validation_patients else 'test'
                 file_names.append({"file_name": file_name, "set": set})
 
-            elif df_patient.shape[0] < 10:
-                self.patient_settings["7_to_small"].append(patient)
-            else:
-                self.patient_settings["6_not_in_config"].append(patient)
 
         with open(os.path.join(self.processed_dir, f"{self.processed_file_name}_filenames.pkl"), 'wb') as handle:
             pickle.dump(file_names, handle)
