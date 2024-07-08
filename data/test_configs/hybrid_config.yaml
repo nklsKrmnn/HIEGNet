@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "coding"
+run_name: "hyrbid_25_106"
 model_parameters:
   hybrid:
     hidden_channels: [20, 30, 40, 50] #output dim: 361
@@ -13,10 +13,10 @@ model_parameters:
       n_fc_layers: 2
       norm_fc_layers: batch
       output_dim: 3
-      dropout: 0.7
+      dropout: 0.8
 training_parameters:
   batch_size: 1
-  epochs: 10000
+  epochs: 500
   learning_rate: 0.0003
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"

@@ -60,6 +60,7 @@ class GnnCnnHybrid(nn.Module):
         self.connention_fc = nn.Linear(self.hidden_channels[-1] * last_dim ** 2, gnn_params["input_dim"])
 
         # GNN layer
+        gnn_params = gnn_params.copy()
         self.gnn = SUBMODEL_NAME_MAPPING[gnn_params.pop("class_name")](**gnn_params)
 
     def forward(self, x, edge_index):

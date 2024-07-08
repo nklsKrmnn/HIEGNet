@@ -46,6 +46,7 @@ class ModelService():
         Returns:
             nn.Module: The created model.
         """
+        model_attributes = model_attributes.copy()
         model_path = model_attributes.pop("model_path") if "model_path" in model_attributes else None
 
         try:
