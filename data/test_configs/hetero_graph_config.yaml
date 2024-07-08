@@ -35,7 +35,8 @@ dataset_parameters:
   annotations_path: "/home/niklas/drive/data/1_cytomine_downloads/EXC/annotations/25/"
   validation_split: 0.15
   processed_file_name: "glom_graph"
-  n_neighbours: 5
+  n_neighbours: 0
+  n_neighbours_cells: 5
   train_patients:
     - 001
   random_seed: 123

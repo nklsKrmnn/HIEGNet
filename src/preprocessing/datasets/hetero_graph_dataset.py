@@ -20,6 +20,7 @@ class HeteroGraphDataset(GlomGraphDataset):
     def __init__(self, **kwargs):
         self.cell_node_dir_path = kwargs.pop('cell_node_dir_path')
         self.cell_types = kwargs.pop('cell_types')
+        self.n_neighbours_cells = kwargs.pop('n_neighbours_cells')
 
         super().__init__(**kwargs)
 
@@ -139,7 +140,7 @@ class HeteroGraphDataset(GlomGraphDataset):
                 for i, df_cell_nodes in enumerate(list_cell_nodes):
                     # Create connections between cells
                     cell_coords = df_cell_nodes[['center_x_global', 'center_y_global']].to_numpy()
-                    cell_sparse_matrix = knn_weighted_graph_construction(cell_coords, self.n_neighbours)
+                    cell_sparse_matrix = knn_weighted_graph_construction(cell_coords, self.n_neighbours_cells)
 
                     cell_edge_index = torch.tensor(cell_sparse_matrix.nonzero(), dtype=torch.long)
                     cell_edge_weight = torch.tensor(cell_sparse_matrix.data, dtype=torch.float).unsqueeze(1)
