@@ -39,9 +39,9 @@ class HeteroGraphDataset(GlomGraphDataset):
         df = pd.merge(df, df_annotations, left_on="glom_index", right_on="ID", how="left")
         patients_in_raw_data = df['patient'].unique()
 
-        cell_node_files = [os.path.join(self.cell_node_dir_path, f"{cell_type}_cell_nodes.csv") for cell_type in
+        cell_node_files = [os.path.join(self.cell_node_dir_path, f"{cell_type}_cell_nodes.pkl") for cell_type in
                            self.cell_types]
-        list_cell_nodes = [pd.read_csv(path) for path in cell_node_files]
+        list_cell_nodes = [pd.read_pickle(path) for path in cell_node_files]
 
         file_names = []
 
@@ -138,6 +138,8 @@ class HeteroGraphDataset(GlomGraphDataset):
 
                 # Add other cells to graph
                 for i, df_cell_nodes in enumerate(list_cell_nodes):
+                    df_cell_nodes = df_cell_nodes[df_cell_nodes['patient'] == patient].reset_index(drop=True)
+
                     # Create connections between cells
                     cell_coords = df_cell_nodes[['center_x_global', 'center_y_global']].to_numpy()
                     cell_sparse_matrix = knn_weighted_graph_construction(cell_coords, self.n_neighbours_cells)
@@ -148,14 +150,20 @@ class HeteroGraphDataset(GlomGraphDataset):
                     data[self.cell_types[i], 'to', self.cell_types[i]].edge_attr = cell_edge_weight
 
                     # Create connections between cells and glomeruli
+                    df_cell_nodes['cell_row'] = np.arange(df_cell_nodes.shape[0])
+                    df_cells_exploded = df_cell_nodes.explode('associated_glomeruli')
+                    df_cells_exploded['glom_index'] = df_cells_exploded['associated_glomeruli'].apply(lambda d: d['glom_index'])
+                    df_cells_exploded['distance'] = df_cells_exploded['associated_glomeruli'].apply(lambda d: d['distance'])
                     df_glom_connection = df_patient['glom_index'].to_frame()
                     df_glom_connection['glom_row'] = np.arange(df_glom_connection.shape[0])
-                    df_glom_connection = df_cell_nodes.merge(df_glom_connection, right_on='glom_row',
-                                                             left_on='associated_glom', how='inner')
-                    cell_glom_edge_index = (df_glom_connection.index.values, df_glom_connection['glom_row'])
+                    df_glom_connection = df_cells_exploded.merge(df_glom_connection, right_on='glom_index',
+                                                             left_on='glom_index', how='inner')
+                    cell_glom_edge_index = (df_glom_connection['cell_row'], df_glom_connection['glom_row'])
+                    cell_glom_edge_weights = torch.tensor(df_glom_connection['distance'].values, dtype=torch.float).unsqueeze(1)
 
                     data[self.cell_types[i], 'to', 'glomeruli'].edge_index = torch.tensor(cell_glom_edge_index,
                                                                                           dtype=torch.long)
+                    data[self.cell_types[i], 'to', 'glomeruli'].edge_attr = cell_glom_edge_weights
 
                     # Get node features
                     x = df_cell_nodes[[c for c in df_cell_nodes.columns if c.endswith('_node_feature')]]

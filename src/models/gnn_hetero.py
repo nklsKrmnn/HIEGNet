@@ -30,7 +30,7 @@ class HeteroMessagePassingLayer(nn.Module):
         x_dict = self.message_passing_layer(x_dict, edge_index_dict)
         x_dict = {key: self.norm(x) for key, x in x_dict.items()}
         x_dict = {key: F.relu(x) for key, x in x_dict.items()}
-        x_dict = {key: F.dropout(x, p=self.dropout_rate, training=self.training) for key, x in x_dict.items()}
+        #x_dict = {key: F.dropout(x, p=self.dropout_rate, training=self.training) for key, x in x_dict.items()}
 
         return x_dict
 

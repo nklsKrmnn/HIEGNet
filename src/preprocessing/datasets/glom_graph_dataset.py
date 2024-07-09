@@ -86,7 +86,7 @@ class GlomGraphDataset(Dataset):
 
         return [item['file_name'] for item in file_names]
 
-    def download(self):
+    def _download(self):
         pass
 
     def process(self) -> None:
