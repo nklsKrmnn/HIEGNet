@@ -319,7 +319,7 @@ class GlomGraphDataset(Dataset):
 
         # Apply the fold masks for each graph
         for idx, graph in enumerate(graphs):
-            len_graph = graph.num_nodes
+            len_graph = len(graph.y)
             graph.train_folds = []
             graph.val_folds = []
             zero_mask = torch.zeros(len_graph, dtype=torch.bool)
