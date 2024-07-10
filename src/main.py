@@ -176,8 +176,6 @@ def main() -> None:
         trainer.start_training()
         trainer.save_model()
 
-
-        print('stop here')
     if args.pipeline == EVAL_COMMAND:
         model = ModelService.create_model(model_name=model_name,
                                           model_attributes=model_attributes)

@@ -3,20 +3,23 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, GATv2Conv, HeteroConv
 
+from src.models.model_constants import MESSAGE_PASSING_MAPPING
 from src.models.gnn_models import MessagePassingLayer
 from src.models.model_utils import init_norm_layer
 
 
 class HeteroMessagePassingLayer(nn.Module):
-    def __init__(self, output_dim, edge_types, message_passing_class, dropout=0.5, norm: str = None):
+    def __init__(self, output_dim, edge_types, dropout=0.5, norm: str = None):
         super(HeteroMessagePassingLayer, self).__init__()
-        # Lazy intialization of the input dimension, depending on the message passing class
-        input_dim = -1 if isinstance(message_passing_class, GCNConv) else (-1, -1)
 
-        self.message_passing_layer = HeteroConv({
-            edge_type: message_passing_class(input_dim, output_dim, add_self_loops=False)
-            for edge_type in edge_types
-        }, aggr="sum")
+        hetero_conv_dict = {}
+        for edge_type, msg_passing_type in edge_types.items():
+            message_passing_class = MESSAGE_PASSING_MAPPING[msg_passing_type]
+            # Lazy intialization of the input dimension, depending on the message passing class
+            input_dim = -1 if isinstance(message_passing_class, GCNConv) else (-1, -1)
+            hetero_conv_dict[edge_type] = message_passing_class(input_dim, output_dim, add_self_loops=False)
+        self.message_passing_layer = HeteroConv(hetero_conv_dict, aggr="sum")
+
         if norm == "batch":
             self.norm = nn.BatchNorm1d(output_dim)
         elif norm == "layer":
@@ -40,6 +43,7 @@ class HeteroGATv2(nn.Module):
                  hidden_dims: list[int],
                  output_dim: int,
                  cell_types: list[str],
+                 msg_passing_types: dict[str, str],
                  dropout=0.5,
                  n_fc_layers: int = 0,
                  norm: str = None,
@@ -54,18 +58,17 @@ class HeteroGATv2(nn.Module):
         self.norm_fc_layers = norm_fc_layers
         self.softmax_function = softmax_function
 
-        edge_types = [('glomeruli', 'to', 'glomeruli')]
+        edge_types = {('glomeruli', 'to', 'glomeruli'): msg_passing_types['glom_to_glom']}
         for cell_type in cell_types:
-            edge_types.append((cell_type, 'to', 'glomeruli'))
+            edge_types[(cell_type, 'to', 'glomeruli')]= msg_passing_types['cell_to_glom']
             for cell_type2 in cell_types:
-                edge_types.append((cell_type, 'to', cell_type2))
+                edge_types[(cell_type, 'to', cell_type2)]= msg_passing_types['cell_to_glom']
         node_types = ['glomeruli'] + cell_types
 
         # First GAT layer
         self.gat_layers.append(HeteroMessagePassingLayer(
             output_dim=hidden_dims[0],
             edge_types=edge_types,
-            message_passing_class=GATv2Conv,
             dropout=dropout,
             norm=norm,
         ))
@@ -88,7 +91,6 @@ class HeteroGATv2(nn.Module):
             self.gat_layers.append(HeteroMessagePassingLayer(
                 output_dim=hidden_dims[i],
                 edge_types=edge_types,
-                message_passing_class=GATv2Conv,
                 dropout=dropout,
                 norm=norm,
             ))

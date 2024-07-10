@@ -11,12 +11,15 @@ from torch_geometric.data import Dataset, Data
 from sklearn.model_selection import StratifiedKFold, train_test_split
 
 from src.preprocessing.datasets.dataset_utils.dataset_utils import list_annotation_file_names, \
-    list_neighborhood_image_paths
+    list_neighborhood_image_paths, get_train_val_test_indices
 from src.preprocessing.feature_preprocessing import feature_preprocessing
-from src.preprocessing.graph_preprocessing.knn_graph_constructor import knn_graph_construction
+from src.preprocessing.graph_preprocessing.knn_graph_constructor import knn_graph_construction, graph_construction
 from src.utils.path_io import get_path_up_to
 
 ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")
+
+
+
 
 class GlomGraphDataset(Dataset):
     """
@@ -32,13 +35,14 @@ class GlomGraphDataset(Dataset):
         random_seed (int, optional): The random seed for the train-test split. Default is None.
     """
 
+
     def __init__(self,
                  root,
                  processed_file_name: str,
                  feature_file_path: str,
                  annotations_path: str,
                  feature_list: list,
-                 n_neighbours: int = 5,
+                 glom_graph: dict,
                  validation_split: float = 0.2,
                  test_split: float = 0.0,
                  train_patients: list[str] = [],
@@ -59,7 +63,7 @@ class GlomGraphDataset(Dataset):
         self.validation_patients = validation_patients if validation_patients != [] else train_patients
         self.test_patients = test_patients if test_patients != [] else validation_patients
         self.feature_list = feature_list
-        self.n_neighbours = n_neighbours
+        self.glom_graph = glom_graph
         self.random_seed = random_seed
         self.onehot_targets = onehot_targets
         self.path_image_inputs = path_image_inputs
@@ -116,82 +120,7 @@ class GlomGraphDataset(Dataset):
             if (df_patient.shape[0] > 10) and (patient in self.train_patients + self.validation_patients + self.test_patients):
 
                 # Create the data object for each graph
-                data = Data()
-
-                # Target labels
-                data.target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
-
-
-                # Create the graph from point cloud and generate the edge index
-                coords = df_patient[['Center X', 'Center Y']].to_numpy()
-                adjectency_matrix = knn_graph_construction(coords, self.n_neighbours)
-                edge_index = torch.tensor(np.argwhere(adjectency_matrix == 1).T, dtype=torch.long)
-                data.edge_index = edge_index
-
-                # Create the target labels in tensor
-                if self.onehot_targets:
-                    df_patient = pd.get_dummies(df_patient, columns=['Term'])
-                    # Add missing target columns if not represented in the data
-                    for target in data.target_labels:
-                        if target not in df_patient.columns:
-                            df_patient[target] = False
-                    y = df_patient[data.target_labels]
-                    y = torch.tensor(y.to_numpy(), dtype=torch.float)
-                else:
-                    y = df_patient['Term']
-                    y.replace({'Healthy': 0, 'Sclerotic': 1, 'Dead': 2}, inplace=True)
-                    y = torch.tensor(y.to_numpy(), dtype=torch.long)
-
-
-                # Generate stratified train, val and test indices
-                # Test set becomes equal to val set, if test split is 0
-                # Val set becomes equal to train set, if val split is 0
-                if (self.test_split < 1.0 and self.test_split > 0.0):
-                    train_indices, test_indices = train_test_split(np.arange(len(y)),
-                                                                   test_size=float(self.test_split),
-                                                                   random_state=self.random_seed,
-                                                                   stratify=y.numpy())
-                    # Add a correction, because 100% for the val split will be reduced by the test split
-                    val_split_correction = self.test_split*self.val_split
-                else:
-                    train_indices = np.arange(len(y))
-                    test_indices = np.arange(len(y)) if patient in self.test_patients else np.array([])
-                    val_split_correction = 0
-                if (self.val_split < 1.0 and self.val_split > 0.0):
-                    train_indices, val_indices = train_test_split(train_indices,
-                                                                  test_size=float(self.val_split + val_split_correction),
-                                                                  random_state=self.random_seed,
-                                                                  stratify=y[train_indices].numpy())
-                else:
-                    train_indices = np.arange(len(y))
-                    val_indices = np.arange(len(y)) if patient in self.val_patients else np.array([])
-
-                # Add train, val and test masks based on random seed and split values
-                data.train_mask = torch.zeros(data.num_nodes, dtype=torch.bool)
-                data.train_mask[train_indices] = True
-                data.val_mask = torch.zeros(data.num_nodes, dtype=torch.bool)
-                data.val_mask[val_indices] = True
-                data.test_mask = torch.zeros(data.num_nodes, dtype=torch.bool)
-                data.test_mask[test_indices] = True
-                data.test_mask = data.val_mask if (self.test_split == 0.0) and (self.test_patients==[]) else data.test_mask
-
-                # Create the node features in tensor
-                if self.path_image_inputs is None:
-                    # Get numerical features
-                    x = df_patient[self.feature_list]
-                    x = feature_preprocessing(x, train_indices, **self.preprocessing_params)
-                    x = torch.tensor(x.to_numpy(), dtype=torch.float)
-                else:
-                    # Get image paths
-                    x = [[ROOT_DIR + df_patient[path].iloc[i] for path in self.feature_list] for i in range(df_patient.shape[0])]
-
-                data.x = x
-                data.y = y
-
-                data.glom_indices = torch.tensor(df_patient['glom_index'].values)
-                data.coords = torch.tensor(coords, dtype=torch.float)
-                data.adjacency_matrix = torch.tensor(adjectency_matrix, dtype=torch.float)
-
+                data = self.create_graph_object(df_patient)
 
                 # Save graph data object
                 file_name = f"{self.processed_file_name}_p{patient}.pt"
@@ -206,7 +135,86 @@ class GlomGraphDataset(Dataset):
         with open(os.path.join(self.processed_dir, f"{self.processed_file_name}_filenames.pkl"), 'wb') as handle:
             pickle.dump(file_names, handle)
 
+    def create_graph_object(self, df_patient) -> Data:
+        """
+        Create the graph object from the raw data.
 
+        The raw data is loaded from the raw file and a graph is constructed from the point cloud with the knn graph
+        algorithm. Afterward, node features and note-wise targets for node classification are added. A train and test
+        mask is added to the graph data object.
+
+        :return: The graph data object
+        """
+        # Create the data object for each graph
+        data = Data()
+
+        # Target labels
+        data.target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
+
+        # Create the graph from point cloud and generate the edge index
+        coords = df_patient[['Center X', 'Center Y']].to_numpy()
+        edge_index, edge_weights = graph_construction(coords, **self.glom_graph)
+        data.edge_index = torch.tensor(edge_index, dtype=torch.long)
+        data.edge_attr = torch.tensor(edge_weights, dtype=torch.float).unsqueeze(1)
+
+        y = self.create_targets(df_patient, data.target_labels)
+
+        # Generate stratified train, val and test indices
+        train_indices, val_indices, test_indices = get_train_val_test_indices(y, self.test_split,
+                                                                              self.val_split,
+                                                                              self.random_seed,
+                                                                              self.test_patients,
+                                                                              self.validation_patients)
+
+        data.train_mask = self.create_mask(len(y), train_indices)
+        data.val_mask = self.create_mask(len(y), val_indices)
+        data.test_mask = data.val_mask if (self.test_split == 0.0) and (self.test_patients == []) else self.create_mask(
+            len(y), test_indices)
+
+        # Create the node features in tensor
+        if self.path_image_inputs is None:
+            x = self.create_feature_tensor(df_patient, train_indices, self.feature_list)
+        else:
+            # Get image paths
+            x = [[ROOT_DIR + df_patient[path].iloc[i] for path in self.feature_list] for i in
+                 range(df_patient.shape[0])]
+
+        data.x = x
+        data.y = y
+
+        data.glom_indices = torch.tensor(df_patient['glom_index'].values)
+        data.coords = torch.tensor(coords, dtype=torch.float)
+
+        return data
+
+    def create_mask(self, num_nodes, indices):
+        mask = torch.zeros(num_nodes, dtype=torch.bool)
+        mask[indices] = True
+        return mask
+
+    def create_targets(self, df_patient: pd.DataFrame, target_labels:list[str]) -> torch.Tensor:
+        # Create the target labels in tensor
+        if self.onehot_targets:
+            df_patient = pd.get_dummies(df_patient, columns=['Term'])
+            # Add missing target columns if not represented in the data
+            for target in target_labels:
+                if target not in df_patient.columns:
+                    df_patient[target] = False
+            y = df_patient[target_labels]
+            y = torch.tensor(y.to_numpy(), dtype=torch.float)
+        else:
+            y = df_patient['Term']
+            y.replace({'Healthy': 0, 'Sclerotic': 1, 'Dead': 2}, inplace=True)
+            y = torch.tensor(y.to_numpy(), dtype=torch.long)
+
+        return y
+    def create_feature_tensor(self, df: pd.DataFrame, train_indices: list[int], feature_list: list[str]) -> torch.Tensor:
+        # Get numerical features
+        x = df[feature_list]
+        x = feature_preprocessing(x, train_indices, **self.preprocessing_params)
+        x = torch.tensor(x.to_numpy(), dtype=torch.float)
+
+        return x
     @property
     def image_size(self):
         first_graph = torch.load(os.path.join(self.processed_dir, self.processed_file_names[0]))
