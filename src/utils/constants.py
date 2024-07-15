@@ -1,4 +1,5 @@
 from typing import Final
+from itertools import product
 
 from src.models.gnn_cnn_hyrbid import GnnCnnHybrid
 from src.models.gnn_hetero import HeteroGATv2
@@ -36,3 +37,18 @@ REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {
     }
 }
 
+TRAIN_PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
+    "learning_rate": [0.003, 0.001, 0.0003, 0.0001]
+}
+
+MODEL_PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
+    'hidden_dim': [16, 32, 64, 128],
+    'message_passing_staps': [1, 2, 3, 5, 10],
+    'n_fc_layers': [1, 2, 3],
+    'dropout': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+    'softmax_function': ['softmax', 'log_softmax', 'none'],
+    'msg_passing_types': [{k: t[i] for i, k in enumerate(["glom_to_glom", "cell_to_glom", "cell_to_cell"])} for t in
+                          list(product(*[['gat_v2', 'gcn', 'gin'] for i in range(3)]))],
+    'norm_fc_layers': ['batch', 'layer', 'none'],
+    'norm': ['batch', 'layer', 'none']
+}

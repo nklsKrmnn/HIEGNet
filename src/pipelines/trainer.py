@@ -97,7 +97,8 @@ class Trainer:
             seed: int = None,
             batch_shuffle: bool = False,
             patience: int = 50,
-            log_image_frequency: int = 10
+            log_image_frequency: int = 10,
+            reported_set: str = "test"
     ):
         """
         Creates a Trainer instance from an unpacked configuration file.
@@ -124,6 +125,7 @@ class Trainer:
             batch_shuffle (bool): Whether to shuffle the batches.
             patience (int, optional): Number of epochs to wait for improvement before stopping. Defaults to 50.
             log_image_frequency (int, optional): Frequency of logging images. Defaults to 10.
+            reported_set (str, optional): The set to report the performance measures on. Defaults to "test".
 
         Returns:
             Trainer: A Trainer instance with the specified configuration.
@@ -206,6 +208,7 @@ class Trainer:
         self.logger = logger
         self.dataset = dataset
         self.test_split = test_split
+        self.reported_set = reported_set
         print("[TRAINER]: Trainer was successfully set up.")
 
     def start_training(self) -> None:
@@ -286,11 +289,17 @@ class Trainer:
                 val_loss, val_results = self.validation_step(validation_loader)
                 self.logger.log_loss(val_loss, epoch, "2_validation")
 
-                if test_loader != None:
+                if test_loader is not None and self.reported_set == "test":
                     test_scores, test_results = self.test_step(test_loader, "test")
-                else:
+                elif validation_loader is not None and self.reported_set == 'val':
                     test_results = (val_results[0], val_results[1])
                     test_scores = calc_test_scores(val_results[1], val_results[0])
+                elif train_loader is not None and self.reported_set == 'train':
+                    test_results = (train_results[0], train_results[1])
+                    test_scores = calc_test_scores(train_results[1], train_results[0])
+                else:
+                    raise ValueError("No valid set to report performance on.")
+
                 for score, score_dict in test_scores.items():
                     for class_label, value in score_dict.items():
                         self.logger.log_test_score(value, epoch, class_label, score)
@@ -331,7 +340,7 @@ class Trainer:
 
         return finish_reason
 
-    def train_step(self, dataloader) -> tuple[float, float]:
+    def train_step(self, dataloader) -> tuple[float, tuple[torch.Tensor, torch.Tensor]]:
         """
         Calculates the training loss for the model. This method is called during each epoch.
 
@@ -378,7 +387,6 @@ class Trainer:
 
         total_train_loss = total_train_loss / step_count
 
-
         return total_train_loss, (complete_predictions, complete_targets)
 
     def calc_batch(self, graph_data, mask) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -402,7 +410,8 @@ class Trainer:
             input_graph_feature = graph_data.x if isinstance(graph_data.x, torch.Tensor) else graph_data.x
         else:
             input_graph_feature = graph_data.x_dict
-        input_graph_edge_index = graph_data.edge_index if not isinstance(graph_data[0], HeteroData) else graph_data.edge_index_dict
+        input_graph_edge_index = graph_data.edge_index if not isinstance(graph_data[0],
+                                                                         HeteroData) else graph_data.edge_index_dict
         target = graph_data.y
 
         prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
@@ -414,10 +423,12 @@ class Trainer:
         elif graph_data.y.shape[1] > 1:
             pred = prediction.detach().argmax(dim=1).cpu()
             targ = target.detach().argmax(dim=1).cpu()
+        else:
+            raise ValueError("Target shape is not valid.")
 
         return pred, targ, loss
 
-    def validation_step(self, validation_loader) -> float:
+    def validation_step(self, validation_loader) -> tuple[float, tuple[torch.Tensor, torch.Tensor]]:
         """
         Calculates the target metric for the test set and generates visualisations for the train and the test set. This method is called in the frequency given in the config.
 
@@ -439,7 +450,6 @@ class Trainer:
 
         with torch.no_grad():
             for graph_data in validation_loader:
-
                 pred, targ, val_loss = self.calc_batch(graph_data, graph_data.val_mask)
 
                 total_val_loss += val_loss.item()
@@ -455,7 +465,10 @@ class Trainer:
 
         return total_val_loss, (complete_predictions, complete_targets)
 
-    def test_step(self, test_loader, mask_str: str = "test", return_softmax:bool = False) -> dict[str, dict[str, float]]:
+    def test_step(self,
+                  test_loader,
+                  mask_str: str = "test",
+                  return_softmax: bool = False) -> tuple[dict, tuple[torch.Tensor, torch.Tensor]]:
         """
         Calculates the target metric for the test set and generates visualisations for the train and the test set. This method is called in the frequency given in the config.
 
@@ -475,10 +488,8 @@ class Trainer:
 
         with torch.no_grad():
             for graph_data in test_loader:
-
-                pred, targ, _ = self.calc_batch(graph_data, graph_data.test_mask if mask_str == "test" else graph_data.val_mask)
-
                 mask = graph_data.test_mask if mask_str == "test" else graph_data.val_mask if mask_str == "val" else graph_data.train_mask
+                pred, targ, _ = self.calc_batch(graph_data, mask)
 
                 complete_predictions.append(pred[mask.detach().cpu()])
                 complete_targets.append(targ[mask.detach().cpu()])
@@ -549,7 +560,6 @@ class Trainer:
         df_test_targets.columns = [f"target_{label}" for label in self.dataset[0].target_labels]
         df_test_results = pd.concat([df_test_predictions, df_test_targets], axis=1)
 
-
         # Get images for test set
         glomeruli_indices = []
         inputs = []
@@ -572,7 +582,3 @@ class Trainer:
 
             class_labels = self.dataset[0].target_labels
             fig = visualize_graph(coordinates, adjacency_matrix, target_classes, predicted_classes, class_labels)
-
-
-
-

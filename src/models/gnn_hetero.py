@@ -40,10 +40,12 @@ class HeteroMessagePassingLayer(nn.Module):
 
 class HeteroGATv2(nn.Module):
     def __init__(self,
-                 hidden_dims: list[int],
                  output_dim: int,
                  cell_types: list[str],
                  msg_passing_types: dict[str, str],
+                 hidden_dims: list[int] = None,
+                 hidden_dim: int = None,
+                 message_passing_steps= None,
                  dropout=0.5,
                  n_fc_layers: int = 0,
                  norm: str = None,
@@ -57,6 +59,8 @@ class HeteroGATv2(nn.Module):
         self.norm = norm
         self.norm_fc_layers = norm_fc_layers
         self.softmax_function = softmax_function
+
+        hidden_dims = [hidden_dim for _ in range(message_passing_steps)] if hidden_dims is None else hidden_dims
 
         edge_types = {('glomeruli', 'to', 'glomeruli'): msg_passing_types['glom_to_glom']}
         for cell_type in cell_types:

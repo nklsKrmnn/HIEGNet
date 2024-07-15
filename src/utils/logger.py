@@ -6,6 +6,7 @@ import io
 import os
 from datetime import datetime
 from typing import Optional
+import pandas as pd
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,6 +19,7 @@ from tqdm import tqdm
 from src.utils.vis_training import plot_confusion_matrix
 
 first_name_logging = True
+
 
 class Logger():
     """
@@ -49,7 +51,6 @@ class Logger():
             text (str): The text to write.
         """
         self._summary_writer.add_text(tag, text)
-
 
     def write_config(self, config: dict) -> None:
         """
@@ -159,7 +160,7 @@ class Logger():
         tqdm.write(f"[LOGGER]: Epoch {epoch}: Test Loss = {value}")
         self._summary_writer.add_scalar("loss/2_test", value, epoch)
 
-    def log_test_score(self, value: float, epoch: int, class_label: str = '0_total', score:str = "Accuracy") -> None:
+    def log_test_score(self, value: float, epoch: int, class_label: str = '0_total', score: str = "Accuracy") -> None:
         """
         Logs the accuracy for an epoch.
 
@@ -216,7 +217,6 @@ class Logger():
         print(f"[Logger]: Chart for {set} set saved.")
         plt.close('all')
 
-
     def log_model_path(self, model_path: str) -> None:
         """
         Logs the path of the saved model.
@@ -233,8 +233,7 @@ class Logger():
             first_name_logging = False
 
 
-
-class CrossValidationLogger(Logger):
+class FoldLogger(Logger):
     """
     A class used to log training information for each run of a cross validation.
 
@@ -310,6 +309,7 @@ class CrossValidationLogger(Logger):
         elif set == '3_test':
             self.test_loss[epoch] = value
 
+    # TODO remove bellow loss logging methods
     def log_training_loss(self, value: float, epoch: int):
         """
         Logs the training loss for an epoch.
@@ -338,7 +338,7 @@ class CrossValidationLogger(Logger):
         super().log_test_loss(value, epoch)
         self.test_loss[epoch] = value
 
-    def log_test_score(self, value: float, epoch: int, class_label: str = '0_total', score:str="Accuracy") -> None:
+    def log_test_score(self, value: float, epoch: int, class_label: str = '0_total', score: str = "Accuracy") -> None:
         """
         Logs the accuracy for an epoch.
 
@@ -357,7 +357,6 @@ class CrossValidationLogger(Logger):
             self.scores[score][class_label] = {}
         self.scores[score][class_label][epoch] = value
 
-
     def log_model_path(self, model_path: str) -> None:
         """
         Logs the path of the saved model.
@@ -375,8 +374,7 @@ class CrossValidationLogger(Logger):
             first_name_logging = False
 
 
-class CrossValLoggerSummary():
-
+class CrossValLogger():
     """
     A class used to summarize the training information for all folds of a cross validation.
 
@@ -384,20 +382,42 @@ class CrossValLoggerSummary():
     loss, test loss, and accuracy of multiple loggers
     """
 
+    def __init__(self, n_folds: int, name: str = "") -> None:
 
-    def __init__(self, logger: CrossValidationLogger, name:str="") -> None:
-        self.start_time_str = logger.start_time_str
-        self._summary_writer = SummaryWriter(f"runs/{self.start_time_str}_{name}_summary")
+        self.start_time_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.fold_logger = [FoldLogger(fold, self.start_time_str, name) for fold in range(n_folds)]
+        self.summary_logger = Logger(name=f'{name}_summary')
         self._training_start: Optional[datetime] = None
 
-        for key, value in logger.text.items():
-            self._summary_writer.add_text(key, value)
+    def write_config(self, config: dict) -> None:
+        """
 
-        if hasattr(logger, 'model'):
-            self._summary_writer.add_text("model", logger.model)
-        self._summary_writer.add_text('model/mode_path', logger.text['model/mode_path'])
+        """
+        for logger in self.fold_logger + [self.summary_logger]:
+            logger.write_config(config)
 
-    def summarize_mean_values(self, loggers: list[CrossValidationLogger]) -> None:
+    def write_text(self, tag: str, text: str) -> None:
+        """
+        Writes a custom text to a custom tag in the TensorBoard log file.
+
+        Args:
+            tag (str): The tag for the text.
+            text (str): The text to write.
+        """
+        for logger in self.fold_logger + [self.summary_logger]:
+            logger.write_text(tag, text)
+
+    def write_model(self, model: nn.Module) -> None:
+        """
+        Writes the model architecture formatted as text to the TensorBoard log file.
+
+        Args:
+            model (nn.Module): The model.
+        """
+        for logger in self.fold_logger + [self.summary_logger]:
+            logger.write_model(model)
+
+    def summarize(self) -> None:
         """
         Summarizes the mean training loss for all folds.
 
@@ -406,26 +426,132 @@ class CrossValLoggerSummary():
         :param loggers: A list of loggers for each fold of a cross validation.
         """
 
-        for row in loggers[0].train_loss.keys():
-            mean_train_loss = np.mean([fold.train_loss[row] for fold in loggers])
-            self._summary_writer.add_scalar("loss/1_train", mean_train_loss, row)
+        for key, value in self.fold_logger[0].text.items():
+            self.summary_logger.write_text(key, value)
 
-            if row in loggers[0].val_loss.keys():
-                mean_val_loss = np.mean([fold.val_loss[row] for fold in loggers])
-                self._summary_writer.add_scalar("loss/2_validation", mean_val_loss, row)
+        if hasattr(self.fold_logger[0], 'model'):
+            self.summary_logger.write_model(self.fold_logger[0].model)
 
-            if row in loggers[0].test_loss.keys():
-                mean_test_loss = np.mean([fold.test_loss[row] for fold in loggers])
-                self._summary_writer.add_scalar("loss/3_test", mean_test_loss, row)
+        for row in self.fold_logger[0].train_loss.keys():
+            mean_train_loss = np.mean([fold.train_loss[row] for fold in self.fold_logger])
+            self.summary_logger.log_loss(mean_train_loss, row, '1_train')
 
-            for score in loggers[0].scores.keys():
-                for class_label in loggers[0].scores[score].keys():
-                    if row in loggers[0].scores[score][class_label].keys():
-                        mean_acc = np.mean([fold.scores[score][class_label][row] for fold in loggers])
-                        self._summary_writer.add_scalar(f"{score}/{class_label}", mean_acc, row)
+            if row in self.fold_logger[0].val_loss.keys():
+                mean_val_loss = np.mean([fold.val_loss[row] for fold in self.fold_logger])
+                self.summary_logger.log_loss(mean_val_loss, row, '2_validation')
 
+            if row in self.fold_logger[0].test_loss.keys():
+                mean_test_loss = np.mean([fold.test_loss[row] for fold in self.fold_logger])
+                self.summary_logger.log_loss(mean_test_loss, row, '3_test')
+
+            for score in self.fold_logger[0].scores.keys():
+                for class_label in self.fold_logger[0].scores[score].keys():
+                    if row in self.fold_logger[0].scores[score][class_label].keys():
+                        mean_value = np.mean([fold.scores[score][class_label][row] for fold in self.fold_logger])
+                        self.summary_logger.log_test_score(mean_value, row, class_label, score)
+
+    def get_final_scores(self):
+        """
+        Returns the final scores from the last epoch of the model for all folds as their mean a standard deviation.
+
+        Iterates over all scores and all classes and all folds. Writes for each of these combindations the last value
+        of the score into a dictionary and calculate for each of these combinations the mean and the standard
+        deviation for all folds and write this into the dict as well.
+        """
+        final_scores = {}
+        for score in self.fold_logger[0].scores.keys():
+            for class_label in self.fold_logger[0].scores[score].keys():
+                for i, fold in enumerate(self.fold_logger):
+                    final_scores[f'{score}_{class_label}_fold{i}'] = fold.scores[score][class_label][
+                        max(fold.scores[score][class_label].keys())]
+
+                mean = np.mean([fold.scores[score][class_label][max(fold.scores[score][class_label].keys())] for fold in
+                                self.fold_logger])
+                std = np.std([fold.scores[score][class_label][max(fold.scores[score][class_label].keys())] for fold in
+                              self.fold_logger])
+                final_scores[f'{score}_{class_label}_mean'] = mean
+                final_scores[f'{score}_{class_label}_std'] = std
+
+        return final_scores
 
     def close(self):
-        self._summary_writer.close()
+        self.summary_logger.write_training_end("Summary finished")
 
 
+class MultiInstanceLogger:
+    """
+    A class used to log training information for multiple instances of a model.
+    """
+
+    def __init__(self, n_folds: int, name: str = "") -> None:
+
+        self.name = name
+        self.n_folds = n_folds
+        self.logger = None
+
+        self.results = []
+        self.text = {}
+
+    def next_logger(self) -> Logger:
+        """
+        Initializes a new crossvalidation logger.
+
+
+        """
+        if self.n_folds == 0:
+            self.logger = Logger(self.name)
+        else:
+            self.logger = CrossValLogger(n_folds=self.n_folds, name=self.name)
+
+        # Write saved properties into new logger
+        for key, value in self.text.items():
+            self.logger.write_text(key, value)
+        self.logger.write_config(self.config)
+
+        return self.logger
+
+    def collect_final_results(self):
+        """
+        Collects the final results of the active loggers.
+
+        This method collects the final results from the current logger and stores them into the list of results.
+        """
+
+        self.results.append(self.logger.get_final_scores())
+
+    def write_config(self, config: dict) -> None:
+        """
+        Saves the config to writes it into each new logger instance
+
+        Args:
+            config (dict): The configuration of the training.
+        """
+        self.config = config
+
+    def write_text(self, tag: str, text: str) -> None:
+        """
+        Saves the text to write it into each new logger instance
+
+        Args:
+            tag (str): The tag for the text.
+            text (str): The text to write.
+        """
+        self.text[tag] = text
+
+    def write_model(self, model: nn.Module) -> None:
+        """
+        Saves the model to write it into each new logger instance
+
+        Args:
+            model (nn.Module): The model.
+        """
+        self.model = model
+
+    def close(self):
+        """
+        Closes multi instance logger and saves the results into a pandas DataFrame.
+        """
+        df_results = pd.DataFrame(self.results)
+        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        df_results.to_csv(f'runs/{current_time}_{self.name}_results.csv', index=False)
