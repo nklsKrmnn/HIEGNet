@@ -32,14 +32,15 @@ training_parameters:
   patience: 10000
   log_image_frequency: 20
   n_folds: 5
+  reported_set: 'val'
 dataset_parameters:
   class_name: hybrid_graph_dataset
-  #root: "/home/niklas/drive/data/4_input_data_graphs/"
-  root: "/home/dascim/data/4_input_data_graphs/glob_graphs/"
-  #feature_file_path: "/home/niklas/drive/data/3_extracted_features/EXC/image_paths.csv"
-  feature_file_path: "/home/dascim/data/3_extracted_features/EXC/image_paths.csv"
-  #annotations_path: "/home/niklas/drive/data/1_cytomine_downloads/EXC/annotations/25/"
-  annotations_path: "/home/dascim/data/1_cytomine_downloads/EXC/annotations/25/"
+  root: "/home/niklas/drive/data/4_input_data_graphs/"
+  #root: "/home/dascim/data/4_input_data_graphs/glob_graphs/"
+  feature_file_path: "/home/niklas/drive/data/3_extracted_features/EXC/image_paths.csv"
+  #feature_file_path: "/home/dascim/data/3_extracted_features/EXC/image_paths.csv"
+  annotations_path: "/home/niklas/drive/data/1_cytomine_downloads/EXC/annotations/25/"
+  #annotations_path: "/home/dascim/data/1_cytomine_downloads/EXC/annotations/25/"
   validation_split: 0.25
   processed_file_name: "glom_graph"
   glom_graph:
@@ -50,7 +51,7 @@ dataset_parameters:
   random_seed: 123
   onehot_targets: true
   process: true
-  hot_load: false
+  hot_load: true
   preprocessing_params:
     scaler: 'MinMaxScaler'
   feature_list:
