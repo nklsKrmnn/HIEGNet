@@ -39,8 +39,8 @@ dataset_parameters:
   #root: "/home/dascim/data/4_input_data_graphs/glob_graphs/"
   feature_file_path: "/home/niklas/drive/data/3_extracted_features/EXC/image_paths.csv"
   #feature_file_path: "/home/dascim/data/3_extracted_features/EXC/image_paths.csv"
-  annotations_path: "/home/niklas/drive/data/1_cytomine_downloads/EXC/annotations/25/"
-  #annotations_path: "/home/dascim/data/1_cytomine_downloads/EXC/annotations/25/"
+  annotations_path: "/home/niklas/drive/data/3_extracted_features/EXC/ann/"
+  #annotations_path: "/home/dascim/data/3_extracted_features/EXC/ann/"
   validation_split: 0.25
   processed_file_name: "glom_graph"
   glom_graph:

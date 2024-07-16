@@ -52,8 +52,27 @@ class GlomGraphDataset(Dataset):
                  preprocessing_params: dict = None,
                  transform=None,
                  pre_transform=None,
-                 random_seed=None,
-                 path_image_inputs=None):
+                 random_seed=None) -> None:
+        """
+        Initialize the dataset.
+
+        :param root: Directory where the dataset and the graph objects should be stored.
+        :param processed_file_name: File name of the processed graph file.
+        :param feature_file_path: File path to the feature file.
+        :param annotations_path: File path to the annotations directory.
+        :param feature_list: List of features to use from feature file
+        :param glom_graph: Dictionary with parameters for the graph construction
+        :param validation_split: Validation split
+        :param test_split: Test split
+        :param train_patients: Patients to train on
+        :param validation_patients: Patients of only validate on
+        :param test_patients: Patients to only test on
+        :param onehot_targets: Bool if to use onehot encoding for targets
+        :param preprocessing_params: Parameters for preprocessing (especially normalisation)
+        :param transform: not used
+        :param pre_transform: not used
+        :param random_seed: Random seed
+        """
 
         self.processed_file_name = processed_file_name
         self.feature_file_path = feature_file_path
@@ -66,7 +85,6 @@ class GlomGraphDataset(Dataset):
         self.glom_graph = glom_graph
         self.random_seed = random_seed
         self.onehot_targets = onehot_targets
-        self.path_image_inputs = path_image_inputs
         self.annot_path = str(annotations_path)
         self.preprocessing_params = preprocessing_params
 
@@ -77,6 +95,13 @@ class GlomGraphDataset(Dataset):
 
     @property
     def raw_file_names(self) -> list[str]:
+        """
+        Get the raw file names of the dataset.
+
+        First file is the features file. To that, all files from the annotation directiory are appended.
+
+        :return: List of raw file names
+        """
         raw_files = [self.feature_file_path] + list_annotation_file_names(self.annot_path)
         return raw_files
 
