@@ -9,7 +9,7 @@ model_parameters:
     gnn_params:
       class_name: gat_v2
       input_dim: 150
-      hidden_dims: [80,80]
+      hidden_dims: [32,32]
       n_fc_layers: 2
       norm_fc_layers: batch
       output_dim: 3
@@ -42,7 +42,9 @@ dataset_parameters:
   #annotations_path: "/home/dascim/data/1_cytomine_downloads/EXC/annotations/25/"
   validation_split: 0.25
   processed_file_name: "glom_graph"
-  n_neighbours: 5
+  glom_graph:
+    method: "knn" # Options: "knn", "radius", "delaunay"
+    k: 5 # Options: "k", "radius", ""
   train_patients:
     - 001
   random_seed: 123
@@ -50,8 +52,6 @@ dataset_parameters:
   process: true
   preprocessing_params:
     scaler: 'MinMaxScaler'
-  #path_image_inputs: "/home/niklas/drive/2_images_preprocessed/25/"
-  path_image_inputs: "/home/dascim/data/2_images_preprocessed/EXC/patches_low_resolution/"
   feature_list:
     - 'path_25'
     - 'path_106'

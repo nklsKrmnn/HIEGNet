@@ -43,8 +43,13 @@ def grid_search(model_name: str,
 
     results = []
 
+    print(f"Start grid search with {size}settings")
+
 
     for i in range(0, size):
+        print("###################################")
+        print(f"Setting {i+1}/{size}")
+        print("###################################")
         setting = grid[i]
         model_attributes = setting[0]
         training_parameters = setting[1]

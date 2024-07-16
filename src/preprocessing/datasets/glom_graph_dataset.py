@@ -172,7 +172,7 @@ class GlomGraphDataset(Dataset):
             len(y), test_indices)
 
         # Create the node features in tensor
-        if self.path_image_inputs is None:
+        if not isinstance(df_patient[self.feature_list[0]][0], str):
             x = self.create_feature_tensor(df_patient, train_indices, self.feature_list)
         else:
             # Get image paths

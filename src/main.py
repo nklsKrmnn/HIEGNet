@@ -107,7 +107,7 @@ def main() -> None:
     # Log which patients are used in the dataset
     logger.write_text("patient_settings", str(dataset.patient_settings))
 
-    if 'path_image_inputs' in dataset_parameters.keys():
+    if dataset.image_size is not None:
         model_attributes["image_size"] = dataset.image_size
         model_attributes["device"] = device
 

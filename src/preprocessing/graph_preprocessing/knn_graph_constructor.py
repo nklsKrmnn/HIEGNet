@@ -54,30 +54,34 @@ def knn_weighted_graph_construction(X: np.array, k: int) -> csr_matrix:
     """
     n = X.shape[0]
 
-    # Use NearestNeighbors to find the k-nearest neighbors
-    nbrs = NearestNeighbors(n_neighbors=k + 1, algorithm='auto').fit(X)
-    distances, indices = nbrs.kneighbors(X)
+    if k == 0:
+        return csr_matrix((n, n))
+    else:
+        # Use NearestNeighbors to find the k-nearest neighbors
+        nbrs = NearestNeighbors(n_neighbors=k+1, algorithm='auto').fit(X)
+        distances, indices = nbrs.kneighbors(X)
 
-    # Remove the first column (distances to self, which are zero)
-    distances = distances[:, 1:]
-    indices = indices[:, 1:]
+        # Remove the first column (distances to self, which are zero)
+        distances = distances[:, 1:]
+        indices = indices[:, 1:]
 
-    # Normalize the distances to the range [0, 1]
-    max_distance = np.max(distances)
-    distances = distances / max_distance if max_distance > 0 else distances
+        # Normalize the distances to the range [0, 1]
+        max_distance = np.max(distances)
+        distances = distances / max_distance if max_distance > 0 else distances
 
-    # Create the sparse matrix
-    row_indices = np.repeat(np.arange(n), k)
-    col_indices = indices.flatten()
-    data = distances.flatten()
+        # Create the sparse matrix
+        row_indices = np.repeat(np.arange(n), k)
+        col_indices = indices.flatten()
+        data = distances.flatten()
 
-    A = csr_matrix((data, (row_indices, col_indices)), shape=(n, n))
+        A = csr_matrix((data, (row_indices, col_indices)), shape=(n, n))
 
-    # Make the matrix symmetric by adding its transpose and then normalizing again
-    A = A + A.T
-    A.data = A.data / np.max(A.data)
+        # Make the matrix symmetric by adding its transpose and then normalizing again
+        A = A + A.T
+        A.data = A.data / np.max(A.data)
 
-    return A
+        return A
+
 
 
 import numpy as np
