@@ -7,6 +7,7 @@ from src.models.gnn_models import GCN, GCNJumpingKnowledge, GATv2
 from src.models.pretrained_cnn import initialize_resnet
 from src.preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
 from src.models.mlp import MLP
+from src.preprocessing.datasets.hybrid_graph_dataset import HybridGraphDataset
 from src.preprocessing.datasets.image_dataset import GlomImageDataset
 from src.preprocessing.datasets.hetero_graph_dataset import HeteroGraphDataset
 
@@ -23,7 +24,8 @@ MODEL_NAME_MAPPING: Final[dict[str, any]] = {
 DATASET_NAME_MAPPING: Final[dict[str, any]] = {
     "glom_graph_dataset": GlomGraphDataset,
     "image_dataset": GlomImageDataset,
-    "hetero_graph_dataset": HeteroGraphDataset
+    "hetero_graph_dataset": HeteroGraphDataset,
+    "hybrid_graph_dataset": HybridGraphDataset
 }
 
 REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {
@@ -43,7 +45,7 @@ TRAIN_PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
 
 MODEL_PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'hidden_dim': [16, 32, 64, 128],
-    'message_passing_staps': [1, 2, 3, 5, 10],
+    'message_passing_steps': [1, 2, 3, 5, 10],
     'n_fc_layers': [1, 2, 3],
     'dropout': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
     'softmax_function': ['softmax', 'log_softmax', 'none'],

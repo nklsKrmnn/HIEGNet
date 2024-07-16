@@ -49,18 +49,7 @@ class ModelService():
         model_attributes = model_attributes.copy()
         model_path = model_attributes.pop("model_path") if "model_path" in model_attributes else None
 
-        try:
-            model = MODEL_NAME_MAPPING[model_name](**model_attributes)
-        except KeyError as parse_error:
-            raise (
-                KeyError(f"The model '{model_name}' does not exist!")
-            ) from parse_error
-        except TypeError as model_error:
-            raise (
-                TypeError(
-                    f"The creation of the {model_name} model failed with the following error message: {model_error}."
-                )
-            ) from model_error
+        model = MODEL_NAME_MAPPING[model_name](**model_attributes)
 
         if model_path is not None:
             model.load_state_dict(torch.load(model_path))

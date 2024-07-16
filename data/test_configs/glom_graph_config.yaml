@@ -27,7 +27,8 @@ training_parameters:
   batch_shuffle: false
   patience: 100000000
   log_image_frequency: 50
-  n_folds: 0 # Set to 0 for no cross-validation
+  n_folds: 5 # Set to 0 for no cross-validation
+  reported_set: "val"
 dataset_parameters:
   class_name: glom_graph_dataset
   #root: "/home/niklas/drive/4_input_data_graphs/"
@@ -38,7 +39,9 @@ dataset_parameters:
   annotations_path: "/home/dascim/data/1_cytomine_downloads/EXC/annotations/25/"
   validation_split: 0.15
   processed_file_name: "glom_graph"
-  n_neighbours: 5
+  glom_graph:
+    method: "knn" # Options: "knn", "radius", "delaunay"
+    k: 5 # Options: "k", "radius", ""
   train_patients:
     - 001
   random_seed: 123

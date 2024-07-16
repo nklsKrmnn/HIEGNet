@@ -8,12 +8,12 @@ from typing import Final
 
 from sklearn.utils import compute_class_weight
 from torch_geometric.data import Dataset, Data
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold
 
 from src.preprocessing.datasets.dataset_utils.dataset_utils import list_annotation_file_names, \
     list_neighborhood_image_paths, get_train_val_test_indices
 from src.preprocessing.feature_preprocessing import feature_preprocessing
-from src.preprocessing.graph_preprocessing.knn_graph_constructor import knn_graph_construction, graph_construction
+from src.preprocessing.graph_preprocessing.knn_graph_constructor import graph_construction
 from src.utils.path_io import get_path_up_to
 
 ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")
@@ -103,6 +103,8 @@ class GlomGraphDataset(Dataset):
 
         :return: None
         """
+        print('[Dataset]: Processing data')
+
         df = pd.read_csv(self.raw_paths[0])
         df_annotations = pd.concat([pd.read_csv(path) for path in self.raw_paths[1:]])
         df = pd.merge(df, df_annotations, left_on="glom_index", right_on="ID", how="left")
@@ -172,12 +174,7 @@ class GlomGraphDataset(Dataset):
             len(y), test_indices)
 
         # Create the node features in tensor
-        if not isinstance(df_patient[self.feature_list[0]][0], str):
-            x = self.create_feature_tensor(df_patient, train_indices, self.feature_list)
-        else:
-            # Get image paths
-            x = [[ROOT_DIR + df_patient[path].iloc[i] for path in self.feature_list] for i in
-                 range(df_patient.shape[0])]
+        x = self.create_feature_tensor(df_patient, train_indices, self.feature_list)
 
         data.x = x
         data.y = y
@@ -217,14 +214,7 @@ class GlomGraphDataset(Dataset):
         return x
     @property
     def image_size(self):
-        first_graph = torch.load(os.path.join(self.processed_dir, self.processed_file_names[0]))
-
-        # Load images, if image features are used and transform to tensor
-        if not isinstance(first_graph.x[0], torch.Tensor):
-            img = cv2.imread(first_graph.x[0][0])
-            return img.shape[0]
-        else:
-            return None
+        return None
 
     def get_set_indices(self) -> tuple[list[int], list[int], list[int]]:
         """
@@ -266,16 +256,6 @@ class GlomGraphDataset(Dataset):
         class_weights_tensor = torch.tensor(class_weights, dtype=torch.float)
         return class_weights_tensor
 
-    def load_neighborhood_image_paths(self, patient) -> list[str]:
-        """
-        Load the neighborhood images for a patient.
-
-        The neighborhood images are loaded from the path_image_inputs directory and the images.
-
-        :param patient: The patient id
-        :return: List of paths of the neighborhood images for one graph
-        """
-        return list_neighborhood_image_paths(patient, self.path_image_inputs)
 
     def create_folds(self, n_folds: int) -> None:
         """
