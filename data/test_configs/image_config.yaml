@@ -28,6 +28,7 @@ training_parameters:
   batch_shuffle: false
   patience: 100000000
   log_image_frequency: 20
+  n_folds: 0
 dataset_parameters:
   class_name: image_dataset
   validation_split: 0.15
