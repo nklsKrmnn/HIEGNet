@@ -13,6 +13,7 @@ def grid_search(model_name: str,
                 logger: MultiInstanceLogger,
                 dataset,
                 device,
+                trainer_class,
                 training_parameters: dict,
                 n_folds: int = 5
                 ):
@@ -62,6 +63,7 @@ def grid_search(model_name: str,
                                         logger=temp_logger,
                                         dataset=dataset,
                                         device=device,
+                                        trainer_class=trainer_class,
                                         training_parameters=training_parameters,
                                         n_folds=n_folds)
         logger.collect_final_results()
@@ -77,6 +79,7 @@ def cross_validation(model_name: str,
                      logger: CrossValLogger,
                      dataset,
                      device,
+                     trainer_class,
                      training_parameters: dict,
                      n_folds: int = 5
                      ) -> dict:
@@ -99,7 +102,7 @@ def cross_validation(model_name: str,
         logger.fold_logger[fold].write_model(model)
         dataset.activate_fold(fold)
 
-        trainer = Trainer(
+        trainer = trainer_class(
             dataset=dataset,
             model=model,
             device=device,

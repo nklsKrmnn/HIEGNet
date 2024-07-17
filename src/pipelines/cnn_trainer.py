@@ -99,6 +99,7 @@ class ImageTrainer:
             seed: int = None,
             batch_shuffle: bool = False,
             patience: int = 50,
+            reported_set = "val",
             log_image_frequency: int = 10
     ):
         """
@@ -125,6 +126,7 @@ class ImageTrainer:
             seed (int, optional): Seed for the random number generator.
             batch_shuffle (bool): Whether to shuffle the batches.
             patience (int, optional): Number of epochs to wait for improvement before stopping. Defaults to 50.
+            reported_set (str, optional): The set to report the performance on. Defaults to "val".
             log_image_frequency (int, optional): Frequency of logging images. Defaults to 10.
 
         Returns:
@@ -208,6 +210,7 @@ class ImageTrainer:
         self.logger = logger
         self.dataset = dataset
         self.test_split = test_split
+        self.reported_set = reported_set
         print("[TRAINER]: Trainer was successfully set up.")
 
     def start_training(self) -> None:
@@ -286,11 +289,17 @@ class ImageTrainer:
                 val_loss, val_results = self.validation_step(validation_loader)
                 self.logger.log_loss(val_loss, epoch, "2_validation")
 
-                if test_loader != None:
-                    test_scores, test_results = self.test_step(test_loader)
-                else:
+                if test_loader is not None and self.reported_set == "test":
+                    test_scores, test_results = self.test_step(test_loader, "test")
+                elif validation_loader is not None and self.reported_set == 'val':
                     test_results = (val_results[0], val_results[1])
-                    test_scores = calc_test_scores(predictions=val_results[0], targets=val_results[1])
+                    test_scores = calc_test_scores(val_results[1], val_results[0])
+                elif train_loader is not None and self.reported_set == 'train':
+                    test_results = (train_results[0], train_results[1])
+                    test_scores = calc_test_scores(train_results[1], train_results[0])
+                else:
+                    raise ValueError("No valid set to report performance on.")
+
                 for score, score_dict in test_scores.items():
                     for class_label, value in score_dict.items():
                         self.logger.log_test_score(value, epoch, class_label, score)

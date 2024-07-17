@@ -8,6 +8,7 @@ import yaml
 from src.pipelines.cnn_trainer import ImageTrainer
 from src.pipelines.grid_search import grid_search, cross_validation
 from src.utils.constants import DATASET_NAME_MAPPING
+from src.pipelines.trainer_constants import TRAINER_MAPPING
 from src.utils.model_service import ModelService
 from src.pipelines.trainer import Trainer
 from torch import cuda
@@ -19,6 +20,9 @@ TRAIN_IMAGE_COMMAND: Final[str] = "train_image"
 GRID_SEARCH_COMMAND: Final[str] = "grid_search"
 EVAL_COMMAND: Final[str] = "evaluate"
 PREDICT_COMMAND: Final[str] = "predict"
+
+GRAPH_COMMAND: Final[str] = "graph"
+IMAGE_COMMAND: Final[str] = "image"
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -35,6 +39,13 @@ def setup_parser() -> argparse.ArgumentParser:
         type=str,
         required=True,
         help="Path to the configuration file with the specified pipeline options.",
+    )
+    parser.add_argument(
+        "--trainer",
+        "-t",
+        required=True,
+        choices=[GRAPH_COMMAND, IMAGE_COMMAND],
+        help="Which trainer class to use.",
     )
     parser.add_argument(
         "--pipeline",
@@ -107,15 +118,22 @@ def main() -> None:
     # Log which patients are used in the dataset
     #logger.write_text("patient_settings", str(dataset.patient_settings))
 
+    if args.trainer == 'graph':
+        trainer_class = Trainer
+    elif args.trainer == 'image':
+        trainer_class = ImageTrainer
+    else:
+        raise ValueError(f"Trainer class '{args.trainer}' is not supported.")
+
     if dataset.image_size is not None:
         model_attributes["image_size"] = dataset.image_size
         model_attributes["device"] = device
 
-    if (args.pipeline == TRAIN_COMMAND) & (n_folds == 0):
+    if (args.pipeline==TRAIN_COMMAND) & (n_folds == 0):
         model = ModelService.create_model(model_name=model_name, model_attributes=model_attributes)
         logger.write_model(model)
 
-        trainer = Trainer(
+        trainer = trainer_class(
             dataset=dataset,
             model=model,
             device=device,
@@ -125,12 +143,13 @@ def main() -> None:
         trainer.start_training()
         trainer.save_model()
 
-    if (args.pipeline == TRAIN_COMMAND) & (n_folds > 0):
+    if (args.pipeline==TRAIN_COMMAND) & (n_folds > 0):
         cross_validation(model_name=model_name,
                          model_attributes=model_attributes,
                          logger=logger,
                          dataset=dataset,
                          device=device,
+                         trainer_class=trainer_class,
                          training_parameters=config['training_parameters'],
                          n_folds=n_folds
                          )
@@ -155,6 +174,7 @@ def main() -> None:
                               logger=logger,
                               dataset=dataset,
                               device=device,
+                              trainer_class=trainer_class,
                               training_parameters=config['training_parameters'],
                               n_folds=n_folds
                               )

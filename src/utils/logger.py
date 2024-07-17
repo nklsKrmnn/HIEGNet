@@ -488,6 +488,7 @@ class MultiInstanceLogger:
         self.name = name
         self.n_folds = n_folds
         self.logger = None
+        self.start_time_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         self.results = []
         self.text = {}
@@ -518,6 +519,15 @@ class MultiInstanceLogger:
         """
 
         self.results.append(self.logger.get_final_scores())
+
+    def save_final_results(self):
+        """
+        Saves the final results of the active loggers to a pandas DataFrame.
+
+        This method saves the final results from the current logger into a pandas DataFrame.
+        """
+        df_results = pd.DataFrame(self.results)
+        df_results.to_csv(f'data/output/gs_results/{self.start_time_str}_{self.name}_results.csv', index=False)
 
     def write_config(self, config: dict) -> None:
         """

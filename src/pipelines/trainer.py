@@ -379,8 +379,6 @@ class Trainer:
             total_train_loss += loss.item()
             step_count += 1
 
-
-
             complete_predictions.append(pred[graph_data.train_mask.detach().cpu()])
             complete_targets.append(targ[graph_data.train_mask.detach().cpu()])
 

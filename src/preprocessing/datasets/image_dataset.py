@@ -3,7 +3,7 @@ from typing import Final, Any
 
 import pandas as pd
 import torch
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.utils import compute_class_weight
 from torchvision.io import read_image
 import numpy as np
@@ -55,6 +55,8 @@ class GlomImageDataset(HybridGraphDataset):
         self.targets = self.create_targets(df, self.target_labels)
         self.img_paths = self.create_feature_tensor(df, [], self.feature_list)
 
+        self.create_set_indices()
+
     def create_feature_tensor(self,
                               df: pd.DataFrame,
                               train_indices: list[int],
@@ -75,7 +77,10 @@ class GlomImageDataset(HybridGraphDataset):
         image = read_image(self.img_paths[0][0])
         return image.shape[1]
 
-    def get_set_indices(self):
+    def get_set_indices(self) -> tuple[list[int], list[int], list[int]]:
+        return self.indices
+
+    def create_set_indices(self):
         # get indices of train and test patients
         dataset_size = len(self)
 
@@ -94,7 +99,7 @@ class GlomImageDataset(HybridGraphDataset):
         if test_indices == []:
             test_indices = validation_indices
 
-        return train_indices, validation_indices, test_indices
+        self.indices = train_indices, validation_indices, test_indices
 
     def get_class_weights(self) -> torch.Tensor:
         """
@@ -119,6 +124,43 @@ class GlomImageDataset(HybridGraphDataset):
                                              y=y_labels)
         class_weights_tensor = torch.tensor(class_weights, dtype=torch.float)
         return class_weights_tensor
+
+    def create_folds(self, n_folds: int) -> None:
+        """
+        Creates n fold for cross validation.
+
+        Applies a stratified k fold split on dataset excluding the test set and saves the indices of the folds into a dict.
+
+        :param n_folds: Number of cross validation folds
+        :return: None
+        """
+        # Get train and val indices
+        train_indices, val_indices, _ = self.get_set_indices()
+
+        indices = np.array(train_indices + val_indices)
+
+        # Get targets
+        y_labels = self.targets[indices]
+        if self.onehot_targets:
+            y_labels = y_labels.argmax(dim=1).numpy()
+        else:
+            y_labels = y_labels.numpy()
+
+        # Create folds
+        skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=self.random_seed)
+
+        self.folds = {}
+        for fold, (train_indices, val_indices) in enumerate(skf.split(indices, y_labels)):
+            self.folds[fold] = (list(indices[train_indices]), list(indices[val_indices]))
+
+    def activate_fold(self, fold: int) -> None:
+        """
+        Activates a specific fold for cross validation.
+
+        :param fold: The fold to activate
+        :return: None
+        """
+        self.indices = (self.folds[fold][0], self.folds[fold][1], self.indices[2])
 
     def __len__(self):
         return len(self.img_paths)
