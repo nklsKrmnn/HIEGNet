@@ -300,6 +300,11 @@ class ImageTrainer:
                     self.visualize(val_results[0], val_results[1], "val", epoch)
                     self.visualize(test_results[0], test_results[1], 'test', epoch)
 
+                # Step for ReduceLROnPlateau schedule is done with validation loss
+                if self.lr_scheduler is not None and not isinstance(self.lr_scheduler,
+                                                                    optim.lr_scheduler.ReduceLROnPlateau):
+                    self.lr_scheduler.step()
+
                 # Logging learning rate (getter-function only works with torch2.2 or higher)
                 if self.lr_scheduler is not None:
                     try:
@@ -369,11 +374,6 @@ class ImageTrainer:
 
             total_train_loss += train_loss.item()
             step_count += 1
-
-            # Step for ReduceLROnPlateau schedule is done with validation loss
-            if self.lr_scheduler is not None and not isinstance(self.lr_scheduler,
-                                                                optim.lr_scheduler.ReduceLROnPlateau):
-                self.lr_scheduler.step()
 
             if len(labels.shape) == 1:
                 pred = predictions.detach().argmax(dim=1).cpu()
