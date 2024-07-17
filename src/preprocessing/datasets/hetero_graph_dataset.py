@@ -2,18 +2,13 @@ from typing import Final
 import cv2
 import pandas as pd
 import numpy as np
-import pickle
 import torch
 import os
 
-from sklearn.utils import compute_class_weight
-from torch_geometric.data import Data, HeteroData
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from torch_geometric.data import HeteroData
 
 from src.preprocessing.datasets.dataset_utils.dataset_utils import get_train_val_test_indices
-from src.preprocessing.feature_preprocessing import feature_preprocessing
-from src.preprocessing.graph_preprocessing.knn_graph_constructor import knn_graph_construction, \
-    knn_weighted_graph_construction, graph_construction
+from src.preprocessing.graph_preprocessing.knn_graph_constructor import graph_construction
 from src.preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
 from src.utils.path_io import get_path_up_to
 

@@ -98,7 +98,7 @@ class GlomGraphDataset(Dataset):
         """
         Get the raw file names of the dataset.
 
-        First file is the features file. To that, all files from the annotation directiory are appended.
+        First file is the features file. To that, all files from the annotation directory are appended.
 
         :return: List of raw file names
         """
@@ -107,6 +107,13 @@ class GlomGraphDataset(Dataset):
 
     @property
     def processed_file_names(self) -> list[str]:
+        """
+        Get the list of paths to processed files of the dataset.
+
+        List of all paths to files with processed graph objects is read from file which stores all these file names.
+
+        :return: List of processed file names
+        """
         try:
             with open(os.path.join(self.processed_dir, f'{self.processed_file_name}_filenames.pkl'), 'rb') as handle:
                 file_names = pickle.load(handle)
@@ -122,9 +129,10 @@ class GlomGraphDataset(Dataset):
         """
         Process the raw data to the graph data format.
 
-        The raw data is loaded from the raw file and a graph is constructed from the point cloud with the knn graph
-        algorithm. Afterward, node features and note-wise targets for node classification are added. A train and test
-        mask is added to the graph data object. Finally, the data object is saved to the processed directory.
+        The raw data of the features and the annotations is loaded from raw files and merged into one DataFrame. For
+        each of the patients in the DataFrame the data is processed by calling a function to create a graph data
+        object. Each of the processed graph objects is then stored as file in the root dir and the file names are
+        saved in and extra file.
 
         :return: None
         """
@@ -164,13 +172,15 @@ class GlomGraphDataset(Dataset):
 
     def create_graph_object(self, df_patient) -> Data:
         """
-        Create the graph object from the raw data.
+        The raw data is processed to a graph data object with the features, target labels and edge index.
 
-        The raw data is loaded from the raw file and a graph is constructed from the point cloud with the knn graph
-        algorithm. Afterward, node features and note-wise targets for node classification are added. A train and test
-        mask is added to the graph data object.
+        First the graph ist constructed from the passed DataFrame which the graph construction method given in this
+        dataset object. Afterward, the target labels are created from the data (Y) and the train, val, test split is
+        applied. At last the feature tensor is generated from the input DataFrame and preprocessed based on the given
+        preprocessing parameters and the train indices (for normalization).
 
-        :return: The graph data object
+        :param df_patient: DataFrame for one graph data object
+        :return: Graph data object.
         """
         # Create the data object for each graph
         data = Data()
@@ -209,12 +219,29 @@ class GlomGraphDataset(Dataset):
 
         return data
 
-    def create_mask(self, num_nodes, indices):
+    def create_mask(self, num_nodes, indices) -> torch.tensor:
+        """
+        Create a mask for the train, validation or test data.
+
+        Creates a torch mask tensor with True values for the indices of the given indices list.
+        :param num_nodes: Number of nodes in mask
+        :param indices: Indices to be True
+        :return: Mask
+        """
         mask = torch.zeros(num_nodes, dtype=torch.bool)
         mask[indices] = True
         return mask
 
     def create_targets(self, df_patient: pd.DataFrame, target_labels:list[str]) -> torch.Tensor:
+        """
+        Creates target tensor for patient.
+
+        Creates a torch tensor storing the target values given with the target_labels list. Extracts the column "Term"
+        from the input DataFrame and applies one-hot encoding or encodes the targets with ordinal numbers.
+        :param df_patient: Input DataFrame
+        :param target_labels: List of target labels
+        :return: Target value tensor
+        """
         # Create the target labels in tensor
         if self.onehot_targets:
             df_patient = pd.get_dummies(df_patient, columns=['Term'])
