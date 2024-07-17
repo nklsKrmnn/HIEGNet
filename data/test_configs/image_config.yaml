@@ -37,6 +37,7 @@ dataset_parameters:
     - 001
   random_seed: 123
   onehot_targets: true
+  hot_load: true
   image_paths_file: "/home/niklas/drive/data/3_extracted_features/EXC/image_paths.csv"
   #image_paths_file: "/home/dascim/data/3_extracted_features/EXC/image_paths.csv"
   annotations_path: "/home/niklas/drive/data/3_extracted_features/EXC/ann/"
