@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "hyrbid_all_stains_d5"
+run_name: "hyrbid_all_stains_k0_d7"
 model_parameters:
   hybrid:
     hidden_channels: [20, 30, 40, 50] #output dim: 361
@@ -7,13 +7,11 @@ model_parameters:
     input_channels: 12
     stride: 2
     gnn_params:
-      class_name: gat_v2
+      class_name: mlp
       input_dim: 150
-      hidden_dims: [32,32]
-      n_fc_layers: 2
-      norm_fc_layers: batch
+      hidden_dims: [80,40]
       output_dim: 3
-      dropout: 0.5
+      dropout: 0.7
 training_parameters:
   batch_size: 1
   epochs: 500
