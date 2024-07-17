@@ -44,10 +44,10 @@ class HybridGraphDataset(GlomGraphDataset):
         img = cv2.imread(first_graph.x[0][0])
         return img.shape[0]
 
-    def load_images(self, paths) -> list[np.ndarray]:
+    def load_images(self, paths) -> list[torch.tensor]:
         """
         Load images from paths.
-        :param paths: List of paths to images.
+        :param paths: List of tuples of paths to images.
         :return: List of images.
         """
         images = []
@@ -57,6 +57,11 @@ class HybridGraphDataset(GlomGraphDataset):
                 slices.append(cv2.imread(slice))
             img = np.concatenate(slices, axis=2)
             images.append(img)
+
+        # Transform to tensor
+        images = np.array(images)
+        images = torch.tensor(images, dtype=torch.float)
+        images = images.permute(0, 3, 1, 2)
 
         return images
 
@@ -69,10 +74,6 @@ class HybridGraphDataset(GlomGraphDataset):
             images = self.x_hot[idx]
         else:
             images = self.load_images(item.x)
-
-        # Transform to tensor
-        item.x = np.array(images)
-        item.x = torch.tensor(item.x, dtype=torch.float)
-        item.x = item.x.permute(0, 3, 1, 2)
+        item.x = images
 
         return item

@@ -1,6 +1,7 @@
 from typing import Final
 from itertools import product
 
+from src.models.cnn import CNN
 from src.models.gnn_cnn_hyrbid import GnnCnnHybrid
 from src.models.gnn_hetero import HeteroGATv2
 from src.models.gnn_models import GCN, GCNJumpingKnowledge, GATv2
@@ -15,6 +16,7 @@ MODEL_NAME_MAPPING: Final[dict[str, any]] = {
     "gcn": GCN,
     "hybrid": GnnCnnHybrid,
     "mlp": MLP,
+    "cnn": CNN,
     "gcn_jk": GCNJumpingKnowledge,
     "gat_v2": GATv2,
     "resnet": initialize_resnet,

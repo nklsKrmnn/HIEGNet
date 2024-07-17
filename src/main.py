@@ -105,7 +105,7 @@ def main() -> None:
         dataset.process()
 
     # Log which patients are used in the dataset
-    logger.write_text("patient_settings", str(dataset.patient_settings))
+    #logger.write_text("patient_settings", str(dataset.patient_settings))
 
     if dataset.image_size is not None:
         model_attributes["image_size"] = dataset.image_size

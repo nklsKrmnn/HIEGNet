@@ -1,14 +1,19 @@
 use_gpu: true
-run_name: "test_resnet"
+run_name: "cnn_all_stains_d7"
 model_parameters:
-  resnet:
-    hidden_dims: [128, 64]
-    output_dim: 3
-    dropout: 0.9
-    fc_norm: none
+  cnn:
+    hidden_channels: [ 20, 30, 40, 50 ] #output dim: 361
+    kernel_size: 4
+    input_channels: 12
+    stride: 2
+    mlp_params:
+      input_dim: 150
+      hidden_dims: [80,40]
+      output_dim: 3
+      dropout: 0.7
 training_parameters:
   batch_size: 50
-  epochs: 1000
+  epochs: 200
   learning_rate: 0.0001
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
@@ -23,16 +28,20 @@ training_parameters:
   batch_shuffle: false
   patience: 100000000
   log_image_frequency: 20
-  n_folds: 0
 dataset_parameters:
   class_name: image_dataset
   validation_split: 0.15
-  process: false
+  process: true
   train_patients:
     - 001
   random_seed: 123
   onehot_targets: true
-  #path_image_inputs: "/home/niklas/drive/2_images_preprocessed/25/"
-  path_image_inputs: "/home/dascim/data/2_images_preprocessed/EXC/patches_low_resolution/25"
-  #annotations_path: "/home/niklas/drive/4_input_data_graphs/annotations/"
-  annotations_path: "/home/dascim/data/1_cytomine_downloads/EXC/annotations/25/"
+  image_paths_file: "/home/niklas/drive/data/3_extracted_features/EXC/image_paths.csv"
+  #image_paths_file: "/home/dascim/data/3_extracted_features/EXC/image_paths.csv"
+  annotations_path: "/home/niklas/drive/data/3_extracted_features/EXC/ann/"
+  #annotations_path: "/home/dascim/data/3_extracted_features/EXC/ann/"
+  feature_list:
+    - 'path_25'
+    - 'path_106'
+    - 'path_107'
+    - 'path_108'
