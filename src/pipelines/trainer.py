@@ -173,7 +173,7 @@ class Trainer:
                 lr_scheduler = optim.lr_scheduler.CyclicLR(optimizer_instance,
                                                            **lr_scheduler_params["params"])
             elif lr_scheduler_params["scheduler"] == "OneCycleLR":
-                total_steps = (int(math.ceil(len(dataset) / batch_size))) * epochs
+                total_steps = epochs
                 lr_scheduler = optim.lr_scheduler.OneCycleLR(optimizer_instance,
                                                              total_steps=total_steps,
                                                              **lr_scheduler_params["params"])

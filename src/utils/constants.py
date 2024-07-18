@@ -47,7 +47,7 @@ TRAIN_PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
 
 MODEL_PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'hidden_dim': [16, 32, 64, 128],
-    'message_passing_steps': [1, 2, 3, 5, 10],
+    'n_message_passings': [1, 2, 3, 5, 10],
     'n_fc_layers': [1, 2, 3],
     'dropout': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
     'softmax_function': ['softmax', 'log_softmax', 'none'],

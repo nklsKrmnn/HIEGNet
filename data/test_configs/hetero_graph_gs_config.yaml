@@ -3,7 +3,7 @@ run_name: "first gs"
 model_parameters:
   hetero_gat_v2:
     hidden_dim: gs
-    message_passing_steps: gs
+    n_message_passings: gs
     n_fc_layers: 3
     norm_fc_layers: gs
     output_dim: 3
@@ -28,7 +28,7 @@ training_parameters:
   batch_shuffle: false
   patience: 100000000
   log_image_frequency: 25
-  n_folds: 5 # Set to 0 for no cross-validation
+  n_folds: 2 # Set to 0 for no cross-validation
 dataset_parameters:
   class_name: hetero_graph_dataset
   root: "/home/dascim/data/4_input_data_graphs/glob_graphs/"

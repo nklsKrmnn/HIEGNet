@@ -67,6 +67,7 @@ def grid_search(model_name: str,
                                         training_parameters=training_parameters,
                                         n_folds=n_folds)
         logger.collect_final_results()
+        logger.save_final_results()
         results.append({**model_attributes, **training_parameters, **final_scores})
 
     results = pd.DataFrame(results)
@@ -143,11 +144,14 @@ class SearchSampler:
         search_training_parameters = {k: v for k, v in self.training_parameters.items() if v == 'gs'}
         search_model_attributes = {k: v for k, v in self.model_attributes.items() if v == 'gs'}
 
+        base_epochs = self.training_parameters['epochs']
+
         # Create a list of all possible combinations of the search space
         # TODO implement function to get special search spaces
         for model_params in product(*[self.model_parameter_search_space[k] for k in search_model_attributes.keys()]):
             for train_params in product(
                     *[self.train_parameter_search_space[k] for k in search_training_parameters.keys()]):
+
                 model_attributes = self.model_attributes.copy()
                 training_parameters = self.training_parameters.copy()
 
@@ -163,9 +167,14 @@ class SearchSampler:
 
                 # Adjust epochs to learning rate
                 if 'learning_rate' in search_training_parameters:
-                    training_parameters["epochs"] = int(training_parameters['learning_rate'] / 0.0003) * 1000
+                    training_parameters["epochs"] = max(int(0.0003/training_parameters['learning_rate'] * base_epochs), 1)
 
-                self.search_space.append((model_attributes, training_parameters))
+                # Check that gcn is only used for homogenous edge types
+                hetero_edge_types = [et for et in model_attributes['msg_passing_types'].keys() if et.split('_')[0] != et.split('_')[2]]
+                if not any(model_attributes['msg_passing_types'][et] == 'gcn' for et in hetero_edge_types):
+
+                    # Append the setting to the search space
+                    self.search_space.append((model_attributes, training_parameters))
 
     def shuffle(self) -> None:
         """
