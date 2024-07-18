@@ -7,6 +7,7 @@ import os
 from datetime import datetime
 from typing import Optional
 import pandas as pd
+import copy
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -62,7 +63,7 @@ class Logger():
             config (dict): The configuration of the training.
         """
         for key, value in config.items():
-            self.write_text(f'config_{key}/{key}', str(value))
+            self.write_text(f'config_{key}', str(value))
 
     def write_model(self, model: nn.Module) -> None:
         """
@@ -275,9 +276,10 @@ class FoldLogger(Logger):
         Args:
             config (dict): The configuration of the training.
         """
+        config = copy.deepcopy(config)
         super().write_config(config)
         for key, value in config.items():
-            self.text[f'config_{key}/{key}'] = str(value)
+            self.text[f'config_{key}'] = str(value)
 
     def write_model(self, model: nn.Module) -> None:
         """
@@ -493,11 +495,11 @@ class MultiInstanceLogger:
         self.results = []
         self.text = {}
 
-    def next_logger(self) -> Logger:
+    def next_logger(self) -> CrossValLogger:
         """
         Initializes a new crossvalidation logger.
 
-
+        Returns: CrossValLogger
         """
         if self.n_folds == 0:
             self.logger = Logger(self.name)
@@ -511,16 +513,25 @@ class MultiInstanceLogger:
 
         return self.logger
 
-    def collect_final_results(self):
+    def collect_final_results(self, train_params: dict, model_params:dict) -> None:
         """
         Collects the final results of the active loggers.
 
-        This method collects the final results from the current logger and stores them into the list of results.
+        This method collects the final results from the current logger, adds train and model params from passed
+        arguments and stores them into the list of results.
+
+        Args:
+            train_params (dict): The training parameters.
+            model_params (dict): The model parameters.
         """
 
-        self.results.append(self.logger.get_final_scores())
+        results = self.logger.get_final_scores()
+        results.update(train_params)
+        results.update(model_params)
 
-    def save_final_results(self):
+        self.results.append(results)
+
+    def save_final_results(self) -> None:
         """
         Saves the final results of the active loggers to a pandas DataFrame.
 
@@ -536,7 +547,7 @@ class MultiInstanceLogger:
         Args:
             config (dict): The configuration of the training.
         """
-        self.config = config
+        self.config = copy.deepcopy(config)
 
     def write_text(self, tag: str, text: str) -> None:
         """
@@ -557,7 +568,7 @@ class MultiInstanceLogger:
         """
         self.model = model
 
-    def close(self):
+    def close(self) -> None:
         """
         Closes multi instance logger and saves the results into a pandas DataFrame.
         """

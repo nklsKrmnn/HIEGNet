@@ -1,10 +1,10 @@
 import pandas as pd
 from itertools import product
 import random
+import copy
 
 from src.utils.logger import Logger, CrossValLogger, MultiInstanceLogger
 from src.utils.constants import MODEL_PARAMETER_SEARCH_SPACE, TRAIN_PARAMETER_SEARCH_SPACE
-from src.pipelines.trainer import Trainer
 from src.utils.model_service import ModelService
 
 
@@ -46,17 +46,19 @@ def grid_search(model_name: str,
 
     print(f"Start grid search with {size}settings")
 
-
     for i in range(0, size):
         print("###################################")
-        print(f"Setting {i+1}/{size}")
+        print(f"Setting {i + 1}/{size}")
         print("###################################")
         setting = grid[i]
         model_attributes = setting[0]
         training_parameters = setting[1]
         temp_logger = logger.next_logger()
 
-        training_parameters['reported_set'] = 'val' # Always report on validation set for grid search
+        training_parameters['reported_set'] = 'val'  # Always report on validation set for grid search
+
+        temp_logger.write_text("config_model_parameters", str(model_attributes))
+        temp_logger.write_text("config_training_parameters", str(training_parameters))
 
         final_scores = cross_validation(model_name=model_name,
                                         model_attributes=model_attributes,
@@ -66,7 +68,8 @@ def grid_search(model_name: str,
                                         trainer_class=trainer_class,
                                         training_parameters=training_parameters,
                                         n_folds=n_folds)
-        logger.collect_final_results()
+
+        logger.collect_final_results(train_params=training_parameters, model_params=model_attributes)
         logger.save_final_results()
         results.append({**model_attributes, **training_parameters, **final_scores})
 
@@ -163,18 +166,20 @@ class SearchSampler:
 
                 # Adjust max lr for scheduler
                 if "lr_scheduler_params" in training_parameters.keys():
-                    training_parameters["lr_scheduler_params"]['params']["max_lr"] = training_parameters["learning_rate"] * 10
+                    training_parameters["lr_scheduler_params"]['params']["max_lr"] = training_parameters[
+                                                                                         "learning_rate"] * 10
 
                 # Adjust epochs to learning rate
                 if 'learning_rate' in search_training_parameters:
-                    training_parameters["epochs"] = max(int(0.0003/training_parameters['learning_rate'] * base_epochs), 1)
+                    training_parameters["epochs"] = max(
+                        int(0.0003 / training_parameters['learning_rate'] * base_epochs), 1)
 
                 # Check that gcn is only used for homogenous edge types
-                hetero_edge_types = [et for et in model_attributes['msg_passing_types'].keys() if et.split('_')[0] != et.split('_')[2]]
+                hetero_edge_types = [et for et in model_attributes['msg_passing_types'].keys() if
+                                     et.split('_')[0] != et.split('_')[2]]
                 if not any(model_attributes['msg_passing_types'][et] == 'gcn' for et in hetero_edge_types):
-
                     # Append the setting to the search space
-                    self.search_space.append((model_attributes, training_parameters))
+                    self.search_space.append((copy.deepcopy(model_attributes), copy.deepcopy(training_parameters)))
 
     def shuffle(self) -> None:
         """

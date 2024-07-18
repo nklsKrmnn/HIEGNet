@@ -4,7 +4,7 @@ model_parameters:
   hetero_gat_v2:
     hidden_dim: gs
     n_message_passings: gs
-    n_fc_layers: 3
+    n_fc_layers: 2
     norm_fc_layers: gs
     output_dim: 3
     dropout: gs
