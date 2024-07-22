@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "cnn_all_stains_d7"
+run_name: "cnn_all_stains_masked_d7"
 model_parameters:
   cnn:
     hidden_channels: [ 20, 30, 40, 50 ] #output dim: 361
@@ -38,8 +38,8 @@ dataset_parameters:
   random_seed: 123
   onehot_targets: true
   hot_load: true
-  image_paths_file: "/home/niklas/drive/data/3_extracted_features/EXC/image_paths.csv"
-  #image_paths_file: "/home/dascim/data/3_extracted_features/EXC/image_paths.csv"
+  image_paths_file: "/home/niklas/drive/data/3_extracted_features/EXC/image_masked_paths.csv"
+  #image_paths_file: "/home/dascim/data/3_extracted_features/EXC/image_masked_paths.csv"
   annotations_path: "/home/niklas/drive/data/3_extracted_features/EXC/ann/"
   #annotations_path: "/home/dascim/data/3_extracted_features/EXC/ann/"
   feature_list:
