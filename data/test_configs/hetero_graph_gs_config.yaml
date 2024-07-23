@@ -46,7 +46,7 @@ dataset_parameters:
     k: 0 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
-    radius: 5 # Options: "k", "radius", ""
+    k: 5 # Options: "k", "radius", ""
   train_patients:
     - 001
   random_seed: 123
