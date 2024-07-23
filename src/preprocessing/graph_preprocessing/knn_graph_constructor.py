@@ -134,6 +134,9 @@ def delaunay_graph_construction(X: np.array) -> csr_matrix:
     max_distance = np.max(data)
     data = np.array(data) / max_distance if max_distance > 0 else np.array(data)
 
+    # Invert the distances to get weights
+    data = 1 - data
+
     # Create the sparse matrix
     A = csr_matrix((data, (row_indices, col_indices)), shape=(n, n))
 
@@ -166,6 +169,9 @@ def radius_based_graph_construction(X: np.array, radius: float) -> csr_matrix:
     if A.data.size > 0:
         max_distance = A.data.max()
         A.data = A.data / max_distance if max_distance > 0 else A.data
+
+        # Invert the distances to get weights
+        A.data = 1 - A.data
 
     return A
 

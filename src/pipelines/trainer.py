@@ -412,9 +412,11 @@ class Trainer:
             input_graph_feature = graph_data.x_dict
         input_graph_edge_index = graph_data.edge_index if not isinstance(graph_data[0],
                                                                          HeteroData) else graph_data.edge_index_dict
+        input_graph_attr = graph_data.edge_attr if not isinstance(graph_data[0],
+                                                                  HeteroData) else graph_data.edge_attr_dict
         target = graph_data.y
 
-        prediction = self.model.forward(input_graph_feature, input_graph_edge_index)
+        prediction = self.model.forward(input_graph_feature, input_graph_edge_index, input_graph_attr)
         loss = self.loss(prediction[mask], target[mask])
 
         if len(graph_data.y.shape) == 1:

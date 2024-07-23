@@ -11,6 +11,7 @@ from src.models.model_utils import init_norm_layer
 class HeteroMessagePassingLayer(nn.Module):
     def __init__(self, output_dim, edge_types, dropout=0.5, norm: str = None):
         super(HeteroMessagePassingLayer, self).__init__()
+        self.edge_types = edge_types
 
         hetero_conv_dict = {}
         for edge_type, msg_passing_type in edge_types.items():
@@ -26,12 +27,22 @@ class HeteroMessagePassingLayer(nn.Module):
                     "nn": nn.LazyLinear(output_dim),
                     "train_eps": True
                 }
-            else:
+
+            elif msg_passing_type == "gcn":
                 params = {
                     "in_channels": input_dim,
                     "out_channels": output_dim,
                     "add_self_loops": add_self_loops
                 }
+            elif msg_passing_type == "gat_v2":
+                params = {
+                    "in_channels": input_dim,
+                    "out_channels": output_dim,
+                    "add_self_loops": add_self_loops,
+                    "edge_dim": 1
+                }
+            else:
+                raise ValueError(f"Message passing type {msg_passing_type} not supported.")
 
             # Initialize message passing layer
             message_passing_class = MESSAGE_PASSING_MAPPING[msg_passing_type]
@@ -47,9 +58,16 @@ class HeteroMessagePassingLayer(nn.Module):
             self.norm = nn.Identity()
         self.dropout_rate = dropout
 
-    def forward(self, x_dict, edge_index_dict):
+    def forward(self, x_dict, edge_index_dict, edge_attr_dict=None):
+        input_msg_passing = {'x_dict': x_dict, 'edge_index_dict': edge_index_dict, 'edge_attr_dict': {},
+                             'edge_weight_dict': {}}
+        for edge_type, msg_passing_type in self.edge_types.items():
+            if msg_passing_type == "gat_v2":
+                input_msg_passing['edge_attr_dict'].update({edge_type: edge_attr_dict[edge_type]})
+            if msg_passing_type == "gcn":
+                input_msg_passing['edge_weight_dict'].update({edge_type: edge_attr_dict[edge_type]})
 
-        x_dict = self.message_passing_layer(x_dict, edge_index_dict)
+        x_dict = self.message_passing_layer(**input_msg_passing)
         x_dict = {key: self.norm(x) for key, x in x_dict.items()}
         x_dict = {key: F.relu(x) for key, x in x_dict.items()}
         # x_dict = {key: F.dropout(x, p=self.dropout_rate, training=self.training) for key, x in x_dict.items()}
@@ -57,7 +75,7 @@ class HeteroMessagePassingLayer(nn.Module):
         return x_dict
 
 
-class HeteroGATv2(nn.Module):
+class HeteroGNN(nn.Module):
     def __init__(self,
                  output_dim: int,
                  cell_types: list[str],
@@ -70,7 +88,7 @@ class HeteroGATv2(nn.Module):
                  norm: str = None,
                  norm_fc_layers: str = None,
                  softmax_function: "str" = "softmax"):
-        super(HeteroGATv2, self).__init__()
+        super(HeteroGNN, self).__init__()
         self.message_passing_layers = nn.ModuleList()
         self.fc_layers = nn.ModuleList()
         self.dropout_rate = dropout
@@ -87,7 +105,7 @@ class HeteroGATv2(nn.Module):
         for cell_type in cell_types:
             edge_types[(cell_type, 'to', 'glomeruli')] = msg_passing_types['cell_to_glom']
             for cell_type2 in cell_types:
-                edge_types[(cell_type, 'to', cell_type2)] = msg_passing_types['cell_to_glom']
+                edge_types[(cell_type, 'to', cell_type2)] = msg_passing_types['cell_to_cell']
         node_types = ['glomeruli'] + cell_types
 
         # FC layer to unify input dimensions
@@ -126,7 +144,7 @@ class HeteroGATv2(nn.Module):
         # Output layer
         self.output_layer = nn.Linear(hidden_dims[-1], output_dim)
 
-    def forward(self, x_dict, edge_index_dict):
+    def forward(self, x_dict, edge_index_dict, edge_attr_dict=None):
         fc_layer_index = 0
 
         # Apply one FC to unify number of featues for all node types
@@ -135,7 +153,7 @@ class HeteroGATv2(nn.Module):
         fc_layer_index += 1
 
         for i, message_passing_layer in enumerate(self.message_passing_layers):
-            x_dict = message_passing_layer(x_dict, edge_index_dict)
+            x_dict = message_passing_layer(x_dict, edge_index_dict, edge_attr_dict)
 
             # Apply fully connected layers between GAT layers
             for _ in range(self.n_fc_layers):

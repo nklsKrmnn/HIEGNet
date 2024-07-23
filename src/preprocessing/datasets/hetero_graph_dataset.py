@@ -95,8 +95,13 @@ class HeteroGraphDataset(GlomGraphDataset):
             df_glom_connection = df_cells_exploded.merge(df_glom_connection, right_on='glom_index',
                                                          left_on='glom_index', how='inner')
             cell_glom_edge_index = (df_glom_connection['cell_row'], df_glom_connection['glom_row'])
-            cell_glom_edge_weights = torch.tensor(df_glom_connection['distance'].values, dtype=torch.float).unsqueeze(1)
 
+            # Create edge weights
+            cell_glom_edge_distances = torch.tensor(df_glom_connection['distance'].values, dtype=torch.float).unsqueeze(1)
+            # Norm and invert distances to get weights
+            cell_glom_edge_weights = 1 - cell_glom_edge_distances / cell_glom_edge_distances.max()
+
+            # Add cell to glom edge index and weights to data
             data[self.cell_types[i], 'to', 'glomeruli'].edge_index = torch.tensor(cell_glom_edge_index,
                                                                                   dtype=torch.long)
             data[self.cell_types[i], 'to', 'glomeruli'].edge_attr = cell_glom_edge_weights
