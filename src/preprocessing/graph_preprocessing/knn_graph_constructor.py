@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.sparse import csr_matrix
-from sklearn.neighbors import NearestNeighbors
+from sklearn.neighbors import NearestNeighbors, radius_neighbors_graph
 import networkx as nx
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -159,31 +159,13 @@ def radius_based_graph_construction(X: np.array, radius: float) -> csr_matrix:
     csr_matrix
         A sparse matrix of shape (n, n) representing the adjacency matrix of the graph.
     """
-    n = X.shape[0]
-
-    # Create lists for row indices, column indices, and data (distances)
-    row_indices = []
-    col_indices = []
-    data = []
-
-    # Calculate distances and connect nodes within the specified radius
-    for i in range(n):
-        for j in range(i + 1, n):
-            dist = np.linalg.norm(X[i] - X[j])
-            if dist <= radius:
-                row_indices.append(i)
-                col_indices.append(j)
-                data.append(dist)
-                row_indices.append(j)
-                col_indices.append(i)
-                data.append(dist)
+    # Compute the radius neighbors graph
+    A = radius_neighbors_graph(X, radius, mode='distance', include_self=False)
 
     # Normalize the distances to the range [0, 1]
-    max_distance = np.max(data)
-    data = np.array(data) / max_distance if max_distance > 0 else np.array(data)
-
-    # Create the sparse matrix
-    A = csr_matrix((data, (row_indices, col_indices)), shape=(n, n))
+    if A.data.size > 0:
+        max_distance = A.data.max()
+        A.data = A.data / max_distance if max_distance > 0 else A.data
 
     return A
 
