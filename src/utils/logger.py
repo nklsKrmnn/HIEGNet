@@ -528,6 +528,7 @@ class MultiInstanceLogger:
         results = self.logger.get_final_scores()
         results.update(train_params)
         results.update(model_params)
+        results.update({'name': f'{self.logger.start_time_str}_{self.name}'})
 
         self.results.append(results)
 
