@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "first gs"
+run_name: "gs_rad_graph"
 model_parameters:
   hetero_gat_v2:
     hidden_dim: gs
@@ -45,8 +45,8 @@ dataset_parameters:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 0 # Options: "k", "radius", ""
   cell_graph:
-    method: "knn" # Options: "knn", "radius", "delaunay"
-    k: 5 # Options: "k", "radius", ""
+    method: "radius" # Options: "knn", "radius", "delaunay"
+    radius: 80 # Options: "k", "radius", ""
   train_patients:
     - 001
   random_seed: 123
