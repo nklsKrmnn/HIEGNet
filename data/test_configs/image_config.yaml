@@ -1,10 +1,10 @@
 use_gpu: true
-run_name: "cnn_all_stains_masked_d7"
+run_name: "cnn_stain25_glom_isolated_d7"
 model_parameters:
   cnn:
     hidden_channels: [ 20, 30, 40, 50 ] #output dim: 361
     kernel_size: 4
-    input_channels: 12
+    input_channels: 3
     stride: 2
     mlp_params:
       input_dim: 150
@@ -38,12 +38,12 @@ dataset_parameters:
   random_seed: 123
   onehot_targets: true
   hot_load: true
-  image_paths_file: "/home/niklas/drive/data/3_extracted_features/EXC/image_masked_paths.csv"
-  #image_paths_file: "/home/dascim/data/3_extracted_features/EXC/image_masked_paths.csv"
-  annotations_path: "/home/niklas/drive/data/3_extracted_features/EXC/ann/"
-  #annotations_path: "/home/dascim/data/3_extracted_features/EXC/ann/"
+  #image_paths_file: "/home/niklas/drive/data/3_extracted_features/EXC/image_glom_iso_paths.csv"
+  image_paths_file: "/home/dascim/data/3_extracted_features/EXC/image_glom_iso_paths.csv"
+  #annotations_path: "/home/niklas/drive/data/3_extracted_features/EXC/ann/"
+  annotations_path: "/home/dascim/data/3_extracted_features/EXC/ann/"
   feature_list:
     - 'path_25'
-    - 'path_106'
-    - 'path_107'
-    - 'path_108'
+    #- 'path_106'
+    #- 'path_107'
+    #- 'path_108'
