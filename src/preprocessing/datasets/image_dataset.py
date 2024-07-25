@@ -9,7 +9,9 @@ from torchvision.io import read_image
 import numpy as np
 
 from src.preprocessing.datasets.dataset_utils.dataset_utils import list_annotation_file_names
+from src.preprocessing.datasets.dataset_utils.image_utils import load_images
 from src.preprocessing.datasets.hybrid_graph_dataset import HybridGraphDataset
+from src.preprocessing.feature_preprocessing import get_image_paths
 from src.utils.path_io import get_path_up_to
 
 ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")
@@ -25,7 +27,7 @@ class GlomImageDataset(HybridGraphDataset):
                  test_split: float = 0.0,
                  train_patients: list[str] = [],
                  hot_load: bool = False,
-                 onehot_targets:bool=True):
+                 onehot_targets: bool = True):
 
         self.test_split = test_split
         self.val_split = validation_split
@@ -38,7 +40,6 @@ class GlomImageDataset(HybridGraphDataset):
         self.feature_list = feature_list
         if self.hot_load:
             self.x_hot = []
-
 
     def process(self) -> None:
 
@@ -53,22 +54,21 @@ class GlomImageDataset(HybridGraphDataset):
 
         self.target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
         self.targets = self.create_targets(df, self.target_labels)
-        self.img_paths = self.create_feature_tensor(df, [], self.feature_list)
+        self.img_paths = self.create_features(df, [], self.feature_list)
 
         self.create_set_indices()
 
-    def create_feature_tensor(self,
-                              df: pd.DataFrame,
-                              train_indices: list[int],
-                              feature_list: list[str]) -> list[list[str | Any]]:
+    def create_features(self,
+                        df: pd.DataFrame,
+                        train_indices: list[int],
+                        feature_list: list[str]) -> list[list[str | Any]]:
 
         # Get paths to images
-        x = [[ROOT_DIR + df[path].iloc[i] for path in self.feature_list] for i in
-                 range(df.shape[0])]
+        x = get_image_paths(df, feature_list, ROOT_DIR)
 
         # Save images in instance variable if hot load is enabled
         if self.hot_load:
-            self.x_hot=self.load_images(x)
+            self.x_hot = load_images(x)
 
         return x
 
@@ -87,13 +87,15 @@ class GlomImageDataset(HybridGraphDataset):
         # random split
         indices = list(range(dataset_size))
         if self.test_split > 0:
-            train_indices, test_indices = train_test_split(indices, test_size=self.test_split, random_state=self.random_seed,
+            train_indices, test_indices = train_test_split(indices, test_size=self.test_split,
+                                                           random_state=self.random_seed,
                                                            stratify=self.targets)
         else:
             train_indices = indices
             test_indices = []
         val_split_correction = self.test_split * self.val_split
-        train_indices, validation_indices = train_test_split(train_indices, test_size=self.val_split - val_split_correction,
+        train_indices, validation_indices = train_test_split(train_indices,
+                                                             test_size=self.val_split - val_split_correction,
                                                              random_state=self.random_seed,
                                                              stratify=self.targets[train_indices])
         if test_indices == []:
@@ -172,6 +174,6 @@ class GlomImageDataset(HybridGraphDataset):
         if self.hot_load:
             image = self.x_hot[idx]
         else:
-            image = self.load_images([self.img_paths[idx]])[0]
+            image = load_images([self.img_paths[idx]])[0]
         label = self.targets[idx]
         return image, label
