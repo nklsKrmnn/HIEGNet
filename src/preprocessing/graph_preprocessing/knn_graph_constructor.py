@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 from sklearn.neighbors import NearestNeighbors, radius_neighbors_graph
+from scipy.spatial import Delaunay
 import networkx as nx
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -84,11 +85,6 @@ def knn_weighted_graph_construction(X: np.array, k: int) -> csr_matrix:
 
 
 
-import numpy as np
-from scipy.spatial import Delaunay
-from scipy.sparse import csr_matrix
-
-
 def delaunay_graph_construction(X: np.array) -> csr_matrix:
     """
     Construct a graph from the data points in X using Delaunay triangulation.
@@ -142,8 +138,6 @@ def delaunay_graph_construction(X: np.array) -> csr_matrix:
 
     return A
 
-import numpy as np
-from scipy.sparse import csr_matrix
 
 def radius_based_graph_construction(X: np.array, radius: float) -> csr_matrix:
     """
@@ -172,6 +166,8 @@ def radius_based_graph_construction(X: np.array, radius: float) -> csr_matrix:
 
         # Invert the distances to get weights
         A.data = 1 - A.data
+
+    A.data[A.data == 0] = 1e-10
 
     return A
 
@@ -202,7 +198,7 @@ def graph_construction(X: np.array, method: str, **kwargs) -> csr_matrix:
     else:
         raise ValueError(f"Unknown graph construction method: {method}")
 
-    edge_index = sparse_matrix.nonzero() #np.argwhere(sparse_matrix > 1).T
+    edge_index = sparse_matrix.nonzero()
     edge_weights = sparse_matrix.data
     return edge_index, edge_weights
 
