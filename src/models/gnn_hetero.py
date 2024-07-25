@@ -1,10 +1,8 @@
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, GATv2Conv, HeteroConv
+from torch_geometric.nn import HeteroConv
 
 from src.models.model_constants import MESSAGE_PASSING_MAPPING
-from src.models.gnn_models import MessagePassingLayer
 from src.models.model_utils import init_norm_layer
 
 

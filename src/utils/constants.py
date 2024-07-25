@@ -2,32 +2,23 @@ from typing import Final
 from itertools import product
 
 from src.models.cnn import CNN
-from src.models.gnn_cnn_hyrbid import GnnCnnHybrid
+from src.models.gnn_cnn_hyrbid import GnnCnnHybrid, HeteroHybridGNN
 from src.models.gnn_hetero import HeteroGNN
 from src.models.gnn_models import GCN, GCNJumpingKnowledge, GATv2
+from src.models.mlp import MLP
 from src.models.pretrained_cnn import initialize_resnet
 from src.preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
-from src.models.mlp import MLP
+from src.preprocessing.datasets.hetero_hybrid_graph_dataset import HeteroHybridGraphDataset
 from src.preprocessing.datasets.hybrid_graph_dataset import HybridGraphDataset
 from src.preprocessing.datasets.image_dataset import GlomImageDataset
 from src.preprocessing.datasets.hetero_graph_dataset import HeteroGraphDataset
-
-MODEL_NAME_MAPPING: Final[dict[str, any]] = {
-    "gcn": GCN,
-    "hybrid": GnnCnnHybrid,
-    "mlp": MLP,
-    "cnn": CNN,
-    "gcn_jk": GCNJumpingKnowledge,
-    "gat_v2": GATv2,
-    "resnet": initialize_resnet,
-    "hetero_gat_v2": HeteroGNN
-}
 
 DATASET_NAME_MAPPING: Final[dict[str, any]] = {
     "glom_graph_dataset": GlomGraphDataset,
     "image_dataset": GlomImageDataset,
     "hetero_graph_dataset": HeteroGraphDataset,
-    "hybrid_graph_dataset": HybridGraphDataset
+    "hybrid_graph_dataset": HybridGraphDataset,
+    "hetero_hybrid_graph_dataset": HeteroHybridGraphDataset
 }
 
 REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {
@@ -55,4 +46,15 @@ MODEL_PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
                           list(product(*[['gat_v2', 'gcn', 'gin'] for i in range(3)]))],
     'norm_fc_layers': ['batch', 'layer', 'none'],
     'norm': ['batch', 'layer', 'none']
+}
+MODEL_NAME_MAPPING: Final[dict[str, any]] = {
+    "gcn": GCN,
+    "hybrid": GnnCnnHybrid,
+    "mlp": MLP,
+    "cnn": CNN,
+    "gcn_jk": GCNJumpingKnowledge,
+    "gat_v2": GATv2,
+    "resnet": initialize_resnet,
+    "hetero_gnn": HeteroGNN,
+    "hetero_hybrid_gnn": HeteroHybridGNN
 }

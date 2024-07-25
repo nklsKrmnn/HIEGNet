@@ -11,14 +11,12 @@ from torch_geometric.data import Dataset, Data
 from sklearn.model_selection import StratifiedKFold
 
 from src.preprocessing.datasets.dataset_utils.dataset_utils import list_annotation_file_names, \
-    list_neighborhood_image_paths, get_train_val_test_indices
+    get_train_val_test_indices, create_mask
 from src.preprocessing.feature_preprocessing import feature_preprocessing
 from src.preprocessing.graph_preprocessing.knn_graph_constructor import graph_construction
 from src.utils.path_io import get_path_up_to
 
 ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")
-
-
 
 
 class GlomGraphDataset(Dataset):
@@ -34,7 +32,6 @@ class GlomGraphDataset(Dataset):
         test_split (float): The fraction of the data that is used for testing. Default is 0.2.
         random_seed (int, optional): The random seed for the train-test split. Default is None.
     """
-
 
     def __init__(self,
                  root,
@@ -77,7 +74,7 @@ class GlomGraphDataset(Dataset):
         self.processed_file_name = processed_file_name
         self.feature_file_path = feature_file_path
         self.test_split = test_split if test_patients == [] else 0.0
-        self.val_split = validation_split if (validation_patients == [] or validation_split==1.0) else 0.0
+        self.val_split = validation_split if (validation_patients == [] or validation_split == 1.0) else 0.0
         self.train_patients = train_patients
         self.validation_patients = validation_patients if validation_patients != [] else train_patients
         self.test_patients = test_patients if test_patients != [] else validation_patients
@@ -152,8 +149,8 @@ class GlomGraphDataset(Dataset):
             df_patient.dropna(subset=self.feature_list, inplace=True)
 
             # threshold for minimum number of data points and check if patient is in train or test set
-            if (df_patient.shape[0] > 10) and (patient in self.train_patients + self.validation_patients + self.test_patients):
-
+            if (df_patient.shape[0] > 10) and (
+                    patient in self.train_patients + self.validation_patients + self.test_patients):
                 # Create the data object for each graph
                 data = self.create_graph_object(df_patient)
 
@@ -165,7 +162,6 @@ class GlomGraphDataset(Dataset):
                 # Save file names of processed files and if patient is in train/test set and save in settings dict
                 set = 'train' if patient in self.train_patients else 'validation' if patient in self.validation_patients else 'test'
                 file_names.append({"file_name": file_name, "set": set})
-
 
         with open(os.path.join(self.processed_dir, f"{self.processed_file_name}_filenames.pkl"), 'wb') as handle:
             pickle.dump(file_names, handle)
@@ -203,13 +199,13 @@ class GlomGraphDataset(Dataset):
                                                                               self.test_patients,
                                                                               self.validation_patients)
 
-        data.train_mask = self.create_mask(len(y), train_indices)
-        data.val_mask = self.create_mask(len(y), val_indices)
-        data.test_mask = data.val_mask if (self.test_split == 0.0) and (self.test_patients == []) else self.create_mask(
+        data.train_mask = create_mask(len(y), train_indices)
+        data.val_mask = create_mask(len(y), val_indices)
+        data.test_mask = data.val_mask if (self.test_split == 0.0) and (self.test_patients == []) else create_mask(
             len(y), test_indices)
 
         # Create the node features in tensor
-        x = self.create_feature_tensor(df_patient, train_indices, self.feature_list)
+        x = self.create_features(df_patient, train_indices, self.feature_list)
 
         data.x = x
         data.y = y
@@ -219,20 +215,7 @@ class GlomGraphDataset(Dataset):
 
         return data
 
-    def create_mask(self, num_nodes, indices) -> torch.tensor:
-        """
-        Create a mask for the train, validation or test data.
-
-        Creates a torch mask tensor with True values for the indices of the given indices list.
-        :param num_nodes: Number of nodes in mask
-        :param indices: Indices to be True
-        :return: Mask
-        """
-        mask = torch.zeros(num_nodes, dtype=torch.bool)
-        mask[indices] = True
-        return mask
-
-    def create_targets(self, df_patient: pd.DataFrame, target_labels:list[str]) -> torch.Tensor:
+    def create_targets(self, df_patient: pd.DataFrame, target_labels: list[str]) -> torch.Tensor:
         """
         Creates target tensor for patient.
 
@@ -257,13 +240,14 @@ class GlomGraphDataset(Dataset):
             y = torch.tensor(y.to_numpy(), dtype=torch.long)
 
         return y
-    def create_feature_tensor(self, df: pd.DataFrame, train_indices: list[int], feature_list: list[str]) -> torch.Tensor:
-        # Get numerical features
-        x = df[feature_list]
-        x = feature_preprocessing(x, train_indices, **self.preprocessing_params)
-        x = torch.tensor(x.to_numpy(), dtype=torch.float)
 
+    def create_features(self, df: pd.DataFrame,
+                        train_indices: list[int],
+                        feature_list: list[str]) -> torch.Tensor:
+        # Get numerical features
+        x = feature_preprocessing(df, feature_list, train_indices, **self.preprocessing_params)
         return x
+
     @property
     def image_size(self):
         return None
@@ -308,7 +292,6 @@ class GlomGraphDataset(Dataset):
         class_weights_tensor = torch.tensor(class_weights, dtype=torch.float)
         return class_weights_tensor
 
-
     def create_folds(self, n_folds: int) -> None:
         """
         Create the n folds for the dataset.
@@ -335,18 +318,18 @@ class GlomGraphDataset(Dataset):
             y_data.append(pd.DataFrame(graph.y.numpy(), columns=cols))
             y_data[i]["term"] = y_data[i].idxmax(axis=1)
             y_data[i]['graph'] = i
-            
+
             # Get mask for train and val data
             mask = np.zeros(len(graph.y))
-            mask[graph.train_mask+graph.val_mask] = 1
+            mask[graph.train_mask + graph.val_mask] = 1
             masks.append(mask)
-            
+
         # Concatenate y data and masks
         train_val_mask = np.concatenate(masks)
         y_data = pd.concat(y_data, axis=0)
-        
+
         # Apply mask and keep old index to identify samples later in the whole graph
-        train_val_data = y_data[train_val_mask==1]
+        train_val_data = y_data[train_val_mask == 1]
         train_val_data = train_val_data.reset_index()
 
         # Create StratifiedKFold object
@@ -419,7 +402,7 @@ class GlomGraphDataset(Dataset):
         if not isinstance(item.x[0], torch.Tensor):
             images = []
             for paths in item.x:
-                slices=[]
+                slices = []
                 for slice in paths:
                     slices.append(cv2.imread(slice))
                 img = np.concatenate(slices, axis=2)

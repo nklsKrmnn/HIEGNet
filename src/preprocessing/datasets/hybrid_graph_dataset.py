@@ -6,10 +6,13 @@ import torch
 import os
 import time
 
+from src.preprocessing.datasets.dataset_utils.image_utils import load_images
 from src.preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
+from src.preprocessing.feature_preprocessing import get_image_paths
 from src.utils.path_io import get_path_up_to
 
 ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")
+
 
 class HybridGraphDataset(GlomGraphDataset):
 
@@ -20,21 +23,22 @@ class HybridGraphDataset(GlomGraphDataset):
 
         super().__init__(**kwargs)
 
-    def create_feature_tensor(self,
-                              df: pd.DataFrame,
-                              train_indices: list[int],
-                              feature_list: list[str]) -> list[list[str | Any]]:
-
+    def create_image_input_tensor(self, df: pd.DataFrame, feature_list: list[str]) -> list:
         # Get paths to images
-        x = [[ROOT_DIR + df[path].iloc[i] for path in self.feature_list] for i in
-                 range(df.shape[0])]
+        x = get_image_paths(df, feature_list, ROOT_DIR)
 
         # Save images in instance variable if hot load is enabled
         if self.hot_load:
-            images = self.load_images(x)
+            images = load_images(x)
             self.x_hot.append(images)
 
         return x
+
+    def create_features(self,
+                        df: pd.DataFrame,
+                        train_indices: list[int],
+                        feature_list: list[str]) -> list[list[str | Any]]:
+        return self.create_image_input_tensor(df, feature_list)
 
     @property
     def image_size(self):
@@ -44,25 +48,12 @@ class HybridGraphDataset(GlomGraphDataset):
         img = cv2.imread(first_graph.x[0][0])
         return img.shape[0]
 
-    def load_images(self, paths) -> list[torch.tensor]:
-        """
-        Load images from paths.
-        :param paths: List of tuples of paths to images.
-        :return: List of images.
-        """
-        images = []
-        for glom in paths:
-            slices = []
-            for slice in glom:
-                slices.append(cv2.imread(slice))
-            img = np.concatenate(slices, axis=2)
-            images.append(img)
-
-        # Transform to tensor
-        images = np.array(images)
-        images = torch.tensor(images, dtype=torch.float)
-        images = images.permute(0, 3, 1, 2)
-
+    def get_images_from_paths(self, idx, x):
+        # Load images
+        if self.hot_load:
+            images = self.x_hot[idx]
+        else:
+            images = load_images(x)
         return images
 
     def get(self, idx):
@@ -70,10 +61,6 @@ class HybridGraphDataset(GlomGraphDataset):
         item = torch.load(os.path.join(self.processed_dir, self.processed_file_names[idx]))
 
         # Load images
-        if self.hot_load:
-            images = self.x_hot[idx]
-        else:
-            images = self.load_images(item.x)
-        item.x = images
+        item.x = self.get_images_from_paths(idx, item.x)
 
         return item

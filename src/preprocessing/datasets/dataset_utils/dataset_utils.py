@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import torch
 from sklearn.model_selection import train_test_split
 
 
@@ -49,3 +50,17 @@ def get_train_val_test_indices(y, test_split, val_split, random_seed, test_patie
         val_indices = np.arange(len(y)) if val_patients else np.array([])
 
     return train_indices, val_indices, test_indices
+
+
+def create_mask(num_nodes, indices) -> torch.tensor:
+    """
+    Create a mask for the train, validation or test data.
+
+    Creates a torch mask tensor with True values for the indices of the given indices list.
+    :param num_nodes: Number of nodes in mask
+    :param indices: Indices to be True
+    :return: Mask
+    """
+    mask = torch.zeros(num_nodes, dtype=torch.bool)
+    mask[indices] = True
+    return mask

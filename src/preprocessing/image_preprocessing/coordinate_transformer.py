@@ -4,6 +4,7 @@ from typing import Final
 
 OFFSET_THRESHOLD: Final[float] = 10.0
 
+
 class CoordinateTransformater:
     """
     Class for transforming coordinates from a origin to a target coordinate system
@@ -22,6 +23,7 @@ class CoordinateTransformater:
         target_x_offset (int): The offset in x-direction from origin to target space. Default is 0.
         target_y_offset (int): The offset in y-direction from origin to target space. Default is 0.
     """
+
     def __init__(self, magnification: float,
                  rotation: int,
                  mirror_x: bool = False,
@@ -73,8 +75,8 @@ class CoordinateTransformater:
 
         # Translation by the distance between origin of the origin and the target space.
         offset_matrix = np.array([[1, 0, self.target_x_offset],
-                                            [0, 1, self.target_y_offset],
-                                            [0, 0, 1]])
+                                  [0, 1, self.target_y_offset],
+                                  [0, 0, 1]])
 
         # Y-axis is mirrored over X-axis.
         mirror_x = -1 if self.mirror_x else 1
@@ -163,4 +165,3 @@ class CoordinateTransformater:
 
         # Return the matching indices for the origin coordinates
         return matched_points
-

@@ -7,7 +7,7 @@ import os
 
 from torch_geometric.data import HeteroData
 
-from src.preprocessing.datasets.dataset_utils.dataset_utils import get_train_val_test_indices
+from src.preprocessing.datasets.dataset_utils.dataset_utils import get_train_val_test_indices, create_mask
 from src.preprocessing.graph_preprocessing.knn_graph_constructor import graph_construction
 from src.preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
 from src.utils.path_io import get_path_up_to
@@ -58,13 +58,13 @@ class HeteroGraphDataset(GlomGraphDataset):
                                                                               self.test_patients,
                                                                               self.validation_patients)
 
-        data.train_mask = self.create_mask(len(y), train_indices)
-        data.val_mask = self.create_mask(len(y), val_indices)
-        data.test_mask = data.val_mask if (self.test_split == 0.0) and (self.test_patients == []) else self.create_mask(
+        data.train_mask = create_mask(len(y), train_indices)
+        data.val_mask = create_mask(len(y), val_indices)
+        data.test_mask = data.val_mask if (self.test_split == 0.0) and (self.test_patients == []) else create_mask(
             len(y), test_indices)
 
         # Create the node features in tensor
-        data["glomeruli"].x = self.create_feature_tensor(df_patient, train_indices, self.feature_list)
+        data["glomeruli"].x = self.create_features(df_patient, train_indices, self.feature_list)
 
         data.y = y
 
@@ -97,7 +97,8 @@ class HeteroGraphDataset(GlomGraphDataset):
             cell_glom_edge_index = (df_glom_connection['cell_row'], df_glom_connection['glom_row'])
 
             # Create edge weights
-            cell_glom_edge_distances = torch.tensor(df_glom_connection['distance'].values, dtype=torch.float).unsqueeze(1)
+            cell_glom_edge_distances = torch.tensor(df_glom_connection['distance'].values, dtype=torch.float).unsqueeze(
+                1)
             # Norm and invert distances to get weights
             cell_glom_edge_weights = 1 - cell_glom_edge_distances / cell_glom_edge_distances.max()
 
@@ -107,10 +108,10 @@ class HeteroGraphDataset(GlomGraphDataset):
             data[self.cell_types[i], 'to', 'glomeruli'].edge_attr = cell_glom_edge_weights
 
             # Get node features
-            data[self.cell_types[i]].x = self.create_feature_tensor(df=df_cell_nodes,
-                                                                    train_indices=list(range(0, len(df_cell_nodes))),
-                                                                    feature_list=[c for c in df_cell_nodes.columns if
-                                                                                  c.endswith('_node_feature')])
+            data[self.cell_types[i]].x = self.create_features(df=df_cell_nodes,
+                                                              train_indices=list(range(0, len(df_cell_nodes))),
+                                                              feature_list=[c for c in df_cell_nodes.columns if
+                                                                            c.endswith('_node_feature')])
 
         return data
 

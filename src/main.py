@@ -73,12 +73,20 @@ def main() -> None:
     with open(args.config, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
+    # Check validity of the config file values
+    # Check if targets are one-hot encoded if loss is cross entropy
+    ce = config["training_parameters"]["loss"] == "crossentropy"
+    oh = config["dataset_parameters"]["onehot_targets"]
+    if (ce and not oh) or (not ce and oh):
+        raise ValueError("Targets must be one-hot encoded for cross entropy loss and vice versa.")
+
     # Pop first parameter
     n_folds = config["training_parameters"].pop("n_folds")
     run_name = config.pop("run_name")
 
     # Initialize logger
-    logger = MultiInstanceLogger(name=run_name, n_folds=n_folds) if args.pipeline == GRID_SEARCH_COMMAND else Logger(run_name) if n_folds == 0 else CrossValLogger(n_folds, run_name)
+    logger = MultiInstanceLogger(name=run_name, n_folds=n_folds) if args.pipeline == GRID_SEARCH_COMMAND else Logger(
+        run_name) if n_folds == 0 else CrossValLogger(n_folds, run_name)
     logger.write_config(config)
 
     # Setting up GPU based on availability and usage preference
@@ -116,7 +124,7 @@ def main() -> None:
         dataset.process()
 
     # Log which patients are used in the dataset
-    #logger.write_text("patient_settings", str(dataset.patient_settings))
+    # logger.write_text("patient_settings", str(dataset.patient_settings))
 
     if args.trainer == 'graph':
         trainer_class = Trainer
@@ -129,7 +137,7 @@ def main() -> None:
         model_attributes["image_size"] = dataset.image_size
         model_attributes["device"] = device
 
-    if (args.pipeline==TRAIN_COMMAND) & (n_folds == 0):
+    if (args.pipeline == TRAIN_COMMAND) & (n_folds == 0):
         model = ModelService.create_model(model_name=model_name, model_attributes=model_attributes)
         logger.write_model(model)
 
@@ -143,7 +151,7 @@ def main() -> None:
         trainer.start_training()
         trainer.save_model()
 
-    if (args.pipeline==TRAIN_COMMAND) & (n_folds > 0):
+    if (args.pipeline == TRAIN_COMMAND) & (n_folds > 0):
         cross_validation(model_name=model_name,
                          model_attributes=model_attributes,
                          logger=logger,
