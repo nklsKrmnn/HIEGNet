@@ -38,12 +38,12 @@ TRAIN_PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
 
 MODEL_PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'hidden_dim': [16, 32, 64],
-    'n_message_passings': [1, 3, 5, 10],
+    'n_message_passings': [1, 2, 3, 4, 5],
     'n_fc_layers': [1, 2, 3],
-    'dropout': [0.2, 0.4, 0.6, 0.8],
+    'dropout': [0.2, 0.3, 0.4, 0.5],
     'softmax_function': ['softmax', 'log_softmax', 'none'],
     'msg_passing_types': [{k: t[i] for i, k in enumerate(["glom_to_glom", "cell_to_glom", "cell_to_cell"])} for t in
-                          list(product(*[['gat_v2', 'gcn', 'gin'] for i in range(3)]))],
+                          list(product(*[['gat_v2', 'gcn', 'gine'] for i in range(3)]))],
     'norm_fc_layers': ['batch', 'layer', 'none'],
     'norm': ['batch', 'layer', 'none']
 }

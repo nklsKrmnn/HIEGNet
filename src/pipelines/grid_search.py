@@ -178,12 +178,16 @@ class SearchSampler:
                 hetero_edge_types = [et for et in model_attributes['msg_passing_types'].keys() if
                                      et.split('_')[0] != et.split('_')[2]]
                 no_hetero_gcn = not any(model_attributes['msg_passing_types'][et] == 'gcn' for et in hetero_edge_types)
+                # Replace gcn with rgcn for heterogenous edge types
+                #for et in hetero_edge_types:
+                #    if model_attributes['msg_passing_types'][et] == 'gcn':
+                #        model_attributes['msg_passing_types'][et] = 'rgcn'
 
                 # Check if dropout is too high for number of message passing steps
                 n_msg_passing_good = not (model_attributes['n_message_passings'] > 1 and model_attributes['dropout'] > 0.6)
 
                 # Remove variation in glom2glom
-                is_glom2glom_gcn = model_attributes['msg_passing_types']['glom_to_glom'] = 'gcn'
+                is_glom2glom_gcn = model_attributes['msg_passing_types']['glom_to_glom'] == 'gcn'
 
                 if no_hetero_gcn and n_msg_passing_good and is_glom2glom_gcn:
                     # Append the setting to the search space

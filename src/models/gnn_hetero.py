@@ -20,26 +20,37 @@ class HeteroMessagePassingLayer(nn.Module):
             input_dim = (-1, -1) if msg_passing_type == "gat_v2" else -1
 
             # Collect parameters for message passing layer
-            if msg_passing_type == "gin":
-                params = {
-                    "nn": nn.LazyLinear(output_dim),
-                    "train_eps": True
-                }
+            params = {}
 
-            elif msg_passing_type == "gcn":
-                params = {
+            if msg_passing_type == "gine" or msg_passing_type == "gin":
+                params.update({
+                    "nn": nn.Sequential(
+                        nn.Linear(output_dim, output_dim), #TODO: Lazy
+                        nn.ReLU()
+                    ),
+                    "train_eps": True
+                })
+
+            if msg_passing_type == "gine" or msg_passing_type == "gat_v2":
+                params.update({
+                    "edge_dim": 1
+                })
+
+            if msg_passing_type == "gcn" or msg_passing_type == "gat_v2":
+                params.update({
                     "in_channels": input_dim,
                     "out_channels": output_dim,
                     "add_self_loops": add_self_loops
-                }
-            elif msg_passing_type == "gat_v2":
-                params = {
-                    "in_channels": input_dim,
+                })
+
+            if msg_passing_type == "rgcn":
+                params.update({
+                    "in_channels": output_dim,
                     "out_channels": output_dim,
-                    "add_self_loops": add_self_loops,
-                    "edge_dim": 1
-                }
-            else:
+                    "num_relations": 1
+                })
+
+            if params == {}:
                 raise ValueError(f"Message passing type {msg_passing_type} not supported.")
 
             # Initialize message passing layer
@@ -61,6 +72,8 @@ class HeteroMessagePassingLayer(nn.Module):
                              'edge_weight_dict': {}}
         for edge_type, msg_passing_type in self.edge_types.items():
             if msg_passing_type == "gat_v2":
+                input_msg_passing['edge_attr_dict'].update({edge_type: edge_attr_dict[edge_type]})
+            if msg_passing_type == "gine":
                 input_msg_passing['edge_attr_dict'].update({edge_type: edge_attr_dict[edge_type]})
             if msg_passing_type == "gcn":
                 input_msg_passing['edge_weight_dict'].update({edge_type: edge_attr_dict[edge_type]})
