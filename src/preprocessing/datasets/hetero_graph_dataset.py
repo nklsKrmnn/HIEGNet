@@ -8,7 +8,7 @@ import os
 from torch_geometric.data import HeteroData
 
 from src.preprocessing.datasets.dataset_utils.dataset_utils import get_train_val_test_indices, create_mask
-from src.preprocessing.graph_preprocessing.hetero_graph_processing import drop_cell_glom_edges
+from src.preprocessing.graph_preprocessing.hetero_graph_processing import drop_cell_glom_edges, create_cell_glom_edges
 from src.preprocessing.graph_preprocessing.knn_graph_constructor import graph_construction, graph_connection
 from src.preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
 from src.utils.path_io import get_path_up_to
@@ -107,28 +107,11 @@ class HeteroGraphDataset(GlomGraphDataset):
                     1)
 
             # Create connections between cells and glomeruli
-            # TODO: Check if multi connections work
-            df_cell_nodes['cell_row'] = np.arange(df_cell_nodes.shape[0])
-            df_cell_nodes = drop_cell_glom_edges(df_cell_nodes)
-            df_cells_exploded = df_cell_nodes.explode('associated_glomeruli')
-            df_cells_exploded['glom_index'] = df_cells_exploded['associated_glomeruli'].apply(lambda d: d['glom_index'])
-            df_cells_exploded['distance'] = df_cells_exploded['associated_glomeruli'].apply(lambda d: d['distance'])
-            df_glom_connection = df_patient['glom_index'].to_frame()
-            df_glom_connection['glom_row'] = np.arange(df_glom_connection.shape[0])
-            df_glom_connection = df_cells_exploded.merge(df_glom_connection, right_on='glom_index',
-                                                         left_on='glom_index', how='inner')
-            cell_glom_edge_index = (df_glom_connection['cell_row'], df_glom_connection['glom_row'])
-
-            # Create edge weights
-            cell_glom_edge_distances = torch.tensor(df_glom_connection['distance'].values, dtype=torch.float).unsqueeze(
-                1)
-            # Norm and invert distances to get weights
-            cell_glom_edge_weights = 1 - cell_glom_edge_distances / cell_glom_edge_distances.max()
+            cell_glom_edge_index, cell_glom_edge_distances = create_cell_glom_edges(df_cell_nodes, df_patient['glom_index'])
 
             # Add cell to glom edge index and weights to data
-            data[self.cell_types[i], 'to', 'glomeruli'].edge_index = torch.tensor(cell_glom_edge_index,
-                                                                                  dtype=torch.long)
-            data[self.cell_types[i], 'to', 'glomeruli'].edge_attr = cell_glom_edge_weights
+            data[self.cell_types[i], 'to', 'glomeruli'].edge_index = cell_glom_edge_index
+            data[self.cell_types[i], 'to', 'glomeruli'].edge_attr = cell_glom_edge_distances
 
             # Get node features
             data[self.cell_types[i]].x = self.create_features(df=df_cell_nodes,
