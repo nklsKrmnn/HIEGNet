@@ -132,8 +132,10 @@ class SearchSampler:
                  model_parameter_search_space: dict,
                  train_parameter_search_space: dict
                  ):
-        self.model_attributes = model_attributes
-        self.training_parameters = training_parameters
+        self.model_attributes = model_attributes["gnn_params"].copy() if "gnn_params" in model_attributes.keys() else model_attributes.copy()
+        if "gnn_params" in model_attributes.keys():
+            self.all_params = model_attributes
+        self.training_parameters = training_parameters.copy()
         self.model_parameter_search_space = model_parameter_search_space
         self.train_parameter_search_space = train_parameter_search_space
         self.search_space = []
@@ -175,19 +177,29 @@ class SearchSampler:
                         int(0.0003 / training_parameters['learning_rate'] * base_epochs), 1)
 
                 # Check that gcn is only used for homogenous edge types
-                hetero_edge_types = [et for et in model_attributes['msg_passing_types'].keys() if
-                                     et.split('_')[0] != et.split('_')[2]]
-                no_hetero_gcn = not any(model_attributes['msg_passing_types'][et] == 'gcn' for et in hetero_edge_types)
+                if 'msg_passing_types' in model_attributes.keys():
+                    hetero_edge_types = [et for et in model_attributes['msg_passing_types'].keys() if
+                                         et.split('_')[0] != et.split('_')[2]]
+                    no_hetero_gcn = not any(model_attributes['msg_passing_types'][et] == 'gcn' for et in hetero_edge_types)
+                else:
+                    no_hetero_gcn = True
                 # Replace gcn with rgcn for heterogenous edge types
                 #for et in hetero_edge_types:
                 #    if model_attributes['msg_passing_types'][et] == 'gcn':
                 #        model_attributes['msg_passing_types'][et] = 'rgcn'
 
                 # Check if dropout is too high for number of message passing steps
-                n_msg_passing_good = not (model_attributes['n_message_passings'] > 1 and model_attributes['dropout'] > 0.6)
+                #n_msg_passing_good = not (model_attributes['n_message_passings'] > 1 and model_attributes['dropout'] > 0.6)
+                n_msg_passing_good = True
 
                 # Remove variation in glom2glom
-                is_glom2glom_gcn = model_attributes['msg_passing_types']['glom_to_glom'] == 'gcn'
+                #is_glom2glom_gcn = model_attributes['msg_passing_types']['glom_to_glom'] == 'gcn'
+                is_glom2glom_gcn = True
+
+                if "all_params" in self.__dict__.keys():
+                    tmp = self.all_params.copy()
+                    tmp["gnn_params"] = model_attributes
+                    model_attributes = tmp
 
                 if no_hetero_gcn and n_msg_passing_good and is_glom2glom_gcn:
                     # Append the setting to the search space
