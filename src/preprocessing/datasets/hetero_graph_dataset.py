@@ -8,7 +8,8 @@ import os
 from torch_geometric.data import HeteroData
 
 from src.preprocessing.datasets.dataset_utils.dataset_utils import get_train_val_test_indices, create_mask
-from src.preprocessing.graph_preprocessing.knn_graph_constructor import graph_construction
+from src.preprocessing.graph_preprocessing.hetero_graph_processing import drop_cell_glom_edges
+from src.preprocessing.graph_preprocessing.knn_graph_constructor import graph_construction, graph_connection
 from src.preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
 from src.utils.path_io import get_path_up_to
 
@@ -19,8 +20,11 @@ class HeteroGraphDataset(GlomGraphDataset):
     def __init__(self, **kwargs):
         self.cell_types = kwargs.pop('cell_types')
         self.cell_graph_params = kwargs.pop('cell_graph')
+        self.cell_features = kwargs.pop('cell_features')
 
-        self.cell_node_files = [os.path.join(kwargs.pop('cell_node_dir_path'), f"{cell_type}_cell_nodes.pkl") for
+        cell_node_dir_path = kwargs.pop('cell_node_dir_path')
+
+        self.cell_node_files = [os.path.join(cell_node_dir_path, f"{cell_type}_cell_nodes.pkl") for
                                 cell_type in
                                 self.cell_types]
 
@@ -85,8 +89,27 @@ class HeteroGraphDataset(GlomGraphDataset):
             data[self.cell_types[i], 'to', self.cell_types[i]].edge_attr = torch.tensor(cell_edge_weight,
                                                                                         dtype=torch.float).unsqueeze(1)
 
+            # Create connections to other cell types
+            for j, df_other_cell_nodes in enumerate(list_cell_nodes):
+                if i == j:
+                    # Skip same cell type
+                    continue
+
+                df_other_cell_nodes = df_other_cell_nodes[df_other_cell_nodes['patient'] == patient].reset_index(drop=True)
+
+                other_cell_coords = df_other_cell_nodes[['center_x_global', 'center_y_global']].to_numpy()
+                other_cell_edge_index, other_cell_edge_weight = graph_connection(cell_coords, other_cell_coords,
+                                                                                 **self.cell_graph_params)
+                data[self.cell_types[i], 'to', self.cell_types[j]].edge_index = torch.tensor(other_cell_edge_index,
+                                                                                             dtype=torch.long)
+                data[self.cell_types[i], 'to', self.cell_types[j]].edge_attr = torch.tensor(other_cell_edge_weight,
+                                                                                            dtype=torch.float).unsqueeze(
+                    1)
+
             # Create connections between cells and glomeruli
+            # TODO: Check if multi connections work
             df_cell_nodes['cell_row'] = np.arange(df_cell_nodes.shape[0])
+            df_cell_nodes = drop_cell_glom_edges(df_cell_nodes)
             df_cells_exploded = df_cell_nodes.explode('associated_glomeruli')
             df_cells_exploded['glom_index'] = df_cells_exploded['associated_glomeruli'].apply(lambda d: d['glom_index'])
             df_cells_exploded['distance'] = df_cells_exploded['associated_glomeruli'].apply(lambda d: d['distance'])
@@ -111,7 +134,7 @@ class HeteroGraphDataset(GlomGraphDataset):
             data[self.cell_types[i]].x = self.create_features(df=df_cell_nodes,
                                                               train_indices=list(range(0, len(df_cell_nodes))),
                                                               feature_list=[c for c in df_cell_nodes.columns if
-                                                                            c.endswith('_node_feature')])
+                                                                            c in self.cell_features])
 
         return data
 
