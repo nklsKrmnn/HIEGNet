@@ -136,6 +136,8 @@ class GlomGraphDataset(Dataset):
         print('[Dataset]: Processing data')
 
         df = pd.read_csv(self.raw_paths[0])
+        df.dropna(subset=self.feature_list, inplace=True)
+
         df_annotations = pd.concat([pd.read_csv(path) for path in self.raw_paths[1:]])
         df = pd.merge(df, df_annotations, left_on="glom_index", right_on="ID", how="left")
         patients_in_raw_data = df['patient'].unique()
