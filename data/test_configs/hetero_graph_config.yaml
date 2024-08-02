@@ -12,7 +12,7 @@ model_parameters:
     msg_passing_types:
       glom_to_glom: 'gcn'
       cell_to_glom: 'gat_v2'
-      cell_to_cell: 'gine'
+      cell_to_cell: 'gat_v2'
 training_parameters:
   batch_size: 1
   epochs: 500
@@ -70,4 +70,12 @@ dataset_parameters:
     - 'lbp_8'
   cell_types:
     - "M0"
+    - "tcell"
+  cell_features:
+    - "area"
+    - "perimeter"
+    - "eccentricity"
+    - "aspect_ratio"
+    - "compactness"
+    - "solidity"
 
