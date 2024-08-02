@@ -40,7 +40,7 @@ MODEL_PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'hidden_dim': [16, 32, 64],
     'n_message_passings': [1, 2, 3, 4, 5],
     'n_fc_layers': [1, 2, 3],
-    'dropout': [0.2, 0.3, 0.4, 0.5],
+    'dropout': [0.2, 0.4, 0.6, 0.8],
     'softmax_function': ['softmax', 'log_softmax', 'none'],
     'msg_passing_types': [{k: t[i] for i, k in enumerate(["glom_to_glom", "cell_to_glom", "cell_to_cell"])} for t in
                           list(product(*[['gat_v2', 'gcn', 'gine'] for i in range(3)]))],
