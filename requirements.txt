@@ -1,13 +1,12 @@
 #python==3.11
 matplotlib
 notebook
-numpy
-pandas
-scikit-learn
+numpy==1.26.4
+pandas==2.2.2
+scikit-learn==1.4.2
 seaborn
 tqdm
 tensorboard
-torch_geometric
+torch_geometric==2.5.3
 opencv-python
-pandas
 PyYAML
