@@ -32,20 +32,18 @@ REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {
     }
 }
 
-TRAIN_PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
-    "learning_rate": [0.003, 0.001, 0.0003, 0.0001]
-}
-
-MODEL_PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
+PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'hidden_dim': [16, 32, 64],
     'n_message_passings': [1, 2, 3, 4, 5],
     'n_fc_layers': [1, 2, 3],
     'dropout': [0.2, 0.4, 0.6, 0.8],
     'softmax_function': ['softmax', 'log_softmax', 'none'],
-    'msg_passing_types': [{k: t[i] for i, k in enumerate(["glom_to_glom", "cell_to_glom", "cell_to_cell"])} for t in
-                          list(product(*[['gat_v2', 'gcn', 'gine'] for i in range(3)]))],
     'norm_fc_layers': ['batch', 'layer', 'none'],
-    'norm': ['batch', 'layer', 'none']
+    'norm': ['batch', 'layer', 'none'],
+    'glom_to_glom': ['gcn', 'gat_v2', 'gine'],
+    'cell_to_glom': ['gcn', 'gat_v2', 'gine'],
+    'cell_to_cell': ['gcn', 'gat_v2', 'gine'],
+    "learning_rate": [0.003, 0.001, 0.0003, 0.0001]
 }
 MODEL_NAME_MAPPING: Final[dict[str, any]] = {
     "gcn": GCN,

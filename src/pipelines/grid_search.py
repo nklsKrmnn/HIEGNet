@@ -4,7 +4,7 @@ import random
 import copy
 
 from src.utils.logger import Logger, CrossValLogger, MultiInstanceLogger
-from src.utils.constants import MODEL_PARAMETER_SEARCH_SPACE, TRAIN_PARAMETER_SEARCH_SPACE
+from src.utils.constants import PARAMETER_SEARCH_SPACE
 from src.utils.model_service import ModelService
 
 
@@ -34,8 +34,12 @@ def grid_search(model_name: str,
     :param n_folds: Number of folds to use for crossvalidation
     :return:
     """
-    grid = SearchSampler(model_attributes, training_parameters, MODEL_PARAMETER_SEARCH_SPACE,
-                         TRAIN_PARAMETER_SEARCH_SPACE)
+    config_params = {
+        "model_parameters": model_attributes,
+        "training_parameters": training_parameters
+    }
+
+    grid = SeachSampler(config_params, PARAMETER_SEARCH_SPACE)
 
     grid.create_grid_search_space()
     grid.shuffle()
@@ -44,15 +48,15 @@ def grid_search(model_name: str,
 
     results = []
 
-    print(f"Start grid search with {size}settings")
+    print(f"Start grid search with {size} settings")
 
     for i in range(0, size):
         print("###################################")
         print(f"Setting {i + 1}/{size}")
         print("###################################")
         setting = grid[i]
-        model_attributes = setting[0]
-        training_parameters = setting[1]
+        model_attributes = setting["model_parameters"]
+        training_parameters = setting["training_parameters"]
         temp_logger = logger.next_logger()
 
         training_parameters['reported_set'] = 'val'  # Always report on validation set for grid search
@@ -124,86 +128,66 @@ def cross_validation(model_name: str,
     return final_scores
 
 
-class SearchSampler:
+class SeachSampler:
 
     def __init__(self,
-                 model_attributes: dict,
-                 training_parameters: dict,
-                 model_parameter_search_space: dict,
-                 train_parameter_search_space: dict
+                 config: dict,
+                 parameter_search_space: dict
                  ):
-        self.model_attributes = model_attributes["gnn_params"].copy() if "gnn_params" in model_attributes.keys() else model_attributes.copy()
-        if "gnn_params" in model_attributes.keys():
-            self.all_params = model_attributes
-        self.training_parameters = training_parameters.copy()
-        self.model_parameter_search_space = model_parameter_search_space
-        self.train_parameter_search_space = train_parameter_search_space
+        self.config = config
+        self.parameter_search_space = parameter_search_space
+
+        # Recursive init for sub parameters
+        for key, value in self.config.items():
+            if isinstance(value, dict):
+                self.config[key] = SeachSampler(value, parameter_search_space)
+
         self.search_space = []
 
-    def create_grid_search_space(self) -> None:
+    def create_grid_search_space(self) -> list:
         """
         Creates a grid search space over the model and training parameters that are marked with "gs" in the dictionaries.
         All other parameters are kept constant.
         """
         # Get all parameters that should be optimized for the model and training (where value is 'gs')
-        search_training_parameters = {k: v for k, v in self.training_parameters.items() if v == 'gs'}
-        search_model_attributes = {k: v for k, v in self.model_attributes.items() if v == 'gs'}
+        search_parameters = [k for k, v in self.config.items() if v == 'gs']
 
-        base_epochs = self.training_parameters['epochs']
+        # Recursive call of the function for sub parameters
+        for key, value in self.config.items():
+            if isinstance(value, SeachSampler):
+                self.parameter_search_space.update({key: value.create_grid_search_space()})
+                search_parameters.append(key)
 
         # Create a list of all possible combinations of the search space
-        # TODO implement function to get special search spaces
-        for model_params in product(*[self.model_parameter_search_space[k] for k in search_model_attributes.keys()]):
-            for train_params in product(
-                    *[self.train_parameter_search_space[k] for k in search_training_parameters.keys()]):
+        for params in product(*[self.parameter_search_space[k] for k in search_parameters]):
+            config = self.config.copy()
 
-                model_attributes = self.model_attributes.copy()
-                training_parameters = self.training_parameters.copy()
+            for i, key in enumerate(search_parameters):
+                config[key] = params[i]
 
-                for i, key in enumerate(search_model_attributes.keys()):
-                    model_attributes[key] = model_params[i]
+            # Adjust max lr for scheduler
+            if "lr_scheduler_params" in config.keys():
+                config["lr_scheduler_params"]['params']["max_lr"] = config["learning_rate"] * 10
 
-                for i, key in enumerate(search_training_parameters.keys()):
-                    training_parameters[key] = train_params[i]
+            # Adjust epochs to learning rate
+            if 'learning_rate' in search_parameters:
+                config["epochs"] = max(
+                    int(0.0003 / config['learning_rate'] * config['epochs']), 1)
+                config['log_image_frequency'] = config['epochs'] // 5
 
-                # Adjust max lr for scheduler
-                if "lr_scheduler_params" in training_parameters.keys():
-                    training_parameters["lr_scheduler_params"]['params']["max_lr"] = training_parameters[
-                                                                                         "learning_rate"] * 10
+            # Check that gcn is only used for homogenous edge types
+            if 'msg_passing_types' in config.keys():
+                hetero_edge_types = [et for et in config['msg_passing_types'].keys() if
+                                     et.split('_')[0] != et.split('_')[2]]
+                no_hetero_gcn = not any(
+                    config['msg_passing_types'][et] == 'gcn' for et in hetero_edge_types)
+            else:
+                no_hetero_gcn = True
 
-                # Adjust epochs to learning rate
-                if 'learning_rate' in search_training_parameters:
-                    training_parameters["epochs"] = max(
-                        int(0.0003 / training_parameters['learning_rate'] * base_epochs), 1)
+            if no_hetero_gcn:
+                self.search_space.append(copy.deepcopy(config))
 
-                # Check that gcn is only used for homogenous edge types
-                if 'msg_passing_types' in model_attributes.keys():
-                    hetero_edge_types = [et for et in model_attributes['msg_passing_types'].keys() if
-                                         et.split('_')[0] != et.split('_')[2]]
-                    no_hetero_gcn = not any(model_attributes['msg_passing_types'][et] == 'gcn' for et in hetero_edge_types)
-                else:
-                    no_hetero_gcn = True
-                # Replace gcn with rgcn for heterogenous edge types
-                #for et in hetero_edge_types:
-                #    if model_attributes['msg_passing_types'][et] == 'gcn':
-                #        model_attributes['msg_passing_types'][et] = 'rgcn'
-
-                # Check if dropout is too high for number of message passing steps
-                #n_msg_passing_good = not (model_attributes['n_message_passings'] > 1 and model_attributes['dropout'] > 0.6)
-                n_msg_passing_good = True
-
-                # Remove variation in glom2glom
-                #is_glom2glom_gcn = model_attributes['msg_passing_types']['glom_to_glom'] == 'gcn'
-                is_glom2glom_gcn = True
-
-                if "all_params" in self.__dict__.keys():
-                    tmp = self.all_params.copy()
-                    tmp["gnn_params"] = model_attributes
-                    model_attributes = tmp
-
-                if no_hetero_gcn and n_msg_passing_good and is_glom2glom_gcn:
-                    # Append the setting to the search space
-                    self.search_space.append((copy.deepcopy(model_attributes), copy.deepcopy(training_parameters)))
+        return self.search_space
 
     def shuffle(self) -> None:
         """
