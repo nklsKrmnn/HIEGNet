@@ -22,7 +22,7 @@ class HeteroGraphDataset(GlomGraphDataset):
         self.cell_graph_params = kwargs.pop('cell_graph')
         self.cell_features = kwargs.pop('cell_features')
 
-        cell_node_dir_path = kwargs.pop('cell_node_dir_path')
+        cell_node_dir_path = ROOT_DIR + kwargs.pop('cell_node_dir_path')
 
         self.cell_node_files = [os.path.join(cell_node_dir_path, f"{cell_type}_cell_nodes.pkl") for
                                 cell_type in

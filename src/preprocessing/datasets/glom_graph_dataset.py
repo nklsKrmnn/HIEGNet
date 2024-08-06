@@ -56,7 +56,7 @@ class GlomGraphDataset(Dataset):
         :param root: Directory where the dataset and the graph objects should be stored.
         :param processed_file_name: File name of the processed graph file.
         :param feature_file_path: File path to the feature file.
-        :param annotations_path: File path to the annotations directory.
+        :param annotations_path: Path to the annotation directory.
         :param feature_list: List of features to use from feature file
         :param glom_graph: Dictionary with parameters for the graph construction
         :param validation_split: Validation split
@@ -72,7 +72,7 @@ class GlomGraphDataset(Dataset):
         """
 
         self.processed_file_name = processed_file_name
-        self.feature_file_path = feature_file_path
+        self.feature_file_path = ROOT_DIR + feature_file_path
         self.test_split = test_split if test_patients == [] else 0.0
         self.val_split = validation_split if (validation_patients == [] or validation_split == 1.0) else 0.0
         self.train_patients = train_patients
@@ -82,12 +82,13 @@ class GlomGraphDataset(Dataset):
         self.glom_graph = glom_graph
         self.random_seed = random_seed
         self.onehot_targets = onehot_targets
-        self.annot_path = str(annotations_path)
+        self.annot_path = ROOT_DIR + str(annotations_path)
         self.preprocessing_params = preprocessing_params
 
         # Dict to save settings of patients in config later
         self.patient_settings = 'not implemented anymore'
 
+        root = ROOT_DIR + root
         super(GlomGraphDataset, self).__init__(root, transform, pre_transform)
 
     @property
