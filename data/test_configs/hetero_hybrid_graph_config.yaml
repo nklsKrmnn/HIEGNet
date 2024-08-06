@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "hybrid_hetero"
+run_name: "hybrid_hetero_2_2"
 model_parameters:
   hetero_hybrid_gnn:
     hidden_channels: [ 20, 30, 40, 50 ] #output dim: 361
@@ -9,8 +9,8 @@ model_parameters:
     output_dim: 32
     gnn_params:
       class_name: hetero_gnn
-      hidden_dims: [16,16,16,16]
-      n_fc_layers: 3
+      hidden_dims: [32,32]
+      n_fc_layers: 2
       norm_fc_layers: batch
       output_dim: 3
       dropout: gs
@@ -68,4 +68,11 @@ dataset_parameters:
     #- 'path_108'
   cell_types:
     - "M0"
-
+  cell_features:
+    - "area"
+    - "perimeter"
+    - "eccentricity"
+    - "aspect_ratio"
+    - "compactness"
+    - "solidity"
+#    - "is_in_glom"
