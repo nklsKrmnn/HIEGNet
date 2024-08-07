@@ -17,12 +17,14 @@ class CNN(nn.Module):
                  kernel_size=3,
                  stride=3,
                  padding=0,
+                 cnn_softmax_function="softmax",
                  device=torch.device('cpu')):
         super(CNN, self).__init__()
         self.device = device
 
         self.hidden_channels = hidden_channels
         self.in_channels = input_channels
+        self.softmax_function = cnn_softmax_function
 
         last_dim = image_size
         for _ in self.hidden_channels:
@@ -47,11 +49,12 @@ class CNN(nn.Module):
 
         self.cnn_encoder = nn.Sequential(*modules)
 
-        # Fully connection layer
-        self.connention_fc = nn.Linear(self.hidden_channels[-1] * last_dim ** 2, mlp_params["input_dim"])
+        # Set input dim for MLP
+        mlp_params["input_dim"] = self.hidden_channels[-1] * last_dim ** 2
 
         # GNN layer
         mlp_params = mlp_params.copy()
+        mlp_params["mlp_softmax_function"] = 'none'
         self.mlp = MLP(**mlp_params)
 
     def forward(self, x):
@@ -60,9 +63,19 @@ class CNN(nn.Module):
 
         # FC
         x = torch.flatten(x, start_dim=1)
-        x = self.connention_fc(x)
         x = F.relu(x)
 
         # MLP
         x = self.mlp(x)
-        return F.softmax(x, dim=1)
+
+        # Apply softmax if needed
+        if self.softmax_function == "softmax":
+            output = F.softmax(x, dim=1)
+        elif self.softmax_function == "log_softmax":
+            output = F.log_softmax(x, dim=1)
+        elif self.softmax_function == "none":
+            output = x
+        else:
+            raise ValueError(f"Unknown softmax function: {self.softmax_function}")
+
+        return output

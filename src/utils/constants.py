@@ -1,7 +1,6 @@
 from typing import Final
-from itertools import product
-
 from src.models.cnn import CNN
+from src.models.gnn_cnn_hybrid_skip import SkipHeteroHybridGNN
 from src.models.gnn_cnn_hyrbid import GnnCnnHybrid, HeteroHybridGNN
 from src.models.gnn_hetero import HeteroGNN
 from src.models.gnn_models import GCN, GCNJumpingKnowledge, GATv2
@@ -54,5 +53,6 @@ MODEL_NAME_MAPPING: Final[dict[str, any]] = {
     "gat_v2": GATv2,
     "resnet": initialize_resnet,
     "hetero_gnn": HeteroGNN,
-    "hetero_hybrid_gnn": HeteroHybridGNN
+    "hetero_hybrid_gnn": HeteroHybridGNN,
+    "hetero_hybrid_gnn_skip": SkipHeteroHybridGNN
 }

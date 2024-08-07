@@ -25,7 +25,7 @@ class HeteroMessagePassingLayer(nn.Module):
             if msg_passing_type == "gine" or msg_passing_type == "gin":
                 params.update({
                     "nn": nn.Sequential(
-                        nn.Linear(output_dim, output_dim), #TODO: Lazy
+                        nn.Linear(output_dim, output_dim),  # TODO: Lazy
                         nn.ReLU()
                     ),
                     "train_eps": True
@@ -93,7 +93,7 @@ class HeteroGNN(nn.Module):
                  msg_passing_types: dict[str, str],
                  hidden_dims: list[int] = None,
                  hidden_dim: int = None,
-                 n_message_passings=None,
+                 n_message_passings: int = None,
                  dropout=0.5,
                  n_fc_layers: int = 0,
                  norm: str = None,
@@ -172,9 +172,16 @@ class HeteroGNN(nn.Module):
                     x_dict[node_type] = self.fc_layers[fc_layer_index][node_type](x)
                 fc_layer_index += 1
 
-        output = self.output_layer(x_dict['glomeruli'])
+        x = self.output_layer(x_dict['glomeruli'])
+
+        # Apply softmax if needed
         if self.softmax_function == "softmax":
-            output = F.softmax(output, dim=1)
+            output = F.softmax(x, dim=1)
         elif self.softmax_function == "log_softmax":
-            output = F.log_softmax(output, dim=1)
+            output = F.log_softmax(x, dim=1)
+        elif self.softmax_function == "none":
+            output = x
+        else:
+            raise ValueError(f"Unknown softmax function: {self.softmax_function}")
+
         return output

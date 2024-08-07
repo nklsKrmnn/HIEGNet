@@ -112,3 +112,5 @@ class HeteroHybridGNN(GnnCnnHybrid):
         # GNN
         softmax_scores = self.gnn(x_dict, edge_index_dict, edge_attr_dict)
         return softmax_scores
+
+

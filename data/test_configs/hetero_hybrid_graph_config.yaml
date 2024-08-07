@@ -1,25 +1,29 @@
 use_gpu: true
-run_name: "hybrid_hetero_2_2"
+run_name: "hybrid_hetero_skip"
 model_parameters:
-  hetero_hybrid_gnn:
-    hidden_channels: [ 20, 30, 40, 50 ] #output dim: 361
-    kernel_size: 4
-    input_channels: 3
-    stride: 2
-    output_dim: 32
-    gnn_params:
-      class_name: hetero_gnn
-      hidden_dims: [32,32]
-      n_fc_layers: 2
-      norm_fc_layers: batch
-      output_dim: 3
-      dropout: gs
-      norm: none
-      softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
-      msg_passing_types:
-        glom_to_glom: 'gcn'
-        cell_to_glom: 'gat_v2'
-        cell_to_cell: 'gcn'
+  hetero_hybrid_gnn_skip:
+    cnn_params:
+      hidden_channels: [ 20, 30, 40, 50 ] #output dim: 361
+      kernel_size: 4
+      input_channels: 3
+      stride: 2
+      cnn_softmax_function: "none" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
+      mlp_params:
+        hidden_dims: [32]
+        output_dim: 32
+        mlp_dropout: 0.4
+        mlp_softmax_function: "none" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
+    hidden_dims: [32,32]
+    n_fc_layers: 2
+    norm_fc_layers: batch
+    output_dim: 3
+    dropout: gs
+    norm: none
+    softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
+    msg_passing_types:
+      glom_to_glom: 'gcn'
+      cell_to_glom: 'gat_v2'
+      cell_to_cell: 'gcn'
 training_parameters:
   batch_size: 1
   epochs: 500
