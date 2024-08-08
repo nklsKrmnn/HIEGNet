@@ -17,10 +17,13 @@ ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")
 
 
 class HeteroGraphDataset(GlomGraphDataset):
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 send_msg_from_glom_to_cell: bool = True,
+                 **kwargs):
         self.cell_types = kwargs.pop('cell_types')
         self.cell_graph_params = kwargs.pop('cell_graph')
         self.cell_features = kwargs.pop('cell_features')
+        self.cell_glom_connection = send_msg_from_glom_to_cell
 
         cell_node_dir_path = ROOT_DIR + kwargs.pop('cell_node_dir_path')
 
@@ -112,6 +115,12 @@ class HeteroGraphDataset(GlomGraphDataset):
             # Add cell to glom edge index and weights to data
             data[self.cell_types[i], 'to', 'glomeruli'].edge_index = cell_glom_edge_index
             data[self.cell_types[i], 'to', 'glomeruli'].edge_attr = cell_glom_edge_distances
+
+            # Add same edges back from glom to cells
+            if self.cell_glom_connection:
+                data['glomeruli', 'to', self.cell_types[i]].edge_index = torch.stack(
+                    [cell_glom_edge_index[1], cell_glom_edge_index[0]], dim=0).long()
+                data['glomeruli', 'to', self.cell_types[i]].edge_attr = cell_glom_edge_distances
 
             # Get node features
             data[self.cell_types[i]].x = self.create_features(df=df_cell_nodes,

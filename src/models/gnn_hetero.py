@@ -138,6 +138,8 @@ class HeteroGNN(nn.Module):
         edge_types = {('glomeruli', 'to', 'glomeruli'): msg_passing_types['glom_to_glom']}
         for cell_type in cell_types:
             edge_types[(cell_type, 'to', 'glomeruli')] = msg_passing_types['cell_to_glom']
+            if ('glomeruli', 'to', cell_type) in edge_types:
+                edge_types[('glomeruli', 'to', cell_type)] = msg_passing_types['cell_to_glom']
             for cell_type2 in cell_types:
                 edge_types[(cell_type, 'to', cell_type2)] = msg_passing_types['cell_to_cell']
         node_types = ['glomeruli'] + cell_types
