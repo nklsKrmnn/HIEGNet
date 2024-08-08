@@ -1,12 +1,13 @@
 use_gpu: true
-run_name: "coding"
+run_name: "hetero_c2cGATv2_2_3_tcells"
 model_parameters:
   hetero_gnn:
-    hidden_dims: [32,32,32]
+    hidden_dim: 16
+    n_message_passings: 3
     n_fc_layers: 2
     norm_fc_layers: batch
     output_dim: 3
-    dropout: 0.2
+    dropout: 0.3
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
@@ -78,5 +79,5 @@ dataset_parameters:
     - "aspect_ratio"
     - "compactness"
     - "solidity"
-    - "is_in_glom"
+    #- "is_in_glom"
 
