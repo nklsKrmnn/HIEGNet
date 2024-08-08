@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "hetero_4_3_tcells"
+run_name: "hetero_4_3_send_msg_from_glom_to_cell"
 model_parameters:
   hetero_gnn:
     hidden_dim: 16
@@ -54,6 +54,7 @@ dataset_parameters:
   process: true
   preprocessing_params:
     scaler: 'MinMaxScaler'
+  send_msg_from_glom_to_cell: true
   feature_list:
     - 'Area (microns²)'
     - 'Perimeter (mm)'
@@ -71,7 +72,7 @@ dataset_parameters:
     - 'lbp_8'
   cell_types:
     - "M0"
-    - "tcell"
+    #- "tcell"
   cell_features:
     - "area"
     - "perimeter"
