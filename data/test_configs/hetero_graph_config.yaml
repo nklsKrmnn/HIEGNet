@@ -1,19 +1,19 @@
 use_gpu: true
-run_name: "hetero_c2cGATv2_2_3_tcells"
+run_name: "hetero_4_3_tcells"
 model_parameters:
   hetero_gnn:
     hidden_dim: 16
-    n_message_passings: 3
-    n_fc_layers: 2
+    n_message_passings: 4
+    n_fc_layers: 4
     norm_fc_layers: batch
     output_dim: 3
-    dropout: 0.3
+    dropout: 0.2
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
       glom_to_glom: 'gcn'
       cell_to_glom: 'gat_v2'
-      cell_to_cell: 'gat_v2'
+      cell_to_cell: 'gcn'
 training_parameters:
   batch_size: 1
   epochs: 500
