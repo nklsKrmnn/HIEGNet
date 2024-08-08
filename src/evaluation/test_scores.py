@@ -79,6 +79,10 @@ def calc_test_scores(targets: torch.tensor, predictions: torch.tensor) -> dict[d
     :return: A dict with a dict for each score containing the total and separate scores for each class
     """
 
+    # Round predicitions if they are not integers
+    if predictions.dtype == torch.float:
+        predictions = torch.round(predictions)
+
     # TODO doc string
     scores = {
         "accuracy": calc_accuracy(targets, predictions),

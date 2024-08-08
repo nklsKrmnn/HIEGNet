@@ -17,7 +17,7 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from torchvision.transforms import ToTensor
 from tqdm import tqdm
 
-from src.utils.vis_training import plot_confusion_matrix
+from src.utils.vis_training import plot_confusion_matrix, plot_continous_confussion_matrix
 
 first_name_logging = True
 
@@ -188,7 +188,13 @@ class Logger():
         """
         self._summary_writer.add_scalar("lr", lr, epoch)
 
-    def save_confusion_matrix(self, y_true: np.array, y_pred: np.array, labels: list[str], epoch: int, set='Test'):
+    def save_confusion_matrix(self,
+                              y_true: np.array,
+                              y_pred: np.array,
+                              labels: list[str],
+                              epoch: int,
+                              continuous: bool = False,
+                              set='Test'):
         """
         Saves a confusion matrix to the TensorBoard log file.
         Args:
@@ -203,7 +209,10 @@ class Logger():
         title = f'Confusion Matrix: {set} Set'
         cmap = 'Blues'
 
-        fig = plot_confusion_matrix(y_true, y_pred, labels, title, cmap)
+        if not continuous:
+            fig = plot_confusion_matrix(y_true, y_pred, labels, title, cmap)
+        else:
+            fig = plot_continous_confussion_matrix(y_true, y_pred, labels, title, cmap)
 
         os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 

@@ -414,13 +414,13 @@ class Trainer:
                                                                          HeteroData) else graph_data.edge_index_dict
         input_graph_attr = graph_data.edge_attr if not isinstance(graph_data[0],
                                                                   HeteroData) else graph_data.edge_attr_dict
-        target = graph_data.y
+        target = graph_data.y.long() if isinstance(self.loss, nn.NLLLoss) else graph_data.y
 
         prediction = self.model.forward(input_graph_feature, input_graph_edge_index, input_graph_attr)
         loss = self.loss(prediction[mask], target[mask])
 
         if len(graph_data.y.shape) == 1:
-            pred = prediction.detach().argmax(dim=1).cpu()
+            pred = prediction.detach().cpu()
             targ = target.detach().cpu()
         elif graph_data.y.shape[1] > 1:
             pred = prediction.detach().argmax(dim=1).cpu()
@@ -522,10 +522,15 @@ class Trainer:
 
         set_idx = 1 if set == 'train' else 2 if set == 'val' else 3
 
+        # Transform to np.array
+        predictions = predictions.numpy()
+        targets = targets.numpy()
+
         self.logger.save_confusion_matrix(targets,
                                           predictions,
                                           labels=self.dataset[0].target_labels,
                                           epoch=epoch,
+                                          continuous=isinstance(self.loss, nn.MSELoss),
                                           set=f'{set_idx}_{set}')
 
     def save_model(self) -> None:

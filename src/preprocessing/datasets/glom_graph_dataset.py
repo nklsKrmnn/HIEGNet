@@ -240,7 +240,7 @@ class GlomGraphDataset(Dataset):
         else:
             y = df_patient['Term']
             y.replace({'Healthy': 0, 'Sclerotic': 1, 'Dead': 2}, inplace=True)
-            y = torch.tensor(y.to_numpy(), dtype=torch.long)
+            y = torch.tensor(y.to_numpy(), dtype=torch.float)
 
         return y
 
@@ -313,13 +313,14 @@ class GlomGraphDataset(Dataset):
         graphs = [torch.load(fp) for fp in file_paths]
 
         # Get y data for stratified kfold
-        cols = graphs[0].target_labels
+        cols = graphs[0].target_labels if self.onehot_targets else ['term']
         y_data = []
         masks = []
         for i, graph in enumerate(graphs):
             # Get y data and graph index
             y_data.append(pd.DataFrame(graph.y.numpy(), columns=cols))
-            y_data[i]["term"] = y_data[i].idxmax(axis=1)
+            if self.onehot_targets:
+                y_data[i]["term"] = y_data[i].idxmax(axis=1)
             y_data[i]['graph'] = i
 
             # Get mask for train and val data
