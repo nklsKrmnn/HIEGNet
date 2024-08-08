@@ -18,7 +18,7 @@ ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")
 
 class HeteroGraphDataset(GlomGraphDataset):
     def __init__(self,
-                 send_msg_from_glom_to_cell: bool = True,
+                 send_msg_from_glom_to_cell: bool = False,
                  **kwargs):
         self.cell_types = kwargs.pop('cell_types')
         self.cell_graph_params = kwargs.pop('cell_graph')
