@@ -139,10 +139,7 @@ class HeteroGNN(nn.Module):
         for cell_type in cell_types:
             edge_types[(cell_type, 'to', 'glomeruli')] = msg_passing_types['cell_to_glom']
             for cell_type2 in cell_types:
-                if (cell_type != cell_type2) and (msg_passing_types['cell_to_cell'] == 'gcn'):
-                    edge_types[(cell_type, 'to', cell_type2)] = 'gcn' #TODO RGCN
-                else:
-                    edge_types[(cell_type, 'to', cell_type2)] = msg_passing_types['cell_to_cell']
+                edge_types[(cell_type, 'to', cell_type2)] = msg_passing_types['cell_to_cell']
         node_types = ['glomeruli'] + cell_types
 
         # FC layer to unify input dimensions
