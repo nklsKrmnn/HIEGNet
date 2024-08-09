@@ -74,7 +74,7 @@ def plot_continous_confussion_matrix(y_true: np.array,
 
     # Draw lines between descision boundaries
     plt.axvline(x=1.5, color='black', linestyle='--')
-    plt.axvline(x=2.5, color='black', linestyle='--')
+    plt.axvline(x=0.5, color='black', linestyle='--')
 
     #print('stop')
 
