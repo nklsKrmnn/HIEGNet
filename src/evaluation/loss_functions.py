@@ -11,7 +11,7 @@ class WeightedMSELoss(nn.Module):
             class_weights (torch.Tensor): Class weights.
         """
         super().__init__()
-        self.class_weights = class_weights
+        self.register_buffer('class_weights', class_weights)
 
     def forward(self, output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
