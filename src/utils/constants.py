@@ -1,5 +1,6 @@
 from typing import Final
 from src.models.cnn import CNN
+from src.models.full_model import FullHybrid
 from src.models.gnn_cnn_hybrid_skip import SkipHeteroHybridGNN
 from src.models.gnn_cnn_hyrbid import GnnCnnHybrid, HeteroHybridGNN
 from src.models.gnn_hetero import HeteroGNN
@@ -56,5 +57,6 @@ MODEL_NAME_MAPPING: Final[dict[str, any]] = {
     "resnet": initialize_resnet,
     "hetero_gnn": HeteroGNN,
     "hetero_hybrid_gnn": HeteroHybridGNN,
-    "hetero_hybrid_gnn_skip": SkipHeteroHybridGNN
+    "hetero_hybrid_gnn_skip": SkipHeteroHybridGNN,
+    "full_model": FullHybrid
 }
