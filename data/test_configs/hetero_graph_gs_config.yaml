@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "gs_rad_graph"
+run_name: "gs_w_cell2glom_inglom_tcell"
 model_parameters:
   hetero_gnn:
     hidden_dim: gs
@@ -10,7 +10,10 @@ model_parameters:
     dropout: gs
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
-    msg_passing_types: gs
+    msg_passing_types:
+      glom_to_glom: 'gcn'
+      cell_to_glom: gs
+      cell_to_cell: gs
 training_parameters:
   batch_size: 1
   epochs: 500
@@ -50,6 +53,7 @@ dataset_parameters:
   process: true
   preprocessing_params:
     scaler: 'MinMaxScaler'
+  send_msg_from_glom_to_cell: true
   feature_list:
     - 'Area (microns²)'
     - 'Perimeter (mm)'
@@ -67,4 +71,13 @@ dataset_parameters:
     - 'lbp_8'
   cell_types:
     - "M0"
+    - "tcell"
+  cell_features:
+    - "area"
+    - "perimeter"
+    - "eccentricity"
+    - "aspect_ratio"
+    - "compactness"
+    - "solidity"
+    - "is_in_glom"
 
