@@ -58,5 +58,5 @@ MODEL_NAME_MAPPING: Final[dict[str, any]] = {
     "hetero_gnn": HeteroGNN,
     "hetero_hybrid_gnn": HeteroHybridGNN,
     "hetero_hybrid_gnn_skip": SkipHeteroHybridGNN,
-    "full_model": FullHybrid
+    "hetero_full_model": FullHybrid
 }
