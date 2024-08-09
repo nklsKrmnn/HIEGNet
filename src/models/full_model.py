@@ -46,7 +46,7 @@ class FullHybrid(HeteroGNN):
 
     def forward(self, x_dict, edge_index_dict, edge_attr_dict=None):
         # CNN
-        image = x_dict['glomeruli_image']
+        image = x_dict['glomeruli_image'].x
         cnn_output = self.cnn_encoder(image)
         cnn_output = torch.flatten(cnn_output, start_dim=1)
         cnn_output = F.relu(cnn_output)
