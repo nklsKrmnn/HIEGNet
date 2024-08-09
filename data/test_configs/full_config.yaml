@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "hybrid_hetero_skip"
+run_name: "full_model"
 model_parameters:
   hetero_hybrid_gnn_skip:
     cnn_params:
@@ -11,13 +11,13 @@ model_parameters:
       mlp_params:
         hidden_dims: [32]
         output_dim: 32
-        mlp_dropout: 0.4
+        mlp_dropout: 0.1
         mlp_softmax_function: "none" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     hidden_dims: [32,32]
     n_fc_layers: 2
     norm_fc_layers: batch
     output_dim: 3
-    dropout: 0.2
+    dropout: gs
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
@@ -51,6 +51,7 @@ dataset_parameters:
   cell_node_dir_path: "/data/3_extracted_features/EXC/cell_nodes"
   annotations_path: "/data/1_cytomine_downloads/EXC/annotations/25/"
   validation_split: 0.15
+  test_split: 0.15
   processed_file_name: "glom_graph"
   glom_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
