@@ -15,6 +15,7 @@ from torch_geometric.data import Dataset, HeteroData
 from torch_geometric.loader import DataLoader
 from tqdm import tqdm
 
+from src.evaluation.loss_functions import WeightedMSELoss
 from src.evaluation.test_scores import calc_test_scores
 from src.utils.model_service import ModelService
 from src.utils.logger import Logger
@@ -144,6 +145,12 @@ class Trainer:
             loss_instance = nn.CrossEntropyLoss(weight=class_weights_tensor)
         elif loss == "nll":
             loss_instance = nn.NLLLoss(weight=class_weights_tensor)
+        elif loss == "weighted_mse":
+            if class_weights_tensor is None:
+                print(f"[TRAINER]: Class weights are not available, defaulting to MSELoss")
+                loss_instance = nn.MSELoss()
+            else:
+                loss_instance = WeightedMSELoss(class_weights_tensor)
         else:
             print(f"[TRAINER]: Loss {loss} is not valid, defaulting to MSELoss")
             loss_instance = nn.MSELoss()
@@ -526,11 +533,13 @@ class Trainer:
         predictions = predictions.numpy()
         targets = targets.numpy()
 
+        use_continuous_matrix = (isinstance(self.loss, nn.MSELoss) or isinstance(self.loss, WeightedMSELoss))
+
         self.logger.save_confusion_matrix(targets,
                                           predictions,
                                           labels=self.dataset[0].target_labels,
                                           epoch=epoch,
-                                          continuous=isinstance(self.loss, nn.MSELoss),
+                                          continuous=use_continuous_matrix,
                                           set=f'{set_idx}_{set}')
 
     def save_model(self) -> None:
