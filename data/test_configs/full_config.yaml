@@ -1,7 +1,7 @@
 use_gpu: true
 run_name: "full_model"
 model_parameters:
-  hetero_hybrid_gnn_skip:
+  full_model:
     cnn_params:
       hidden_channels: [ 20, 30, 40, 50 ] #output dim: 361
       kernel_size: 4
@@ -17,7 +17,7 @@ model_parameters:
     n_fc_layers: 2
     norm_fc_layers: batch
     output_dim: 3
-    dropout: gs
+    dropout: 0.2
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
