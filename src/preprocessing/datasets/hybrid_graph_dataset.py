@@ -16,12 +16,17 @@ ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")
 
 class HybridGraphDataset(GlomGraphDataset):
 
-    def __init__(self, hot_load: bool = False, **kwargs):
+    def __init__(self, image_file_path: str, hot_load: bool = False, **kwargs):
+        self.image_file_path = ROOT_DIR + image_file_path
         self.hot_load = hot_load
         if self.hot_load:
             self.x_hot = []
 
         super().__init__(**kwargs)
+
+    @property
+    def input_file_paths(self) -> list[str]:
+        return [self.image_file_path]
 
     def create_image_input_tensor(self, df: pd.DataFrame, feature_list: list[str]) -> list:
         # Get paths to images

@@ -20,6 +20,10 @@ class HeteroHybridGraphDataset(HeteroGraphDataset, HybridGraphDataset):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+    @property
+    def input_file_paths(self):
+        return HybridGraphDataset.input_file_paths.__get__(self)
+
     def create_features(self,
                         df: pd.DataFrame,
                         train_indices: list[int],

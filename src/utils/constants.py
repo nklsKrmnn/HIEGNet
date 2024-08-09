@@ -6,6 +6,7 @@ from src.models.gnn_hetero import HeteroGNN
 from src.models.gnn_models import GCN, GCNJumpingKnowledge, GATv2
 from src.models.mlp import MLP
 from src.models.pretrained_cnn import initialize_resnet
+from src.preprocessing.datasets.full_graph import FullGraphDataset
 from src.preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
 from src.preprocessing.datasets.hetero_hybrid_graph_dataset import HeteroHybridGraphDataset
 from src.preprocessing.datasets.hybrid_graph_dataset import HybridGraphDataset
@@ -17,7 +18,8 @@ DATASET_NAME_MAPPING: Final[dict[str, any]] = {
     "image_dataset": GlomImageDataset,
     "hetero_graph_dataset": HeteroGraphDataset,
     "hybrid_graph_dataset": HybridGraphDataset,
-    "hetero_hybrid_graph_dataset": HeteroHybridGraphDataset
+    "hetero_hybrid_graph_dataset": HeteroHybridGraphDataset,
+    "full_graph_dataset": FullGraphDataset
 }
 
 REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {

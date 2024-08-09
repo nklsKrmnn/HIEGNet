@@ -104,6 +104,28 @@ class GlomGraphDataset(Dataset):
         return raw_files
 
     @property
+    def input_file_paths(self) -> list[str]:
+        """
+        Get the list of paths to input files of the dataset.
+
+        List of all paths to files with input data is read from file which stores all these file names.
+
+        :return: List of input file names
+        """
+        return [self.feature_file_path]
+
+    @property
+    def annotation_file_paths(self) -> list[str]:
+        """
+        Get the list of paths to annotation files of the dataset.
+
+        List of all paths to files with annotations is read from file which stores all these file names.
+
+        :return: List of annotation file paths
+        """
+        return list_annotation_file_names(self.annot_path)
+
+    @property
     def processed_file_names(self) -> list[str]:
         """
         Get the list of paths to processed files of the dataset.
@@ -136,10 +158,18 @@ class GlomGraphDataset(Dataset):
         """
         print('[Dataset]: Processing data')
 
-        df = pd.read_csv(self.raw_paths[0])
+        df = pd.read_csv(self.input_file_paths[0])
+
+        # Load additional feature dataframes (like image paths for full dataset)
+        for path2 in self.input_file_paths[1:]:
+            df2 = pd.read_csv(path2)
+            # rop any column, that exists in both dataframes
+            df2.drop(columns=[f for f in df2.columns if (f in df.columns) and f != 'glom_index'], inplace=True)
+            # Iterate over the remaining dataframes
+            df = pd.merge(df, df2, on='glom_index', how='inner')
         df.dropna(subset=[f for f in self.feature_list if f in df.columns], inplace=True)
 
-        df_annotations = pd.concat([pd.read_csv(path) for path in self.raw_paths[1:]])
+        df_annotations = pd.concat([pd.read_csv(path) for path in self.annotation_file_paths])
         df = pd.merge(df, df_annotations, left_on="glom_index", right_on="ID", how="left")
         patients_in_raw_data = df['patient'].unique()
 
