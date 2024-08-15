@@ -20,7 +20,7 @@ class HeteroMessagePassingLayer(nn.Module):
             add_self_loops = edge_type[0] == edge_type[2]
 
             # Lazy intialization of the input dimension, depending on the message passing class
-            input_dim = (-1, -1) if msg_passing_type == "gat_v2" else -1
+            input_dim = (-1, -1) if msg_passing_type in ["gat_v2", 'sage'] else -1
 
             # Collect parameters for message passing layer
             params = {}
@@ -51,6 +51,12 @@ class HeteroMessagePassingLayer(nn.Module):
                     "in_channels": output_dim,
                     "out_channels": output_dim,
                     "num_relations": 1
+                })
+
+            if msg_passing_type == "sage":
+                params.update({
+                    "in_channels": input_dim,
+                    "out_channels": output_dim
                 })
 
             if params == {}:
