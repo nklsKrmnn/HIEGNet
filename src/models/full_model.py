@@ -51,6 +51,9 @@ class FullHybrid(HeteroGNN):
         cnn_output = torch.flatten(cnn_output, start_dim=1)
         cnn_output = F.relu(cnn_output)
 
+        # Delete image features
+        del x_dict['glomeruli_image']
+
         # Concat CNN output to glomeruli node features
         x_dict['glomeruli'] = torch.cat([x_dict['glomeruli'], cnn_output], dim=1)
 
