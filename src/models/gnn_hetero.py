@@ -184,7 +184,7 @@ class HeteroGNN(nn.Module):
                 self.fc_layers.append(lin_dict)
 
         # Output layer
-        self.output_layer = nn.Linear(hidden_dims[-1], output_dim)
+        self.output_layer = nn.LazyLinear(output_dim)
 
     def forward(self, x_dict, edge_index_dict, edge_attr_dict=None):
         fc_layer_index = 0
