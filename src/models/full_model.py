@@ -123,8 +123,8 @@ class FullHybridJK(FullHybrid):
         )
 
         self.output_layer = nn.Sequential(
-            nn.LazyLinear(hidden_dims[-1]),
-            nn.Linear(hidden_dims[-1], output_dim)
+            nn.LazyLinear(self.hidden_dims[-1]),
+            nn.Linear(self.hidden_dims[-1], output_dim)
         )
 
 
