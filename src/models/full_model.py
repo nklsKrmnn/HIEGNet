@@ -44,6 +44,7 @@ class FullHybrid(HeteroGNN):
         self.cnn_encoder = CNN(**cnn_params)
 
 
+
     def forward(self, x_dict, edge_index_dict, edge_attr_dict=None):
         # CNN
         image = x_dict['glomeruli_image']
@@ -119,6 +120,11 @@ class FullHybridJK(FullHybrid):
             softmax_function=softmax_function,
             cnn_params=cnn_params,
             image_size=image_size
+        )
+
+        self.output_layer = nn.Sequential(
+            nn.LazyLinear(hidden_dims[-1]),
+            nn.Linear(hidden_dims[-1], output_dim)
         )
 
 

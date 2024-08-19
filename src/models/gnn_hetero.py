@@ -138,7 +138,7 @@ class HeteroGNN(nn.Module):
         self.softmax_function = softmax_function
 
         # Create hidden_dims list from dimension and number message_passing_steps if hidden_dims is not given
-        hidden_dims = [hidden_dim for _ in range(n_message_passings)] if hidden_dims is None else hidden_dims
+        self.hidden_dims = [hidden_dim for _ in range(n_message_passings)] if hidden_dims is None else hidden_dims
 
         # Determine existing node and edge types
         edge_types = {('glomeruli', 'to', 'glomeruli'): msg_passing_types['glom_to_glom']}
@@ -154,18 +154,18 @@ class HeteroGNN(nn.Module):
         lin_dict = nn.ModuleDict()
         for node_type in node_types:
             lin_dict[node_type] = nn.Sequential(
-                nn.LazyLinear(hidden_dims[0]),
-                init_norm_layer(self.norm_fc_layers)(hidden_dims[0]),
+                nn.LazyLinear(self.hidden_dims[0]),
+                init_norm_layer(self.norm_fc_layers)(self.hidden_dims[0]),
                 nn.ReLU(),
                 nn.Dropout(p=dropout)
             )
         self.fc_layers.append(lin_dict)
 
         # GAT and FC layers
-        for i in range(0, len(hidden_dims)):
+        for i in range(0, len(self.hidden_dims)):
             # Intermediate message passing layer
             self.message_passing_layers.append(HeteroMessagePassingLayer(
-                output_dim=hidden_dims[i],
+                output_dim=self.hidden_dims[i],
                 edge_types=edge_types,
                 dropout=dropout,
                 norm=norm,
@@ -176,8 +176,8 @@ class HeteroGNN(nn.Module):
                 lin_dict = nn.ModuleDict()
                 for node_type in node_types:
                     lin_dict[node_type] = nn.Sequential(
-                        nn.Linear(hidden_dims[i - 1], hidden_dims[i - 1]),
-                        init_norm_layer(self.norm_fc_layers)(hidden_dims[i - 1]),
+                        nn.Linear(self.hidden_dims[i - 1], self.hidden_dims[i - 1]),
+                        init_norm_layer(self.norm_fc_layers)(self.hidden_dims[i - 1]),
                         nn.ReLU(),
                         nn.Dropout(p=dropout)
                     )
