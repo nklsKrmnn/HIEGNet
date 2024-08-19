@@ -1,19 +1,19 @@
 use_gpu: true
-run_name: "gs_w_cell2glom_inglom_tcell"
+run_name: "gs_eb_glom_k1"
 model_parameters:
   hetero_gnn:
-    hidden_dim: gs
-    n_message_passings: gs
-    n_fc_layers: gs
+    hidden_dim: 32
+    n_message_passings: 5
+    n_fc_layers: 1
     norm_fc_layers: batch
     output_dim: 3
     dropout: gs
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
-      glom_to_glom: 'gcn'
-      cell_to_glom: gs
-      cell_to_cell: gs
+      glom_to_glom: gs
+      cell_to_glom: gat_v2
+      cell_to_cell: gine
 training_parameters:
   batch_size: 1
   epochs: 500
@@ -39,10 +39,11 @@ dataset_parameters:
   cell_node_dir_path: "/data/3_extracted_features/EXC/cell_nodes"
   annotations_path: "/data/1_cytomine_downloads/EXC/annotations/25/"
   validation_split: 0.15
+  test_split: 0.15
   processed_file_name: "glom_graph"
   glom_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
-    k: 0 # Options: "k", "radius", ""
+    k: 1 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 5 # Options: "k", "radius", ""

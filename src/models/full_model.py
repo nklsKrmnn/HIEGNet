@@ -159,7 +159,7 @@ class FullHybridJK(FullHybrid):
                     x_dict[node_type] = self.fc_layers[fc_layer_index][node_type](x)
                 fc_layer_index += 1
 
-        x = self.output_layer(torch.cat([x_dict['glomeruli'], cnn_output]))
+        x = self.output_layer(torch.cat([x_dict['glomeruli'], cnn_output],dim=1))
 
         # Apply softmax if needed
         if self.softmax_function == "softmax":
