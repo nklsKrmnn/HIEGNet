@@ -40,7 +40,8 @@ class Logger():
         to the current date and time. It also initializes the training start time to None.
         """
         current_time_string = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self._summary_writer = SummaryWriter(f"runs/{current_time_string}_{name}")
+        self.name = f"runs/{current_time_string}_{name}"
+        self._summary_writer = SummaryWriter(self.name)
         self._training_start: Optional[datetime] = None
 
     def write_text(self, tag: str, text: str) -> None:
@@ -256,7 +257,8 @@ class FoldLogger(Logger):
     def __init__(self, fold: int, current_time_string, name: str = "") -> None:
 
         self.start_time_str = current_time_string
-        self._summary_writer = SummaryWriter(f"runs/{current_time_string}_{name}_fold{fold}")
+        self.name = f"runs/{current_time_string}_{name}_fold{fold}"
+        self._summary_writer = SummaryWriter(self.name)
         self._training_start: Optional[datetime] = None
 
         self.train_loss = {}
@@ -472,16 +474,26 @@ class CrossValLogger():
         final_scores = {}
         for score in self.fold_logger[0].scores.keys():
             for class_label in self.fold_logger[0].scores[score].keys():
+                last_key = max(self.fold_logger[0].scores[score][class_label].keys())
                 for i, fold in enumerate(self.fold_logger):
-                    final_scores[f'{score}_{class_label}_fold{i}'] = fold.scores[score][class_label][
-                        max(fold.scores[score][class_label].keys())]
+                    final_scores[f'{score}_{class_label}_fold{i}'] = fold.scores[score][class_label][last_key]
 
-                mean = np.mean([fold.scores[score][class_label][max(fold.scores[score][class_label].keys())] for fold in
-                                self.fold_logger])
-                std = np.std([fold.scores[score][class_label][max(fold.scores[score][class_label].keys())] for fold in
-                              self.fold_logger])
+                mean = np.mean([fold.scores[score][class_label][last_key] for fold in self.fold_logger])
+                std = np.std([fold.scores[score][class_label][last_key] for fold in self.fold_logger])
                 final_scores[f'{score}_{class_label}_mean'] = mean
                 final_scores[f'{score}_{class_label}_std'] = std
+
+        # Add loss values
+        for loss in ['train', 'val']:
+            last_key = max(self.fold_logger[0].train_loss.keys())
+            for i, fold in enumerate(self.fold_logger):
+                final_scores[f'{loss}_loss_fold{i}'] = fold.train_loss[last_key] if loss == 'train' else fold.val_loss[last_key]
+
+            mean = np.mean([final_scores[f'{loss}_loss_fold{i}'] for i in range(len(self.fold_logger))])
+            std = np.std([final_scores[f'{loss}_loss_fold{i}'] for i in range(len(self.fold_logger))])
+
+            final_scores[f'{loss}_loss_mean'] = mean
+            final_scores[f'{loss}_loss_std'] = std
 
         return final_scores
 

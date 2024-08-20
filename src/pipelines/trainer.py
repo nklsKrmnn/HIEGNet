@@ -99,7 +99,7 @@ class Trainer:
             batch_shuffle: bool = False,
             patience: int = 50,
             log_image_frequency: int = 10,
-            reported_set: str = "test"
+            reported_set: str = "val"
     ):
         """
         Creates a Trainer instance from an unpacked configuration file.

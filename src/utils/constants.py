@@ -1,6 +1,6 @@
 from typing import Final
 from src.models.cnn import CNN
-from src.models.full_model import FullHybrid
+from src.models.full_model import FullHybrid, FullHybridJK
 from src.models.gnn_cnn_hybrid_skip import SkipHeteroHybridGNN
 from src.models.gnn_cnn_hyrbid import GnnCnnHybrid, HeteroHybridGNN
 from src.models.gnn_hetero import HeteroGNN
@@ -47,6 +47,7 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'cell_to_cell': ['gcn', 'gat_v2', 'gine', 'sage'],
     "learning_rate": [0.003, 0.001, 0.0003, 0.0001]
 }
+
 MODEL_NAME_MAPPING: Final[dict[str, any]] = {
     "gcn": GCN,
     "hybrid": GnnCnnHybrid,
@@ -58,5 +59,6 @@ MODEL_NAME_MAPPING: Final[dict[str, any]] = {
     "hetero_gnn": HeteroGNN,
     "hetero_hybrid_gnn": HeteroHybridGNN,
     "hetero_hybrid_gnn_skip": SkipHeteroHybridGNN,
-    "hetero_full_model": FullHybrid
+    "hetero_full_model": FullHybrid,
+    "hetero_full_jk_model": FullHybridJK
 }
