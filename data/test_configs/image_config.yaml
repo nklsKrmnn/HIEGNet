@@ -1,18 +1,12 @@
 use_gpu: true
-run_name: "cnn_stain25_glom_isolated_d7"
+run_name: "resnet_gs_dropout"
 model_parameters:
-  cnn:
-    hidden_channels: [ 20, 30, 40, 50 ] #output dim: 361
-    kernel_size: 4
-    input_channels: 3
-    stride: 2
-    mlp_params:
-      input_dim: 150
-      hidden_dims: [80,40]
-      output_dim: 3
-      dropout: 0.7
+  resnet:
+    hidden_dims: [128, 64]
+    output_dim: 3
+    dropout: gs
 training_parameters:
-  batch_size: 50
+  batch_size: 100
   epochs: 300
   learning_rate: 0.0001
   lr_scheduler_params:
@@ -27,21 +21,21 @@ training_parameters:
   seed: 69
   batch_shuffle: false
   patience: 100000000
-  log_image_frequency: 20
+  log_image_frequency: 50
   n_folds: 4
+  reported_set: "val"
 dataset_parameters:
   class_name: image_dataset
   validation_split: 0.15
+  test_split: 0.15
   process: true
-  train_patients:
+  patients:
     - 001
   random_seed: 123
   onehot_targets: true
   hot_load: true
-  #image_paths_file: "/home/niklas/drive/data/3_extracted_features/EXC/image_glom_iso_paths.csv"
-  image_paths_file: "/home/dascim/data/3_extracted_features/EXC/image_glom_iso_paths.csv"
-  #annotations_path: "/home/niklas/drive/data/3_extracted_features/EXC/ann/"
-  annotations_path: "/home/dascim/data/3_extracted_features/EXC/ann/"
+  image_file_path: "/data/3_extracted_features/EXC/image_paths_full.csv"
+  annotations_path: "/data/1_cytomine_downloads/EXC/annotations/25/"
   feature_list:
     - 'path_25'
     #- 'path_106'
