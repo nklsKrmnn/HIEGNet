@@ -20,20 +20,20 @@ ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")
 class GlomImageDataset(HybridGraphDataset):
     def __init__(self,
                  annotations_path,
-                 image_paths_file,
+                 image_file_path: str,
                  feature_list: list,
                  random_seed: int = 42,
                  validation_split: float = 0.2,
                  test_split: float = 0.0,
-                 train_patients: list[str] = [],
+                 patients: list[str] = [],
                  hot_load: bool = False,
                  onehot_targets: bool = True):
 
         self.test_split = test_split
         self.val_split = validation_split
-        self.train_patients = train_patients
-        self.path_file = image_paths_file
-        self.annotations_paths = list_annotation_file_names(annotations_path)
+        self.train_patients = patients
+        self.path_file = ROOT_DIR + image_file_path
+        self.annotations_paths = list_annotation_file_names(ROOT_DIR + annotations_path)
         self.random_seed = random_seed
         self.onehot_targets = onehot_targets
         self.hot_load = hot_load
