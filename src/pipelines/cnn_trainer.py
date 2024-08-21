@@ -175,7 +175,8 @@ class ImageTrainer:
                 lr_scheduler = optim.lr_scheduler.CyclicLR(optimizer_instance,
                                                            **lr_scheduler_params["params"])
             elif lr_scheduler_params["scheduler"] == "OneCycleLR":
-                total_steps = (len(dataset.get_set_indices()[0]) + 2) / batch_size * epochs
+                n_batches = int(math.ceil((len(dataset.get_set_indices()[0])) / batch_size))
+                total_steps = int(math.ceil((len(dataset.get_set_indices()[0])) / batch_size) * epochs)
                 lr_scheduler = optim.lr_scheduler.OneCycleLR(optimizer_instance,
                                                              total_steps=total_steps,
                                                              **lr_scheduler_params["params"])
@@ -437,7 +438,7 @@ class ImageTrainer:
                 step_count += 1
 
                 # Step for ReduceLROnPlateau schedule is done with validation loss
-                if self.lr_scheduler is not None and not isinstance(self.lr_scheduler,
+                if self.lr_scheduler is not None and isinstance(self.lr_scheduler,
                                                                     optim.lr_scheduler.ReduceLROnPlateau):
                     self.lr_scheduler.step()
 
