@@ -184,8 +184,8 @@ class SeachSampler:
             else:
                 no_hetero_gcn = True
 
-            if no_hetero_gcn:
-                self.search_space.append(copy.deepcopy(config))
+            #if no_hetero_gcn:
+            self.search_space.append(copy.deepcopy(config))
 
         return self.search_space
 
