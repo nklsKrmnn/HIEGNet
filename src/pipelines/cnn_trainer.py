@@ -175,7 +175,7 @@ class ImageTrainer:
                 lr_scheduler = optim.lr_scheduler.CyclicLR(optimizer_instance,
                                                            **lr_scheduler_params["params"])
             elif lr_scheduler_params["scheduler"] == "OneCycleLR":
-                total_steps = (int(math.ceil(len(dataset) / batch_size))) * epochs
+                total_steps = (len(dataset.get_set_indices()[0]) + 2) / batch_size * epochs
                 lr_scheduler = optim.lr_scheduler.OneCycleLR(optimizer_instance,
                                                              total_steps=total_steps,
                                                              **lr_scheduler_params["params"])
@@ -309,11 +309,6 @@ class ImageTrainer:
                     self.visualize(val_results[0], val_results[1], "val", epoch)
                     self.visualize(test_results[0], test_results[1], 'test', epoch)
 
-                # Step for ReduceLROnPlateau schedule is done with validation loss
-                if self.lr_scheduler is not None and not isinstance(self.lr_scheduler,
-                                                                    optim.lr_scheduler.ReduceLROnPlateau):
-                    self.lr_scheduler.step()
-
                 # Logging learning rate (getter-function only works with torch2.2 or higher)
                 if self.lr_scheduler is not None:
                     try:
@@ -383,6 +378,11 @@ class ImageTrainer:
 
             total_train_loss += train_loss.item()
             step_count += 1
+
+            # Step for ReduceLROnPlateau
+            if self.lr_scheduler is not None and not isinstance(self.lr_scheduler,
+                                                                optim.lr_scheduler.ReduceLROnPlateau):
+                self.lr_scheduler.step()
 
             if len(labels.shape) == 1:
                 pred = predictions.detach().argmax(dim=1).cpu()
