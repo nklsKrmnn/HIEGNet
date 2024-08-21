@@ -38,7 +38,7 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'hidden_dim': [32, 64],
     'n_message_passings': [1, 2, 3, 4, 5],
     'n_fc_layers': [1, 2],
-    'dropout': [0.1, 0.2, 0.3, 0.4, 0.5],
+    'dropout': [0.85, 0.9, 0.95],
     'softmax_function': ['softmax', 'log_softmax', 'none'],
     'norm_fc_layers': ['batch', 'layer', 'none'],
     'norm': ['batch', 'layer', 'none'],

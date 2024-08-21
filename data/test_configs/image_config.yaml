@@ -4,15 +4,15 @@ model_parameters:
   resnet:
     hidden_dims: [128, 64]
     output_dim: 3
-    dropout: gs
+    dropout: 0.9
 training_parameters:
-  batch_size: 100
+  batch_size: 20
   epochs: 300
   learning_rate: 0.0001
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: 0.0003
+      max_lr: 0.001
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
@@ -33,7 +33,7 @@ dataset_parameters:
     - 001
   random_seed: 123
   onehot_targets: true
-  hot_load: true
+  hot_load: false
   image_file_path: "/data/3_extracted_features/EXC/image_paths_full.csv"
   annotations_path: "/data/1_cytomine_downloads/EXC/annotations/25/"
   feature_list:
