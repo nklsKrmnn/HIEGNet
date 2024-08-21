@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "resnet_gs_dropout"
+run_name: "resnet50_wout_crossval"
 model_parameters:
   resnet:
     hidden_dims: [128, 64]
@@ -12,7 +12,7 @@ training_parameters:
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: 0.001
+      max_lr: 0.0003
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
@@ -22,12 +22,12 @@ training_parameters:
   batch_shuffle: false
   patience: 100000000
   log_image_frequency: 50
-  n_folds: 4
+  n_folds: 0
   reported_set: "val"
 dataset_parameters:
   class_name: image_dataset
   validation_split: 0.15
-  test_split: 0.15
+  test_split: 0.0
   process: true
   patients:
     - 001
