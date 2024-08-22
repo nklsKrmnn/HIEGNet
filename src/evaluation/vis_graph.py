@@ -8,7 +8,7 @@ import pandas as pd
 
 #matplotlib.use('TkAgg')
 
-def visualize_graph(coordinates, sparse_matrix, target_classes, predicted_classes, class_labels):
+def visualize_graph(coordinates, sparse_matrix, target_classes, predicted_classes, class_labels, train_indices, test_indices):
     """
     Visualizes a graph with nodes colored by their target class and outlined by their predicted class.
 
@@ -19,29 +19,34 @@ def visualize_graph(coordinates, sparse_matrix, target_classes, predicted_classe
         predicted_classes (list): Predicted classes for the nodes.
     """
     # Create the graph from the adjacency matrix
-    adj_matrix = edge_list_to_adjacency_matrix(sparse_matrix.T)
+    if sparse_matrix.shape[1] != 0:
+        adj_matrix = edge_list_to_adjacency_matrix(sparse_matrix.T)
+    else:
+        adj_matrix = np.zeros((len(coordinates), len(coordinates)), dtype=int)
     G = nx.from_numpy_array(adj_matrix)
 
     # Define custom color map
-    colors = ['green', 'yellow', 'red']
+    colors = ['green', 'goldenrod', 'red']
     target_color_map = {i: colors[i % len(colors)] for i in range(len(set(target_classes)))}
     predicted_color_map = {i: colors[i % len(colors)] for i in range(len(set(target_classes)))}
 
     # Create a dictionary for node positions
     pos = {i: coord for i, coord in enumerate(coordinates)}
 
-    fig = plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(20, 16),facecolor='white')
 
     # Draw edges
     nx.draw_networkx_edges(G, pos, alpha=0.5)
 
     # Draw nodes with target class colors and predicted class outlines
-    for node in G.nodes():
+    for i, node in enumerate(G.nodes()):
         target_class = target_classes[node]
         predicted_class = predicted_classes[node]
 
         node_color = target_color_map[target_class]
         edge_color = predicted_color_map[predicted_class]
+
+        alpha = 0.5 if train_indices[i] else 1.0
 
         nx.draw_networkx_nodes(
             G, pos,
@@ -49,7 +54,9 @@ def visualize_graph(coordinates, sparse_matrix, target_classes, predicted_classe
             node_color=[node_color],
             edgecolors=[edge_color],
             node_size=100,
-            linewidths=2.5
+            linewidths=3.5,
+            alpha=alpha,
+
         )
 
     # Draw node labels
@@ -57,7 +64,7 @@ def visualize_graph(coordinates, sparse_matrix, target_classes, predicted_classe
 
     # Create legend for target classes
     target_legend_handles = [
-        plt.Line2D([0], [0], marker='o', color='lightgrey', markerfacecolor=colors[i % len(colors)], markersize=10)
+        plt.Line2D([0], [0], marker='o', color='lightgrey', markerfacecolor=colors[i % len(colors)], markersize=7)
         for i in range(len(set(target_classes)))]
     target_legend_labels = [f"Target: {class_labels[i]}" for i in range(len(set(target_classes)))]
     target_legend = plt.legend(handles=target_legend_handles, labels=target_legend_labels, loc='upper left')
