@@ -635,7 +635,13 @@ class Trainer:
                 predicted_classes = prediction.numpy()
 
                 class_labels = self.dataset[0].target_labels
-                fig = visualize_graph(coordinates, sparse_matrix, target_classes, predicted_classes, class_labels)
+                fig = visualize_graph(coordinates,
+                                      sparse_matrix,
+                                      target_classes,
+                                      predicted_classes,
+                                      class_labels,
+                                      batch.train_mask,
+                                      batch.test_mask)
                 self.logger.save_figure(fig, "graph", i)
 
 

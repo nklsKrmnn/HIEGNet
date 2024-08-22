@@ -1,28 +1,39 @@
 use_gpu: true
-run_name: "coding eval"
+run_name: "evaluation_full_model_jumping_knowledge_suboptimalGNN"
 model_parameters:
-  hetero_gnn:
+  hetero_full_jk_model:
+    cnn_params:
+      hidden_channels: [ 20, 30, 40, 50 ] #output dim: 361
+      kernel_size: 4
+      input_channels: 3
+      stride: 2
+      cnn_softmax_function: "none" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
+      mlp_params:
+        hidden_dims: [128, 64]
+        output_dim: 32
+        mlp_dropout: 0.65
+        mlp_softmax_function: "none" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     hidden_dim: 16
-    n_message_passings: 2
-    n_fc_layers: 1
+    n_message_passings: 4
+    n_fc_layers: 3
     norm_fc_layers: batch
     output_dim: 3
-    dropout: 0.1
+    dropout: 0.15
     norm: none
-    softmax_function: "none" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
+    softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
-      glom_to_glom: 'sage'
+      glom_to_glom: 'gcn'
       cell_to_glom: 'gat_v2'
       cell_to_cell: 'gcn'
 training_parameters:
   batch_size: 1
-  epochs: 5
-  learning_rate: 0.03
+  epochs: 500
+  learning_rate: 0.0003
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
       max_lr: 0.003
-  loss: "crossentropy" # Options: "mse", "crossentropy", "nll", "weighted_mse"
+  loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
   balance_classes: true
@@ -32,35 +43,39 @@ training_parameters:
   patience: 100000000
   log_image_frequency: 100
   n_folds: 0 # Set to 0 for no cross-validation
-  reported_set: "val" # Options: "val", "test", 'train'
+  reported_set: "test"
 dataset_parameters:
-  class_name: hetero_graph_dataset
+  class_name: full_graph_dataset
   root: "/data/4_input_data_graphs/glob_graphs/"
   feature_file_path: "/data/3_extracted_features/EXC/glom_features.csv"
+  image_file_path: "/data/3_extracted_features/EXC/image_paths_full.csv"
   cell_node_dir_path: "/data/3_extracted_features/EXC/cell_nodes"
   annotations_path: "/data/1_cytomine_downloads/EXC/annotations/25/"
-  validation_split: 0.15
+  validation_split: 0.0
   test_split: 0.15
   processed_file_name: "glom_graph"
   glom_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
-    k: 1 # Options: "k", "radius", ""
+    k: 0 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 5 # Options: "k", "radius", ""
   train_patients:
-    - 001
-  validation_patients:
     - 001
   test_patients:
     - 001
   random_seed: 123
   onehot_targets: true
   process: true
+  hot_load: true
   preprocessing_params:
     scaler: 'MinMaxScaler'
   send_msg_from_glom_to_cell: false
   feature_list:
+    - 'path_25'
+    #- 'path_106'
+    #- 'path_107'
+    #- 'path_108'
     - 'Area (microns²)'
     - 'Perimeter (mm)'
     - 'circularity'
@@ -86,4 +101,3 @@ dataset_parameters:
     - "compactness"
     - "solidity"
     #- "is_in_glom"
-
