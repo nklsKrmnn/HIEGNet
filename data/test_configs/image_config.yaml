@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "resnet50_wout_crossval"
+run_name: "resnet152_crossval_lowLR"
 model_parameters:
   resnet:
     hidden_dims: [128, 64]
@@ -8,11 +8,11 @@ model_parameters:
 training_parameters:
   batch_size: 20
   epochs: 300
-  learning_rate: 0.0001
+  learning_rate: 0.00001
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: 0.0003
+      max_lr: 0.0001
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
@@ -22,12 +22,12 @@ training_parameters:
   batch_shuffle: false
   patience: 100000000
   log_image_frequency: 50
-  n_folds: 0
+  n_folds: 4
   reported_set: "val"
 dataset_parameters:
   class_name: image_dataset
   validation_split: 0.15
-  test_split: 0.0
+  test_split: 0.15
   process: true
   patients:
     - 001
