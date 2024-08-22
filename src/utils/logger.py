@@ -228,6 +228,22 @@ class Logger():
         print(f"[Logger]: Chart for {set} set saved.")
         plt.close('all')
 
+    def save_figure(self, figure: plt.Figure, tag: str, index: int) -> None:
+        """
+        Saves an image into logger with tag and at index.
+
+        :param figure: Figure to safe
+        :param tag: Tag in image folder
+        :param index: Index of image
+        :return: None
+        """
+        buf = io.BytesIO()
+        figure.savefig(buf, format='png')
+        buf.seek(0)
+        image = Image.open(buf)
+        image = ToTensor()(image)
+        self._summary_writer.add_image(f"{tag}", image, index)
+
     def log_model_path(self, model_path: str) -> None:
         """
         Logs the path of the saved model.

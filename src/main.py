@@ -189,7 +189,9 @@ def main() -> None:
         logger.close()
 
     if args.pipeline == EVAL_COMMAND:
-        model = ModelService.create_model(model_name=model_name, model_attributes=model_attributes)
+        run_training = 'model_name' not in model_attributes.keys()
+
+        model = ModelService.create_model(model_name=model_name, model_attributes=model_attributes.copy())
         logger.write_model(model)
 
         trainer = Trainer(
@@ -197,10 +199,21 @@ def main() -> None:
             model=model,
             device=device,
             logger=logger,
-            **config.pop("training_parameters"))
+            **config["training_parameters"])
 
-        trainer.evaluate()
-        trainer.save_model()
+        # Train model if model is not provided
+        if run_training:
+            trainer.start_training()
+            trainer.save_model()
+
+        trainer.evaluate(
+            parameters={
+                'model': model_attributes,
+                'training': config['training_parameters'],
+                'dataset': dataset_parameters
+            }
+        )
+
     elif args.pipeline == PREDICT_COMMAND:
         pass
 

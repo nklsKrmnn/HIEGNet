@@ -73,20 +73,17 @@ class GlomGraphDataset(Dataset):
 
         self.processed_file_name = processed_file_name
         self.feature_file_path = ROOT_DIR + feature_file_path
-        self.test_split = test_split if test_patients == [] else 0.0
-        self.val_split = validation_split if (validation_patients == [] or validation_split == 1.0) else 0.0
+        self.test_split = test_split if test_patients != [] else 0.0
+        self.val_split = validation_split if validation_patients != [] else 0.0
         self.train_patients = train_patients
-        self.validation_patients = validation_patients if validation_patients != [] else train_patients
-        self.test_patients = test_patients if test_patients != [] else validation_patients
+        self.validation_patients = validation_patients
+        self.test_patients = test_patients
         self.feature_list = feature_list
         self.glom_graph = glom_graph
         self.random_seed = random_seed
         self.onehot_targets = onehot_targets
         self.annot_path = ROOT_DIR + str(annotations_path)
         self.preprocessing_params = preprocessing_params
-
-        # Dict to save settings of patients in config later
-        self.patient_settings = 'not implemented anymore'
 
         root = ROOT_DIR + root
         super(GlomGraphDataset, self).__init__(root, transform, pre_transform)
@@ -185,7 +182,7 @@ class GlomGraphDataset(Dataset):
             if (df_patient.shape[0] > 10) and (
                     patient in self.train_patients + self.validation_patients + self.test_patients):
                 # Create the data object for each graph
-                data = self.create_graph_object(df_patient)
+                data = self.create_graph_object(df_patient, patient)
 
                 # Save graph data object
                 file_name = f"{self.processed_file_name}_p{patient}.pt"
@@ -193,13 +190,17 @@ class GlomGraphDataset(Dataset):
                 print(f'[Dataset]: Saves {file_name}')
 
                 # Save file names of processed files and if patient is in train/test set and save in settings dict
-                set = 'train' if patient in self.train_patients else 'validation' if patient in self.validation_patients else 'test'
-                file_names.append({"file_name": file_name, "set": set})
+                file_names.append({
+                    "file_name": file_name,
+                    "train_patient": patient in self.train_patients,
+                    "validation_patient": patient in self.validation_patients,
+                    "test_patient": patient in self.test_patients
+                })
 
         with open(os.path.join(self.processed_dir, f"{self.processed_file_name}_filenames.pkl"), 'wb') as handle:
             pickle.dump(file_names, handle)
 
-    def create_graph_object(self, df_patient) -> Data:
+    def create_graph_object(self, df_patient, patient: str) -> Data:
         """
         The raw data is processed to a graph data object with the features, target labels and edge index.
 
@@ -229,8 +230,8 @@ class GlomGraphDataset(Dataset):
         train_indices, val_indices, test_indices = get_train_val_test_indices(y, self.test_split,
                                                                               self.val_split,
                                                                               self.random_seed,
-                                                                              self.test_patients,
-                                                                              self.validation_patients)
+                                                                              self.test_patients == patient,
+                                                                              self.validation_patients == patient)
 
         data.train_mask = create_mask(len(y), train_indices)
         data.val_mask = create_mask(len(y), val_indices)
@@ -292,7 +293,19 @@ class GlomGraphDataset(Dataset):
         """
         with open(os.path.join(self.processed_dir, f"{self.processed_file_name}_filenames.pkl"), 'rb') as handle:
             file_names = pickle.load(handle)
-        train_indices = [i for i, file in enumerate(file_names) if file['set'] == 'train']
+        train_indices = [i for i, file in enumerate(file_names) if file['train_patient']]
+        validation_indices = [i for i, file in enumerate(file_names) if file['validation_patient']]
+        test_indices = [i for i, file in enumerate(file_names) if file['test_patient']]
+        return train_indices, validation_indices, test_indices
+
+    def get_set_indicesold(self) -> tuple[list[int], list[int], list[int]]:
+        """
+        Get the indices of the train, validation and test graphs.
+        :return: Tuple of lists with the indices of the train and test graphs
+        """
+        with open(os.path.join(self.processed_dir, f"{self.processed_file_name}_filenames.pkl"), 'rb') as handle:
+            file_names = pickle.load(handle)
+        train_indices = [i for i, file_name in enumerate(file_names) if file_name['train']]
         validation_indices = [i for i, file in enumerate(file_names) if file['set'] == 'validation']
         test_indices = [i for i, file in enumerate(file_names) if file['set'] == 'test']
         return train_indices, validation_indices, test_indices
@@ -308,7 +321,7 @@ class GlomGraphDataset(Dataset):
             file_names = pickle.load(handle)
         y = []
         for file in file_names:
-            if file["set"] == 'train':
+            if file["train_patient"]:
                 data = torch.load(os.path.join(self.processed_dir, file['file_name']))
                 y.append(data.y)
         y = torch.cat(y)
