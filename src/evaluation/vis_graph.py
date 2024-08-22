@@ -1,26 +1,31 @@
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
 
 import matplotlib
+import pandas as pd
+
+
 #matplotlib.use('TkAgg')
 
-def visualize_graph(coordinates, adjacency_matrix, target_classes, predicted_classes, class_labels):
+def visualize_graph(coordinates, sparse_matrix, target_classes, predicted_classes, class_labels):
     """
     Visualizes a graph with nodes colored by their target class and outlined by their predicted class.
 
     Parameters:
         coordinates (list of tuples): List of (x, y) coordinates for the nodes.
-        adjacency_matrix (numpy array): Adjacency matrix of the graph.
+        sparse_matrix (numpy array): Adjacency matrix of the graph.
         target_classes (list): Target classes for the nodes.
         predicted_classes (list): Predicted classes for the nodes.
     """
     # Create the graph from the adjacency matrix
-    G = nx.from_numpy_array(adjacency_matrix)
+    adj_matrix = edge_list_to_adjacency_matrix(sparse_matrix.T)
+    G = nx.from_numpy_array(adj_matrix)
 
     # Define custom color map
     colors = ['green', 'yellow', 'red']
     target_color_map = {i: colors[i % len(colors)] for i in range(len(set(target_classes)))}
-    predicted_color_map = {i: colors[i % len(colors)] for i in range(len(set(predicted_classes)))}
+    predicted_color_map = {i: colors[i % len(colors)] for i in range(len(set(target_classes)))}
 
     # Create a dictionary for node positions
     pos = {i: coord for i, coord in enumerate(coordinates)}
@@ -74,3 +79,28 @@ def visualize_graph(coordinates, adjacency_matrix, target_classes, predicted_cla
     plt.savefig('graph.png')
 
     return fig
+
+
+def edge_list_to_adjacency_matrix(edge_list):
+    """
+    Convert an edge list to an adjacency matrix.
+
+    Parameters:
+        edge_list (numpy array): 2D array where each row represents an edge between two nodes.
+
+    Returns:
+        numpy array: Adjacency matrix of the graph.
+    """
+    # Get the maximum node index to determine the size of the adjacency matrix
+    num_nodes = int(np.max(edge_list)) + 1
+
+    # Initialize the adjacency matrix with zeros
+    adjacency_matrix = np.zeros((num_nodes, num_nodes), dtype=int)
+
+    # Populate the adjacency matrix
+    for edge in edge_list:
+        node1, node2 = edge
+        adjacency_matrix[node1, node2] = 1
+        adjacency_matrix[node2, node1] = 1  # Assuming an undirected graph
+
+    return adjacency_matrix

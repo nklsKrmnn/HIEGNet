@@ -50,6 +50,10 @@ dataset_parameters:
     k: 5 # Options: "k", "radius", ""
   train_patients:
     - 001
+  validation_patients:
+    - 001
+  test_patients:
+    - 001
   random_seed: 123
   onehot_targets: true
   process: true

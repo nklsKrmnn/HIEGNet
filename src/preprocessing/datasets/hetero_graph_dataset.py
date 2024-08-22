@@ -33,7 +33,7 @@ class HeteroGraphDataset(GlomGraphDataset):
 
         super().__init__(**kwargs)
 
-    def create_graph_object(self, df_patient) -> HeteroData:
+    def create_graph_object(self, df_patient, patient) -> HeteroData:
         """
         Create the graph object from the raw data.
 
@@ -43,7 +43,6 @@ class HeteroGraphDataset(GlomGraphDataset):
 
         :return: The graph data object
         """
-        patient = df_patient['patient'].iloc[0]
 
         data = HeteroData()
 

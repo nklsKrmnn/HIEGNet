@@ -249,15 +249,21 @@ class Trainer:
         """
         # get indices of train and test patients
         train_indices, validation_indices, test_indices = self.dataset.get_set_indices()
-        if validation_indices == []:
-            validation_indices = train_indices
         train_dataset = Subset(self.dataset, train_indices)
         validation_dataset = Subset(self.dataset, validation_indices)
         test_dateset = Subset(self.dataset, test_indices)
 
+        # Check that dataset to report is not empty
+        if self.reported_set == "test" and test_indices == []:
+            raise ValueError("No test set to report performance on.")
+        if self.reported_set == "val" and validation_indices == []:
+            raise ValueError("No validation set to report performance on.")
+        if train_indices == []:
+            raise ValueError("No training set to train on.")
+
         # Create torch data loaders
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size)
-        validation_loader = DataLoader(validation_dataset, batch_size=self.batch_size)
+        validation_loader = DataLoader(validation_dataset, batch_size=self.batch_size) if validation_indices != [] else None
         test_loader = DataLoader(test_dateset, batch_size=self.batch_size) if test_indices != [] else None
 
         return train_loader, validation_loader, test_loader
@@ -292,17 +298,23 @@ class Trainer:
                 # Logging loss of results
                 self.logger.log_loss(train_loss, epoch, "1_train")
 
-                # Calculating validation loss
-                val_loss, val_results = self.validation_step(validation_loader)
-                self.logger.log_loss(val_loss, epoch, "2_validation")
+                if validation_loader is not None:
+                    # Calculating validation loss if loader exists
+                    val_loss, val_results = self.validation_step(validation_loader)
+                    self.logger.log_loss(val_loss, epoch, "2_validation")
+                    early_stopping_loss = val_loss
+                elif train_loader is not None and self.reported_set == "test":
+                    # Calculating test loss if loader exists, and we want to report it
+                    test_loss, test_results = self.validation_step(test_loader)
+                    self.logger.log_loss(test_loss, epoch, "3_test")
+                    early_stopping_loss = test_loss
 
+                # Calculate test scores on set we want to report
                 if test_loader is not None and self.reported_set == "test":
                     test_scores, test_results = self.test_step(test_loader, "test")
                 elif validation_loader is not None and self.reported_set == 'val':
-                    test_results = (val_results[0], val_results[1])
                     test_scores = calc_test_scores(val_results[1], val_results[0])
                 elif train_loader is not None and self.reported_set == 'train':
-                    test_results = (train_results[0], train_results[1])
                     test_scores = calc_test_scores(train_results[1], train_results[0])
                 else:
                     raise ValueError("No valid set to report performance on.")
@@ -313,8 +325,10 @@ class Trainer:
 
                 if epoch % self.log_image_frequency == 0:
                     self.visualize(train_results[0], train_results[1], 'train', epoch)
-                    self.visualize(val_results[0], val_results[1], "val", epoch)
-                    self.visualize(test_results[0], test_results[1], 'test', epoch)
+                    if validation_loader is not None:
+                        self.visualize(val_results[0], val_results[1], "val", epoch)
+                    if test_loader is not None and self.reported_set == "test":
+                        self.visualize(test_results[0], test_results[1], 'test', epoch)
 
                 # Step for ReduceLROnPlateau schedule is done with validation loss
                 if self.lr_scheduler is not None and not isinstance(self.lr_scheduler,
@@ -329,8 +343,8 @@ class Trainer:
                         self.logger.log_lr(lr=self.lr_scheduler.optimizer.param_groups[0]['lr'], epoch=epoch)
 
                 # Early stopping
-                if min_loss > val_loss:
-                    min_loss = val_loss
+                if min_loss > early_stopping_loss:
+                    min_loss = early_stopping_loss
                     cur_patience = 0
                 else:
                     if self.patience > 0:
@@ -396,7 +410,7 @@ class Trainer:
 
         return total_train_loss, (complete_predictions, complete_targets)
 
-    def calc_batch(self, graph_data, mask) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def calc_batch(self, graph_data, mask, return_softmax:bool=False) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Calculates the predictions and targets for a batch of data.
 
@@ -406,6 +420,7 @@ class Trainer:
         Args:
             graph_data (DataLoader): DataLoader for the training and validation graphs.
             mask_str (str): The mask to use for separating the dataset into training and validation data.
+            return_softmax (bool): Whether to return the softmax results.
 
         Returns:
             torch.Tensor: The predictions for the batch.
@@ -426,7 +441,7 @@ class Trainer:
         prediction = self.model.forward(input_graph_feature, input_graph_edge_index, input_graph_attr)
         loss = self.loss(prediction[mask], target[mask])
 
-        if len(graph_data.y.shape) == 1:
+        if (len(graph_data.y.shape) == 1) or return_softmax:
             pred = prediction.detach().cpu()
             targ = target.detach().cpu()
         elif graph_data.y.shape[1] > 1:
@@ -498,7 +513,7 @@ class Trainer:
         with torch.no_grad():
             for graph_data in test_loader:
                 mask = graph_data.test_mask if mask_str == "test" else graph_data.val_mask if mask_str == "val" else graph_data.train_mask
-                pred, targ, _ = self.calc_batch(graph_data, mask)
+                pred, targ, _ = self.calc_batch(graph_data, mask, return_softmax=True)
 
                 complete_predictions.append(pred[mask.detach().cpu()])
                 complete_targets.append(targ[mask.detach().cpu()])
@@ -506,11 +521,17 @@ class Trainer:
         complete_predictions = torch.cat(complete_predictions)
         complete_targets = torch.cat(complete_targets)
 
+        if graph_data.y.shape[1] > 1:
+            pred = complete_predictions.argmax(dim=1)
+            targ = complete_targets.argmax(dim=1)
+        else:
+            raise ValueError("Target shape is not valid.")
+
+        # Calculate test scores
+        scores = calc_test_scores(targ, pred)
+
         softmax_results = (complete_predictions, complete_targets)
-
-        scores = calc_test_scores(complete_targets, complete_predictions)
-
-        results = softmax_results if return_softmax else (complete_predictions, complete_targets)
+        results = softmax_results if return_softmax else (pred, targ)
 
         return scores, results
 
@@ -552,7 +573,8 @@ class Trainer:
         self.logger.log_model_path(model_path=path)
         print(f"Model saved to '{path}'.")
 
-    def evaluate(self) -> None:
+    def evaluate(self, parameters: dict[str, dict]) -> None:
+        # TODO: Docstring
         """
 
 
@@ -562,12 +584,29 @@ class Trainer:
 
         self.model.eval()
 
-        _, val_loader, test_loader = self.setup_dataloaders()
+        _, _, test_loader = self.setup_dataloaders()
 
         if test_loader is None:
-            test_loader = val_loader
+            raise ValueError("No test set to evaluate on.")
 
         test_scores, test_results = self.test_step(test_loader, "test", return_softmax=True)
+
+        # Unstack scores
+        test_scores = {f'{metric}_{score}': value for metric, score_dict in test_scores.items() for score, value in score_dict.items()}
+
+        # Save test scores and parameters
+        params = {f'params_{param_set}_{key}': value for param_set, param_dict in parameters.items() for key, value in param_dict.items()}
+        test_scores.update(params)
+        test_scores['name'] = self.logger.name.split('/')[-1]
+        test_scores = pd.DataFrame([test_scores])
+        try:
+            scores_file = pd.read_csv("./data/output/test_scores.csv") # TODO: put as constant
+        except:
+            scores_file = pd.DataFrame({})
+
+        scores_file = pd.concat([scores_file, test_scores], ignore_index=True)
+        scores_file.to_csv("./data/output/test_scores.csv", index=False)
+
 
         # Dump softmax scores (test results) as csv file
         df_test_predictions = pd.DataFrame(test_results[0].numpy())
@@ -578,23 +617,25 @@ class Trainer:
 
         # Get images for test set
         glomeruli_indices = []
-        inputs = []
         for batch in test_loader:
             glomeruli_indices.append(batch["glom_indices"][batch["test_mask"]])
-            inputs.append(batch["x"][batch["test_mask"]])
         df_test_results["glomerulus_index"] = torch.cat(glomeruli_indices).numpy()
 
         df_test_results.to_csv(f"./data/output/test_results.csv", index=False)
 
-        for batch in test_loader:
-            coordinates = batch["coords"].numpy()
-            adjacency_matrix = batch["adjacency_matrix"].numpy()
-            target_classes = batch['y']
-            with torch.no_grad():
-                prediction = self.model.forward(batch['x'].to(self.device), batch['edge_index'].to(self.device))
+        if test_loader.batch_size == 1:
+            for i, batch in enumerate(test_loader):
+                coordinates = batch["coords"].numpy()
+                sparse_matrix = batch[('glomeruli', 'to', 'glomeruli')].edge_index.numpy()
+                target_classes = batch['y']
+                with torch.no_grad():
+                    prediction, _, _ = self.calc_batch(batch, torch.ones_like(batch.test_mask))
 
-            target_classes = target_classes.numpy().argmax(axis=1)
-            predicted_classes = prediction.numpy().argmax(axis=1)
+                target_classes = target_classes.numpy().argmax(axis=1)
+                predicted_classes = prediction.numpy()
 
-            class_labels = self.dataset[0].target_labels
-            fig = visualize_graph(coordinates, adjacency_matrix, target_classes, predicted_classes, class_labels)
+                class_labels = self.dataset[0].target_labels
+                fig = visualize_graph(coordinates, sparse_matrix, target_classes, predicted_classes, class_labels)
+                self.logger.save_figure(fig, "graph", i)
+
+
