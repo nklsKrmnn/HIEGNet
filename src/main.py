@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Final
 
 import torch
+from torch import cuda
 import yaml
 
 from src.pipelines.cnn_trainer import ImageTrainer
@@ -11,9 +12,8 @@ from src.utils.constants import DATASET_NAME_MAPPING
 from src.pipelines.trainer_constants import TRAINER_MAPPING
 from src.utils.model_service import ModelService
 from src.pipelines.trainer import Trainer
-from torch import cuda
-
 from src.utils.logger import Logger, FoldLogger, CrossValLogger, MultiInstanceLogger
+from src.utils.validate_config import validate_config
 
 TRAIN_COMMAND: Final[str] = "train"
 TRAIN_IMAGE_COMMAND: Final[str] = "train_image"
@@ -74,11 +74,7 @@ def main() -> None:
         config = yaml.safe_load(f)
 
     # Check validity of the config file values
-    # Check if targets are one-hot encoded if loss is cross entropy
-    ce = config["training_parameters"]["loss"] == "crossentropy"
-    oh = config["dataset_parameters"]["onehot_targets"]
-    if (ce and not oh) or (not ce and oh):
-        raise ValueError("Targets must be one-hot encoded for cross entropy loss and vice versa.")
+    validate_config(config)
 
     # Pop first parameter
     n_folds = config["training_parameters"].pop("n_folds")
