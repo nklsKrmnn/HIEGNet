@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Final, Union
 
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -287,8 +288,9 @@ class ImageTrainer:
                 self.logger.log_loss(train_loss, epoch, "1_train")
 
                 # Calculating validation loss
-                val_loss, val_results = self.validation_step(validation_loader)
-                self.logger.log_loss(val_loss, epoch, "2_validation")
+                if len(validation_loader) > 0:
+                    val_loss, val_results = self.validation_step(validation_loader)
+                    self.logger.log_loss(val_loss, epoch, "2_validation")
 
                 if test_loader is not None and self.reported_set == "test":
                     test_scores, test_results = self.test_step(test_loader, "test")
@@ -307,8 +309,10 @@ class ImageTrainer:
 
                 if epoch % self.log_image_frequency == 0:
                     self.visualize(train_results[0], train_results[1], 'train', epoch)
-                    self.visualize(val_results[0], val_results[1], "val", epoch)
-                    self.visualize(test_results[0], test_results[1], 'test', epoch)
+                    if len(validation_loader) > 0:
+                        self.visualize(val_results[0], val_results[1], "val", epoch)
+                    if len(test_loader) > 0:
+                        self.visualize(test_results[0], test_results[1], 'test', epoch)
 
                 # Logging learning rate (getter-function only works with torch2.2 or higher)
                 if self.lr_scheduler is not None:
@@ -460,7 +464,8 @@ class ImageTrainer:
 
         return total_val_loss, (complete_predictions, complete_targets)
 
-    def test_step(self, test_loader) -> dict[str, dict[str, float]]:
+    def test_step(self, test_loader,
+                  return_softmax: bool = False) -> dict[str, dict[str, float]]:
         """
         Calculates the target metric for the test set and generates visualisations for the train and the test set. This method is called in the frequency given in the config.
 
@@ -491,23 +496,27 @@ class ImageTrainer:
                 # Get predictions and train loss
                 predictions = self.model.forward(images)
 
-                if len(labels.shape) == 1:
-                    pred = predictions.detach().argmax(dim=1).cpu()
-                    targ = labels.detach().cpu()
-                elif labels.shape[1] > 1:
-                    pred = predictions.detach().argmax(dim=1).cpu()
-                    targ = labels.detach().argmax(dim=1).cpu()
-
-                complete_predictions.append(pred)
-                complete_targets.append(targ)
+                complete_predictions.append(predictions)
+                complete_targets.append(labels)
 
 
         complete_predictions = torch.cat(complete_predictions)
         complete_targets = torch.cat(complete_targets)
 
-        test_scores = calc_test_scores(complete_targets, complete_predictions)
+        if len(labels.shape) == 1:
+            pred = complete_predictions.detach().argmax(dim=1).cpu()
+            targ = complete_targets.detach().cpu()
+        elif labels.shape[1] > 1:
+            pred = complete_predictions.detach().argmax(dim=1).cpu()
+            targ = complete_targets.detach().argmax(dim=1).cpu()
 
-        return (complete_predictions, complete_targets)
+        test_scores = calc_test_scores(pred, targ)
+
+        # TODO: Fix to return softmax results
+        softmax_results = (complete_predictions, complete_targets)
+        results = softmax_results if return_softmax else (pred, targ)
+
+        return test_scores, results
 
     def visualize(self, predictions, targets, set: str, epoch: int) -> None:
         """
@@ -537,7 +546,7 @@ class ImageTrainer:
         self.logger.log_model_path(model_path=path)
         print(f"Model saved to '{path}'.")
 
-    def evaluate(self) -> None:
+    def evaluate(self, parameters: dict[str, dict]) -> None:
         """
 
 
@@ -545,25 +554,32 @@ class ImageTrainer:
         self.model.to(self.device)
         self.loss.to(self.device)
 
-        # Creating training and validation data loaders from the given data
-        # source
-        self.validation_split = 1
-        train_loader, validation_loader = self.setup_dataloaders()
+        self.model.eval()
 
-        loss, results = self.test_step(validation_loader)
+        _, _, test_loader = self.setup_dataloaders()
 
-        predictions = results[0]
-        targets = results[1]
+        if test_loader is None:
+            raise ValueError("No test set to evaluate on.")
 
-        plot = plot_evaluation(targets, predictions)
-        plot.show()
+        test_scores, test_results = self.test_step(test_loader, return_softmax=True)
 
-        now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        # Unstack scores
+        test_scores = {f'{metric}_{score}': value for metric, score_dict in test_scores.items() for score, value in
+                       score_dict.items()}
 
-        path = Path(FIG_OUTPUT_PATH, f'plot{now}.png')
+        # Save test scores and parameters
+        params = {f'params_{param_set}_{key}': value for param_set, param_dict in parameters.items() for key, value in
+                  param_dict.items()}
+        test_scores.update(params)
+        test_scores['name'] = self.logger.name.split('/')[-1]
+        test_scores = pd.DataFrame([test_scores])
+        try:
+            scores_file = pd.read_csv("./data/output/test_scores.csv")  # TODO: put as constant
+        except:
+            scores_file = pd.DataFrame({})
 
-        plot.savefig(path)
+        scores_file = pd.concat([scores_file, test_scores], ignore_index=True)
+        scores_file.to_csv("./data/output/test_scores_image.csv", index=False)
 
-        Logger.log_text(f"Evaluation plot saved to '{path}'.")
 
-        print(loss)
+
