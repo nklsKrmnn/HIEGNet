@@ -94,10 +94,14 @@ class GlomImageDataset(HybridGraphDataset):
             train_indices = indices
             test_indices = []
         val_split_correction = self.test_split * self.val_split
-        train_indices, validation_indices = train_test_split(train_indices,
-                                                             test_size=self.val_split - val_split_correction,
-                                                             random_state=self.random_seed,
-                                                             stratify=self.targets[train_indices])
+
+        if self.val_split > 0:
+            train_indices, validation_indices = train_test_split(train_indices,
+                                                                 test_size=self.val_split - val_split_correction,
+                                                                 random_state=self.random_seed,
+                                                                 stratify=self.targets[train_indices])
+        else:
+            validation_indices = []
         if test_indices == []:
             test_indices = validation_indices
 

@@ -74,7 +74,7 @@ def main() -> None:
         config = yaml.safe_load(f)
 
     # Check validity of the config file values
-    validate_config(config)
+    #validate_config(config)
 
     # Pop first parameter
     n_folds = config["training_parameters"].pop("n_folds")
@@ -185,17 +185,19 @@ def main() -> None:
         logger.close()
 
     if args.pipeline == EVAL_COMMAND:
-        if (dataset_parameters['test_split'] == 0.0) or (dataset_parameters['test_patients'] == []) or (config['training_parameters']['reported_set'] == []):
-            print("\033[31m!!! WARNING !!!\033[0m")
-            print("\033[31mWARNING: Evaluation requested. Some parameter my is uncommon.\033[0m")
-            print("\033[31mWARNING: Recommended: test_split > 0.0, test_patients != [], reported_set=='test'.\033[0m")
+
+        if 'test_patients' in dataset_parameters.keys():
+            if (dataset_parameters['test_split'] == 0.0) or (dataset_parameters['test_patients'] == []) or (config['training_parameters']['reported_set'] == []):
+                print("\033[31m!!! WARNING !!!\033[0m")
+                print("\033[31mWARNING: Evaluation requested. Some parameter my is uncommon.\033[0m")
+                print("\033[31mWARNING: Recommended: test_split > 0.0, test_patients != [], reported_set=='test'.\033[0m")
 
         run_training = 'model_name' not in model_attributes.keys()
 
         model = ModelService.create_model(model_name=model_name, model_attributes=model_attributes.copy())
         logger.write_model(model)
 
-        trainer = Trainer(
+        trainer = trainer_class(
             dataset=dataset,
             model=model,
             device=device,
