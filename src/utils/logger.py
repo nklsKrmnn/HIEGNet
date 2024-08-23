@@ -607,10 +607,11 @@ class MultiInstanceLogger:
         self.model = model
 
     def close(self) -> None:
+        #TODO Remove function?
         """
         Closes multi instance logger and saves the results into a pandas DataFrame.
         """
         df_results = pd.DataFrame(self.results)
         current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-        df_results.to_csv(f'runs/{current_time}_{self.name}_results.csv', index=False)
+        #df_results.to_csv(f'runs/{current_time}_{self.name}_results.csv', index=False)

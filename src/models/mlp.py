@@ -47,7 +47,7 @@ class MLP(nn.Module):
 
         # Output layer
         self.output_layer = nn.Linear(hidden_dims[-1], output_dim)
-    def forward(self, x, _=None):
+    def forward(self, x, *args):
 
         for i, layer in enumerate(self.fc_layers):
             x = layer(x)
