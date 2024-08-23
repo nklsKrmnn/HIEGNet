@@ -1,19 +1,19 @@
 use_gpu: true
-run_name: "gs_w_cell2glom_inglom_tcell_wtestset_2"
+run_name: "gs_eb_glom_r550_sage"
 model_parameters:
   hetero_gnn:
-    hidden_dim: gs
-    n_message_passings: gs
-    n_fc_layers: gs
+    hidden_dim: 32
+    n_message_passings: 5
+    n_fc_layers: 1
     norm_fc_layers: batch
     output_dim: 3
     dropout: gs
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
-      glom_to_glom: gcn
-      cell_to_glom: gs
-      cell_to_cell: gs
+      glom_to_glom: sage
+      cell_to_glom: gat_v2
+      cell_to_cell: gine
 training_parameters:
   batch_size: 1
   epochs: 500
@@ -43,8 +43,8 @@ dataset_parameters:
   test_split: 0.15
   processed_file_name: "glom_graph"
   glom_graph:
-    method: "knn" # Options: "knn", "radius", "delaunay"
-    k: 0 # Options: "k", "radius", ""
+    method: "radius" # Options: "knn", "radius", "delaunay"
+    radius: 550 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 5 # Options: "k", "radius", ""
