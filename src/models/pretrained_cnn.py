@@ -20,7 +20,7 @@ def initialize_resnet(output_dim: int,
     Returns:
         models.resnet.ResNet: The initialized ResNet model.
     """
-    model = models.resnet152(pretrained=pre_trained)
+    model = models.resnet18(pretrained=pre_trained)
 
     latent_dim = model.fc.in_features
     fc_modules = nn.ModuleList()
