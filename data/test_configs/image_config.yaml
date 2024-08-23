@@ -1,12 +1,12 @@
 use_gpu: true
-run_name: "resnet152_crossval_lowLR"
+run_name: "resnet18_crossval_lowLR_d"
 model_parameters:
   resnet:
     hidden_dims: [128, 64]
     output_dim: 3
-    dropout: 0.9
+    dropout: 0.8
 training_parameters:
-  batch_size: 20
+  batch_size: 100
   epochs: 300
   learning_rate: 0.00001
   lr_scheduler_params:
