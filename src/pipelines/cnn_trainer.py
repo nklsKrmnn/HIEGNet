@@ -20,6 +20,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
 from src.evaluation.test_scores import calc_test_scores
+from src.pipelines.trainer import Trainer
 from src.utils.model_service import ModelService
 from src.utils.logger import Logger
 
@@ -30,7 +31,7 @@ FIG_OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 
 
 @dataclass
-class ImageTrainer:
+class ImageTrainer(Trainer):
     """
     A class used to represent a Trainer for a PyTorch Geometric model.
 
@@ -59,205 +60,12 @@ class ImageTrainer:
         dataset (Dataset): The dataset to use for training and validation.
         test_split (float): The fraction of the data to use for testing.
     """
-    batch_size: int
-    test_split: float
-    epochs: int
-    learning_rate: float
-    loss: Union[nn.MSELoss, nn.CrossEntropyLoss, nn.NLLLoss]
-    optimizer: Union[optim.SGD, optim.Adam]
-    lr_scheduler: Union[
-        optim.lr_scheduler.ReduceLROnPlateau, optim.lr_scheduler.CyclicLR, optim.lr_scheduler.OneCycleLR, None]
-    weight_decay: float
-    balance_classes: bool
-    device: torch.device
-    model: nn.Module
-    logger: Logger
-    eval_mode: bool
-    seed: int
-    batch_shuffle: bool
-    patience: int
-    log_image_frequency: int
-    dataset: Dataset
-    test_split: float
 
-    def __init__(
-            self,
-            dataset,
-            model: nn.Module,
-            batch_size: int,
-            epochs: int,
-            learning_rate: float,
-            device: torch.device,
-            logger: Logger,
-            test_split: float = 0.2,
-            loss: str = "mse",
-            optimizer: str = "adam",
-            lr_scheduler_params: dict = None,
-            weight_decay: float = 0,
-            balance_classes: bool = False,
-            momentum: float = 0,
-            eval_mode: bool = False,
-            seed: int = None,
-            batch_shuffle: bool = False,
-            patience: int = 50,
-            reported_set = "val",
-            log_image_frequency: int = 10
-    ):
-        """
-        Creates a Trainer instance from an unpacked configuration file.
-        This method sets up the loss function, optimizer and the lr scheduler based on the provided
-        parameters. The other parameters from the config are simply passed through to the Trainer instance.
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-        Args:
-            dataset: Dataset to be used for training, optimizing and validating the model.
-            model (nn.Module): Model to be trained.
-            batch_size (int): Batch size for training.
-            epochs (int): Number of epochs to train for.
-            learning_rate (float): Learning rate for the optimizer.
-            test_split (float): Fraction of the data to use for testing.
-            device (torch.device): Whether to use the CPU or the GPU for training.
-            logger (Logger): Logger to use for logging training information.
-            loss (str, optional): Loss function to use. Defaults to "mse".
-            optimizer (str, optional): Optimizer to use. Defaults to "adam".
-            lr_scheduler_params (dict, optional): Parameters for the learning rate scheduler. Defaults to None.
-            weight_decay (float, optional): Weight decay for the optimizer. Defaults to 0.
-            balance_classes (bool, optional): Whether to balance the classes. Defaults to False.
-            momentum (float, optional): Momentum for the optimizer. Defaults to 0.
-            eval_mode (bool, optional): If the model is evaluated, the validation split is set to 1.
-            seed (int, optional): Seed for the random number generator.
-            batch_shuffle (bool): Whether to shuffle the batches.
-            patience (int, optional): Number of epochs to wait for improvement before stopping. Defaults to 50.
-            reported_set (str, optional): The set to report the performance on. Defaults to "val".
-            log_image_frequency (int, optional): Frequency of logging images. Defaults to 10.
 
-        Returns:
-            ImageTrainer: A Trainer instance with the specified configuration.
-        """
-
-        # Compute class weights
-        if balance_classes:
-            class_weights_tensor = dataset.get_class_weights()
-        else:
-            class_weights_tensor = None
-
-        # Setting up the loss
-        if loss == "mse":
-            loss_instance = nn.MSELoss()
-        elif loss == "crossentropy":
-            loss_instance = nn.CrossEntropyLoss(weight=class_weights_tensor)
-        elif loss == "nll":
-            loss_instance = nn.NLLLoss(weight=class_weights_tensor)
-        else:
-            print(f"[TRAINER]: Loss {loss} is not valid, defaulting to MSELoss")
-            loss_instance = nn.MSELoss()
-        print(f"[TRAINER]: Using {loss} loss function.")
-
-        # Setting up the optimizer
-        if optimizer == "adam":
-            optimizer_instance = optim.Adam(
-                model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-            if momentum != 0:
-                print(f"[TRAINER]: Momentum {momentum} is not used since the optimizer is set to Adam")
-        elif optimizer == "sgd":
-            optimizer_instance = optim.SGD(
-                model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay
-            )
-        else:
-            print(f"[TRAINER]: Optimizer {optimizer} is not valid, defaulting to Adam")
-            optimizer_instance = optim.Adam(
-                model.parameters(), lr=learning_rate)
-
-        # Setting up the learning rate scheduler
-        if lr_scheduler_params is not None:
-            if lr_scheduler_params["scheduler"] == "ReduceLROnPlateau":
-                lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer_instance,
-                                                                    **lr_scheduler_params["params"])
-            elif lr_scheduler_params["scheduler"] == "CyclicLR":
-                lr_scheduler = optim.lr_scheduler.CyclicLR(optimizer_instance,
-                                                           **lr_scheduler_params["params"])
-            elif lr_scheduler_params["scheduler"] == "OneCycleLR":
-                n_batches = int(math.ceil((len(dataset.get_set_indices()[0])) / batch_size))
-                total_steps = int(math.ceil((len(dataset.get_set_indices()[0])) / batch_size) * epochs)
-                lr_scheduler = optim.lr_scheduler.OneCycleLR(optimizer_instance,
-                                                             total_steps=total_steps,
-                                                             **lr_scheduler_params["params"])
-            else:
-                print(
-                    f"[TRAINER]: Learning rate scheduler {lr_scheduler_params['scheduler']} is not valid, no scheduler is used.")
-                lr_scheduler = None
-        else:
-            lr_scheduler = None
-
-        # Setting random seed for torch
-        if seed is not None:
-            torch.manual_seed(seed)
-            if device == torch.device("cuda"):
-                torch.cuda.manual_seed(seed)
-
-        self.batch_size = batch_size
-        self.epochs = epochs
-        self.learning_rate = learning_rate
-        self.loss = loss_instance
-        self.optimizer = optimizer_instance
-        self.lr_scheduler = lr_scheduler
-        self.weight_decay = weight_decay
-        self.device = device
-        self.model = model
-        self.logger = logger
-        self.eval_mode = eval_mode
-        self.seed = seed
-        self.batch_shuffle = batch_shuffle
-        self.patience = patience
-        self.log_image_frequency = log_image_frequency
-        self.logger = logger
-        self.dataset = dataset
-        self.test_split = test_split
-        self.reported_set = reported_set
-        print("[TRAINER]: Trainer was successfully set up.")
-
-    def start_training(self) -> None:
-        """
-        This is the entrypoint method to start the training process for the model.
-
-        This method first moves the model and loss function to the device. The
-        method sets up the data loaders using the `setup_dataloaders`
-        method. Afterward, it starts the actual training using the `train_model` method and
-        logs the reason for finishing the training. After the training process is finished,
-        the method closes the logger.
-        """
-        self.model.to(self.device)
-        self.loss.to(self.device)
-
-        # Creating training and validation data loaders from the given data
-        # source
-        train_loader, validation_loader, test_loader = self.setup_dataloaders()
-
-        # Perform model training
-        self.logger.write_training_start()
-        finish_reason = self.train_model(train_loader, validation_loader, test_loader)
-        self.logger.write_training_end(finish_reason)
-
-    def setup_dataloaders(self) -> tuple[DataLoader, DataLoader, DataLoader]:
-        """
-        Sets up the data loaders holding the graph dataset.
-
-        Returns:
-            DataLoader: The training and test data loader.
-        """
-
-        train_indices, validation_indices, test_indices = self.dataset.get_set_indices()
-
-        train_dataset = Subset(self.dataset, train_indices)
-        validation_dataset = Subset(self.dataset, validation_indices)
-        test_dataset = Subset(self.dataset, test_indices)
-
-        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=self.batch_shuffle)
-        validation_loader = DataLoader(validation_dataset, batch_size=self.batch_size, shuffle=self.batch_shuffle)
-        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=self.batch_shuffle) if validation_indices != test_indices else None
-
-        return train_loader, validation_loader, test_loader
-
-    def train_model(self, train_loader: DataLoader, validation_loader: DataLoader, test_loader: DataLoader) -> str:
+    def train_model_old(self, train_loader: DataLoader, validation_loader: DataLoader, test_loader: DataLoader) -> str:
         """
         Trains the model for a specified number of epochs. For each epoch, the method calculates
         the training loss and validation loss, logs these losses, and saves the current state
@@ -293,7 +101,7 @@ class ImageTrainer:
                     self.logger.log_loss(val_loss, epoch, "2_validation")
 
                 if test_loader is not None and self.reported_set == "test":
-                    test_scores, test_results = self.test_step(test_loader, "test")
+                    test_scores, test_results = self.test_step(test_loader, return_softmax=False)
                 elif validation_loader is not None and self.reported_set == 'val':
                     test_results = (val_results[0], val_results[1])
                     test_scores = calc_test_scores(val_results[1], val_results[0])
@@ -345,7 +153,7 @@ class ImageTrainer:
 
         return finish_reason
 
-    def train_step(self, dataloader) -> float:
+    def train_step_old(self, dataloader) -> tuple[float, tuple[torch.Tensor, torch.Tensor]]:
         """
         Calculates the training loss for the model. This method is called during each epoch.
 
@@ -384,18 +192,6 @@ class ImageTrainer:
             total_train_loss += train_loss.item()
             step_count += 1
 
-            # Step for ReduceLROnPlateau
-            if self.lr_scheduler is not None and not isinstance(self.lr_scheduler,
-                                                                optim.lr_scheduler.ReduceLROnPlateau):
-                self.lr_scheduler.step()
-
-            if len(labels.shape) == 1:
-                pred = predictions.detach().argmax(dim=1).cpu()
-                targ = labels.detach().cpu()
-            elif labels.shape[1] > 1:
-                pred = predictions.detach().argmax(dim=1).cpu()
-                targ = labels.detach().argmax(dim=1).cpu()
-
             complete_predictions.append(pred)
             complete_targets.append(targ)
 
@@ -406,7 +202,40 @@ class ImageTrainer:
 
         return total_train_loss, (complete_predictions, complete_targets)
 
-    def validation_step(self, validation_loader) -> float:
+    def calc_batch(self, data, return_softmax: bool = False, mask_str:bool=None) -> tuple[
+        torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        Calculates the predictions and targets for a batch of data.
+
+        This method calculates the predictions and targets for a batch of data. The method is called during each epoch
+        for the training and validation data. The method returns the predictions and targets for the batch.
+
+        Args:
+            graph_data (DataLoader): DataLoader for the training and validation graphs.
+            mask_str (str): The mask to use for separating the dataset into training and validation data.
+            return_softmax (bool): Whether to return the softmax results.
+
+        Returns:
+            torch.Tensor: The predictions for the batch.
+            torch.Tensor: The targets for the batch.
+        """
+        image, labels = data[0].to(self.device), data[1].to(self.device)
+
+        predictions = self.model.forward(image)
+        loss = self.loss(predictions, labels)
+
+        if len(labels.shape) == 1:
+            pred = predictions.detach().argmax(dim=1).cpu()
+            targ = labels.detach().cpu()
+        elif labels.shape[1] > 1:
+            pred = predictions.detach().argmax(dim=1).cpu()
+            targ = labels.detach().argmax(dim=1).cpu()
+        else:
+            raise ValueError("Target shape is not valid.")
+
+        return pred, targ, loss
+
+    def validation_step_old(self, validation_loader) -> float:
         """
         Calculates the target metric for the test set and generates visualisations for the train and the test set. This method is called in the frequency given in the config.
 
@@ -464,7 +293,7 @@ class ImageTrainer:
 
         return total_val_loss, (complete_predictions, complete_targets)
 
-    def test_step(self, test_loader,
+    def test_step_old(self, test_loader,
                   return_softmax: bool = False) -> dict[str, dict[str, float]]:
         """
         Calculates the target metric for the test set and generates visualisations for the train and the test set. This method is called in the frequency given in the config.
@@ -518,7 +347,7 @@ class ImageTrainer:
 
         return test_scores, results
 
-    def visualize(self, predictions, targets, set: str, epoch: int) -> None:
+    def visualize_old(self, predictions, targets, set: str, epoch: int) -> None:
         """
         This method visualizes the results of the training and test set.
 
@@ -536,7 +365,7 @@ class ImageTrainer:
                                           epoch=epoch,
                                           set=f'{set_idx}_{set}')
 
-    def save_model(self) -> None:
+    def save_model_old(self) -> None:
         """
         This method uses the `save_model` function to save the trained model to a file.
         After the model is saved, the method logs a message to the console with the path
@@ -574,7 +403,7 @@ class ImageTrainer:
         test_scores['name'] = self.logger.name.split('/')[-1]
         test_scores = pd.DataFrame([test_scores])
         try:
-            scores_file = pd.read_csv("./data/output/test_scores.csv")  # TODO: put as constant
+            scores_file = pd.read_csv("./data/output/test_scores_images.csv")  # TODO: put as constant
         except:
             scores_file = pd.DataFrame({})
 

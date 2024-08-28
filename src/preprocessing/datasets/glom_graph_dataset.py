@@ -197,6 +197,9 @@ class GlomGraphDataset(Dataset):
                     "test_patient": patient in self.test_patients
                 })
 
+        # Save target labels
+        self.target_labels = data.target_labels
+
         with open(os.path.join(self.processed_dir, f"{self.processed_file_name}_filenames.pkl"), 'wb') as handle:
             pickle.dump(file_names, handle)
 

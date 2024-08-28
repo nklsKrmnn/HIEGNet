@@ -298,20 +298,20 @@ class Trainer:
                 # Logging loss of results
                 self.logger.log_loss(train_loss, epoch, "1_train")
 
+                # Calculating validation loss if loader exists
                 if validation_loader is not None:
-                    # Calculating validation loss if loader exists
                     val_loss, val_results = self.validation_step(validation_loader)
                     self.logger.log_loss(val_loss, epoch, "2_validation")
                     early_stopping_loss = val_loss
+                # Calculating test loss if loader exists, and we want to report it
                 elif train_loader is not None and self.reported_set == "test":
-                    # Calculating test loss if loader exists, and we want to report it
                     test_loss, test_results = self.validation_step(test_loader)
                     self.logger.log_loss(test_loss, epoch, "3_test")
                     early_stopping_loss = test_loss
 
                 # Calculate test scores on set we want to report
                 if test_loader is not None and self.reported_set == "test":
-                    test_scores, test_results = self.test_step(test_loader, "test")
+                    test_scores, test_results = self.test_step(test_loader, mask_str="test")
                 elif validation_loader is not None and self.reported_set == 'val':
                     test_scores = calc_test_scores(val_results[1], val_results[0])
                 elif train_loader is not None and self.reported_set == 'train':
@@ -391,7 +391,7 @@ class Trainer:
             # Reset optimizer
             self.optimizer.zero_grad()
 
-            pred, targ, loss = self.calc_batch(graph_data, graph_data.train_mask)
+            pred, targ, loss = self.calc_batch(graph_data, mask_str="train")
 
             # Backpropagation
             loss.backward()
@@ -400,8 +400,8 @@ class Trainer:
             total_train_loss += loss.item()
             step_count += 1
 
-            complete_predictions.append(pred[graph_data.train_mask.detach().cpu()])
-            complete_targets.append(targ[graph_data.train_mask.detach().cpu()])
+            complete_predictions.append(pred)
+            complete_targets.append(targ)
 
         complete_predictions = torch.cat(complete_predictions)
         complete_targets = torch.cat(complete_targets)
@@ -410,7 +410,7 @@ class Trainer:
 
         return total_train_loss, (complete_predictions, complete_targets)
 
-    def calc_batch(self, graph_data, mask, return_softmax:bool=False) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def calc_batch(self, graph_data, mask_str:str, return_softmax:bool=False) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Calculates the predictions and targets for a batch of data.
 
@@ -426,7 +426,17 @@ class Trainer:
             torch.Tensor: The predictions for the batch.
             torch.Tensor: The targets for the batch.
         """
+        if mask_str == "train":
+            mask = graph_data.train_mask
+        elif mask_str == "val":
+            mask = graph_data.val_mask
+        elif mask_str == "test":
+            mask = graph_data.test_mask
+        else:
+            raise ValueError("Invalid mask string.")
+
         graph_data = graph_data.to(self.device)
+
         # Determine model inputs as send to device
         if not isinstance(graph_data[0], HeteroData):
             input_graph_feature = graph_data.x if isinstance(graph_data.x, torch.Tensor) else graph_data.x
@@ -442,11 +452,11 @@ class Trainer:
         loss = self.loss(prediction[mask], target[mask])
 
         if (len(graph_data.y.shape) == 1) or return_softmax:
-            pred = prediction.detach().cpu()
-            targ = target.detach().cpu()
+            pred = prediction[mask].detach().cpu()
+            targ = target[mask].detach().cpu()
         elif graph_data.y.shape[1] > 1:
-            pred = prediction.detach().argmax(dim=1).cpu()
-            targ = target.detach().argmax(dim=1).cpu()
+            pred = prediction[mask].detach().argmax(dim=1).cpu()
+            targ = target[mask].detach().argmax(dim=1).cpu()
         else:
             raise ValueError("Target shape is not valid.")
 
@@ -474,13 +484,13 @@ class Trainer:
 
         with torch.no_grad():
             for graph_data in validation_loader:
-                pred, targ, val_loss = self.calc_batch(graph_data, graph_data.val_mask)
+                pred, targ, val_loss = self.calc_batch(graph_data, mask_str="val")
 
                 total_val_loss += val_loss.item()
                 step_count += 1
 
-                complete_predictions.append(pred[graph_data.val_mask.detach().cpu()])
-                complete_targets.append(targ[graph_data.val_mask.detach().cpu()])
+                complete_predictions.append(pred)
+                complete_targets.append(targ)
 
         complete_predictions = torch.cat(complete_predictions)
         complete_targets = torch.cat(complete_targets)
@@ -512,11 +522,10 @@ class Trainer:
 
         with torch.no_grad():
             for graph_data in test_loader:
-                mask = graph_data.test_mask if mask_str == "test" else graph_data.val_mask if mask_str == "val" else graph_data.train_mask
-                pred, targ, _ = self.calc_batch(graph_data, mask, return_softmax=True)
+                pred, targ, _ = self.calc_batch(graph_data, mask_str, return_softmax=True)
 
-                complete_predictions.append(pred[mask.detach().cpu()])
-                complete_targets.append(targ[mask.detach().cpu()])
+                complete_predictions.append(pred)
+                complete_targets.append(targ)
 
         complete_predictions = torch.cat(complete_predictions)
         complete_targets = torch.cat(complete_targets)
@@ -558,7 +567,7 @@ class Trainer:
 
         self.logger.save_confusion_matrix(targets,
                                           predictions,
-                                          labels=self.dataset[0].target_labels,
+                                          labels=self.dataset.target_labels,
                                           epoch=epoch,
                                           continuous=use_continuous_matrix,
                                           set=f'{set_idx}_{set}')
