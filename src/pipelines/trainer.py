@@ -530,7 +530,7 @@ class Trainer:
         complete_predictions = torch.cat(complete_predictions)
         complete_targets = torch.cat(complete_targets)
 
-        if len(targ.shape[1]) > 1:
+        if len(targ.shape) > 1:
             pred = complete_predictions.argmax(dim=1)
             targ = complete_targets.argmax(dim=1)
         else:
