@@ -175,13 +175,8 @@ class ImageTrainer(Trainer):
             # Reset optimizer
             self.optimizer.zero_grad()
 
-            # Move data to device
-            images = images.to(self.device)
-            labels = labels.to(self.device)
-
-            # Get predictions and train loss
-            predictions = self.model.forward(images)
-            train_loss = self.loss(predictions, labels)
+            # Calc batch
+            pred, targ, train_loss = self.calc_batch(images, labels)
 
             # Backpropagation
             train_loss.backward()
@@ -222,8 +217,8 @@ class ImageTrainer(Trainer):
         predictions = self.model.forward(image)
         loss = self.loss(predictions, labels)
 
-        if len(labels.shape) == 1:
-            pred = predictions.detach().argmax(dim=1).cpu()
+        if len(labels.shape) == 1 or return_softmax:
+            pred = predictions.detach().cpu()
             targ = labels.detach().cpu()
         elif labels.shape[1] > 1:
             pred = predictions.detach().argmax(dim=1).cpu()
@@ -257,13 +252,8 @@ class ImageTrainer(Trainer):
                 # Reset optimizer
                 self.optimizer.zero_grad()
 
-                # Move data to device
-                images = images.to(self.device)
-                labels = labels.to(self.device)
-
-                # Get predictions and train loss
-                predictions = self.model.forward(images)
-                val_loss = self.loss(predictions, labels)
+                # Calc batch
+                pred, targ, val_loss = self.calc_batch(images, labels)
 
                 total_val_loss += val_loss.item()
                 step_count += 1
@@ -272,13 +262,6 @@ class ImageTrainer(Trainer):
                 if self.lr_scheduler is not None and isinstance(self.lr_scheduler,
                                                                     optim.lr_scheduler.ReduceLROnPlateau):
                     self.lr_scheduler.step()
-
-                if len(labels.shape) == 1:
-                    pred = predictions.detach().argmax(dim=1).cpu()
-                    targ = labels.detach().cpu()
-                elif labels.shape[1] > 1:
-                    pred = predictions.detach().argmax(dim=1).cpu()
-                    targ = labels.detach().argmax(dim=1).cpu()
 
                 complete_predictions.append(pred)
                 complete_targets.append(targ)
@@ -316,26 +299,16 @@ class ImageTrainer(Trainer):
                 # Reset optimizer
                 self.optimizer.zero_grad()
 
-                # Move data to device
-                images = images.to(self.device)
-                labels = labels.to(self.device)
+                # Calc batch
+                pred, targ, _ = self.calc_batch(images, labels, return_softmax=return_softmax)
 
-                # Get predictions and train loss
-                predictions = self.model.forward(images)
-
-                complete_predictions.append(predictions)
-                complete_targets.append(labels)
+                complete_predictions.append(pred)
+                complete_targets.append(targ)
 
 
         complete_predictions = torch.cat(complete_predictions)
         complete_targets = torch.cat(complete_targets)
 
-        if len(labels.shape) == 1:
-            pred = complete_predictions.detach().argmax(dim=1).cpu()
-            targ = complete_targets.detach().cpu()
-        elif labels.shape[1] > 1:
-            pred = complete_predictions.detach().argmax(dim=1).cpu()
-            targ = complete_targets.detach().argmax(dim=1).cpu()
 
         test_scores = calc_test_scores(pred, targ)
 
