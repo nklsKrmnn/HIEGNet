@@ -522,7 +522,7 @@ class Trainer:
 
         with torch.no_grad():
             for graph_data in test_loader:
-                pred, targ, _ = self.calc_batch(graph_data, mask_str, return_softmax=True)
+                pred, targ, _ = self.calc_batch(graph_data, mask_str=mask_str, return_softmax=True)
 
                 complete_predictions.append(pred)
                 complete_targets.append(targ)

@@ -14,10 +14,8 @@ import torch.optim as optim
 from torch.utils.data import Subset
 from torch_geometric.data import Dataset
 from torch_geometric.loader import DataLoader
-from sklearn.utils.class_weight import compute_class_weight
+
 from tqdm import tqdm
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split
 
 from src.evaluation.test_scores import calc_test_scores
 from src.pipelines.trainer import Trainer
