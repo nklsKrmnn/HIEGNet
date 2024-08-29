@@ -45,7 +45,8 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'glom_to_glom': ['gcn'],
     'cell_to_glom': ['gcn', 'gat_v2', 'gine', 'sage'],
     'cell_to_cell': ['gcn', 'gat_v2', 'gine', 'sage'],
-    "learning_rate": [0.003, 0.001, 0.0003, 0.0001]
+    "learning_rate": [0.003, 0.001, 0.0003, 0.0001],
+    "max_lr": [0.0003, 0.0001, 0.00005]
 }
 
 MODEL_NAME_MAPPING: Final[dict[str, any]] = {

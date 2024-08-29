@@ -1,18 +1,18 @@
 use_gpu: true
-run_name: "resnet18_crossval_lowLR_d"
+run_name: "resnet152_d9_MLR_gs"
 model_parameters:
   resnet:
     hidden_dims: [128, 64]
     output_dim: 3
-    dropout: 0.8
+    dropout: 0.9
 training_parameters:
   batch_size: 100
-  epochs: 300
+  epochs: 400
   learning_rate: 0.00001
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: 0.0001
+      max_lr: gs
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000

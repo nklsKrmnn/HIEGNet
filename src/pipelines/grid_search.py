@@ -167,7 +167,8 @@ class SeachSampler:
 
             # Adjust max lr for scheduler
             if "lr_scheduler_params" in config.keys():
-                config["lr_scheduler_params"]['params']["max_lr"] = config["learning_rate"] * 10
+                if ('max_lr' not in search_parameters) and ('learning_rate' in search_parameters):
+                    config["lr_scheduler_params"]['params']["max_lr"] = config["learning_rate"] * 10
 
             # Adjust epochs to learning rate
             if 'learning_rate' in search_parameters:
