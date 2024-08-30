@@ -1,6 +1,8 @@
 from typing import Final
+from torchvision import models
 
 from torch_geometric.nn import GCNConv, GATv2Conv, GINConv, GINEConv, RGCNConv, SAGEConv
+
 
 MESSAGE_PASSING_MAPPING: Final[dict[str, any]] = {
     "gcn": GCNConv,
@@ -9,4 +11,12 @@ MESSAGE_PASSING_MAPPING: Final[dict[str, any]] = {
     "gine": GINEConv,
     "rgcn": RGCNConv,
     'sage': SAGEConv
+}
+
+RESNET_MODEL_MAPPING: Final[dict[int, any]] = {
+    152: models.resnet152,
+    101: models.resnet101,
+    50: models.resnet50,
+    34: models.resnet34,
+    18: models.resnet18
 }
