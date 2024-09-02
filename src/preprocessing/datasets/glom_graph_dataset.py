@@ -178,7 +178,7 @@ class GlomGraphDataset(Dataset):
             # Drop rows where feature or image path is missing (most likely because no match through slices)
             df_patient.dropna(subset=self.feature_list, inplace=True)
 
-            # threshold for minimum number of data points and check if patient is in train or test set
+            # threshold for minimum number of data points and check if patient is in train, val or test set
             if (df_patient.shape[0] > 10) and (
                     patient in self.train_patients + self.validation_patients + self.test_patients):
                 # Create the data object for each graph
