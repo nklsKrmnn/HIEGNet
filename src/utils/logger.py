@@ -481,7 +481,7 @@ class CrossValLogger():
 
     def get_final_scores(self):
         """
-        Returns the final scores from the last epoch of the model for all folds as their mean a standard deviation.
+        Returns the final scores from the last epoch of the model for all folds as their mean and standard deviation.
 
         Iterates over all scores and all classes and all folds. Writes for each of these combindations the last value
         of the score into a dictionary and calculate for each of these combinations the mean and the standard
@@ -513,6 +513,57 @@ class CrossValLogger():
 
         return final_scores
 
+    def get_max_scores(self, ranking_score: str="f1_macro") -> dict:
+        """
+        Returns the scores for the best performaing model from all epochs of the training for all folds as their mean
+        and standard deviation.
+
+        Determines the epoch with the best performing model with regard to the given score or loss for each fold.
+        Iterates then over all scores and loss to write the values into a dict for this best performing model.
+
+        :return: Dict with score and fold as key and max value as value
+        """
+        max_scores = {}
+        for i, fold in enumerate(self.fold_logger):
+            # Determine best epoch
+            if ranking_score == 'val_loss':
+                best_epoch = min(fold.val_loss, key=fold.val_loss.get)
+            elif ranking_score == 'train_loss':
+                best_epoch = min(fold.train_loss, key=fold.train_loss.get)
+            elif ranking_score == 'test_loss':
+                best_epoch = min(fold.test_loss, key=fold.test_loss.get)
+            elif ranking_score in fold.scores.keys():
+                best_epoch = max(fold.scores[ranking_score]['0_total'], key=fold.scores[ranking_score]['0_total'].get)
+            else:
+                raise ValueError(f"Ranking Score {ranking_score} is not in fold.scores")
+
+            # Collection scores
+            for score in fold.scores.keys():
+                for class_label in fold.scores[score].keys():
+                    max_scores[f'{score}_{class_label}_fold{i}'] = fold.scores[score][class_label][best_epoch]
+
+            # Add loss values
+            for loss in ['train', 'val']:
+                max_scores[f'{loss}_loss_fold{i}'] = fold.train_loss[best_epoch] if loss == 'train' else fold.val_loss[
+                    best_epoch]
+
+        # Calculate means and std
+        for score in self.fold_logger[0].scores.keys():
+            for class_label in self.fold_logger[0].scores[score].keys():
+                mean = np.mean([fold.scores[score][class_label][best_epoch] for fold in self.fold_logger])
+                std = np.std([fold.scores[score][class_label][best_epoch] for fold in self.fold_logger])
+                max_scores[f'{score}_{class_label}_mean'] = mean
+                max_scores[f'{score}_{class_label}_std'] = std
+
+        for loss in ['train', 'val']:
+            mean = np.mean([max_scores[f'{loss}_loss_fold{i}'] for i in range(len(self.fold_logger))])
+            std = np.std([max_scores[f'{loss}_loss_fold{i}'] for i in range(len(self.fold_logger))])
+
+            max_scores[f'{loss}_loss_mean'] = mean
+            max_scores[f'{loss}_loss_std'] = std
+
+        return max_scores
+
     def close(self):
         self.summary_logger.write_training_end("Summary finished")
 
@@ -521,12 +572,14 @@ class MultiInstanceLogger:
     """
     A class used to log training information for multiple instances of a model.
     """
+    logger: Optional[CrossValLogger]
 
-    def __init__(self, n_folds: int, name: str = "") -> None:
+    def __init__(self, n_folds: int, name: str = "", report_max_scores: bool = True) -> None:
 
         self.name = name
         self.n_folds = n_folds
         self.logger = None
+        self.report_max_scores = report_max_scores # Whether to report scores with max value or last scores
         self.start_time_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         self.results = []
@@ -555,14 +608,15 @@ class MultiInstanceLogger:
         Collects the final results of the active loggers.
 
         This method collects the final results from the current logger, adds train and model params from passed
-        arguments and stores them into the list of results.
+        arguments and stores them into the list of results. Depending on the class attribute report_max_scores, either
+        the last scores or the scores of the model in the best epoch are collected.
 
         Args:
             train_params (dict): The training parameters.
             model_params (dict): The model parameters.
         """
 
-        results = self.logger.get_final_scores()
+        results = self.logger.get_max_scores() if self.report_max_scores else self.logger.get_final_scores()
         results.update(train_params)
         results.update(model_params)
         results.update({'name': f'{self.logger.start_time_str}_{self.name}'})

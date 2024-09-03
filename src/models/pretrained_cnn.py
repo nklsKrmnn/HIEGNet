@@ -2,11 +2,13 @@ from torch import nn
 from torchvision import models
 
 from src.models.model_utils import init_norm_layer
+from src.models.model_constants import RESNET_MODEL_MAPPING
 
 
 def initialize_resnet(output_dim: int,
                       hidden_dims:list[int],
                       image_size: int,
+                      layers: int,
                       device,
                       pre_trained: bool = True,
                       dropout: float = 0.5,
@@ -20,12 +22,11 @@ def initialize_resnet(output_dim: int,
     Returns:
         models.resnet.ResNet: The initialized ResNet model.
     """
-    model = models.resnet152(pretrained=pre_trained)
+    model = RESNET_MODEL_MAPPING[layers](pretrained=pre_trained)
+
 
     latent_dim = model.fc.in_features
     fc_modules = nn.ModuleList()
-
-    test = model.fc
 
     # First layer
     fc_modules.append(nn.Sequential(

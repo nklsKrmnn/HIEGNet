@@ -32,7 +32,7 @@ def grid_search(model_name: str,
     :param device: Device to use
     :param training_parameters: Dict of training parameters with 'gs' at all parameters that should be optimized
     :param n_folds: Number of folds to use for crossvalidation
-    :return:
+    :return: None
     """
     config_params = {
         "model_parameters": model_attributes,
@@ -64,22 +64,17 @@ def grid_search(model_name: str,
         temp_logger.write_text("config_model_parameters", str(model_attributes))
         temp_logger.write_text("config_training_parameters", str(training_parameters))
 
-        final_scores = cross_validation(model_name=model_name,
-                                        model_attributes=model_attributes,
-                                        logger=temp_logger,
-                                        dataset=dataset,
-                                        device=device,
-                                        trainer_class=trainer_class,
-                                        training_parameters=training_parameters,
-                                        n_folds=n_folds)
+        cross_validation(model_name=model_name,
+                         model_attributes=model_attributes,
+                         logger=temp_logger,
+                         dataset=dataset,
+                         device=device,
+                         trainer_class=trainer_class,
+                         training_parameters=training_parameters,
+                         n_folds=n_folds)
 
         logger.collect_final_results(train_params=training_parameters, model_params=model_attributes)
         logger.save_final_results()
-        results.append({**model_attributes, **training_parameters, **final_scores})
-
-    results = pd.DataFrame(results)
-
-    return results
 
 
 def cross_validation(model_name: str,
@@ -90,7 +85,7 @@ def cross_validation(model_name: str,
                      trainer_class,
                      training_parameters: dict,
                      n_folds: int = 5
-                     ) -> dict:
+                     ) -> None:
     """
 
     :param model_name:
@@ -100,7 +95,7 @@ def cross_validation(model_name: str,
     :param device:
     :param training_parameters:
     :param n_folds:
-    :return: A dictionary containing the final scores of the model for all folds as their mean a standard deviation
+    :return: None
     """
     dataset.create_folds(n_folds)
 
@@ -120,12 +115,8 @@ def cross_validation(model_name: str,
         trainer.start_training()
         trainer.save_model()
 
-    final_scores = logger.get_final_scores()
-
     logger.summarize()
     logger.close()
-
-    return final_scores
 
 
 class SeachSampler:
@@ -185,7 +176,7 @@ class SeachSampler:
             else:
                 no_hetero_gcn = True
 
-            #if no_hetero_gcn:
+            # if no_hetero_gcn:
             self.search_space.append(copy.deepcopy(config))
 
         return self.search_space

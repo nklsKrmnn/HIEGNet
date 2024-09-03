@@ -8,7 +8,8 @@ from sklearn.utils import compute_class_weight
 from torchvision.io import read_image
 import numpy as np
 
-from src.preprocessing.datasets.dataset_utils.dataset_utils import list_annotation_file_names
+from src.preprocessing.datasets.dataset_utils.dataset_utils import list_annotation_file_names, \
+    get_train_val_test_indices
 from src.preprocessing.datasets.dataset_utils.image_utils import load_images
 from src.preprocessing.datasets.hybrid_graph_dataset import HybridGraphDataset
 from src.preprocessing.feature_preprocessing import get_image_paths
@@ -52,6 +53,10 @@ class GlomImageDataset(HybridGraphDataset):
         # Drop rows where feature or image path is missing (most likely because no match through slices)
         df.dropna(subset=self.feature_list, inplace=True)
 
+        # Select only the patients that are in the train_patients list
+        if len(self.train_patients) > 0:
+            df = df[df['patient'].isin(self.train_patients)].reset_index(drop=True)
+
         self.target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
         self.targets = self.create_targets(df, self.target_labels)
         self.img_paths = self.create_features(df, [], self.feature_list)
@@ -81,31 +86,12 @@ class GlomImageDataset(HybridGraphDataset):
         return self.indices
 
     def create_set_indices(self):
-        # get indices of train and test patients
-        dataset_size = len(self)
-
-        # random split
-        indices = list(range(dataset_size))
-        if self.test_split > 0:
-            train_indices, test_indices = train_test_split(indices, test_size=self.test_split,
-                                                           random_state=self.random_seed,
-                                                           stratify=self.targets)
-        else:
-            train_indices = indices
-            test_indices = []
-        val_split_correction = self.test_split * self.val_split
-
-        if self.val_split > 0:
-            train_indices, validation_indices = train_test_split(train_indices,
-                                                                 test_size=self.val_split - val_split_correction,
-                                                                 random_state=self.random_seed,
-                                                                 stratify=self.targets[train_indices])
-        else:
-            validation_indices = []
-        if test_indices == []:
-            test_indices = validation_indices
-
-        self.indices = train_indices, validation_indices, test_indices
+        self.indices = get_train_val_test_indices(self.targets,
+                                                  self.test_split,
+                                                  self.val_split,
+                                                  self.random_seed,
+                                                  True,
+                                                  True)
 
     def get_class_weights(self) -> torch.Tensor:
         """
