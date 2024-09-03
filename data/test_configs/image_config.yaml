@@ -1,18 +1,18 @@
 use_gpu: true
-run_name: "resnet152_d9_MLR_gs"
+run_name: "resnet152_p1_test_instead_of_val"
 model_parameters:
   resnet:
     hidden_dims: [128, 64]
     output_dim: 3
     dropout: 0.9
 training_parameters:
-  batch_size: 100
-  epochs: 400
-  learning_rate: 0.00001
+  batch_size: 20
+  epochs: 300
+  learning_rate: 0.00005
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: gs
+      max_lr: 0.0001
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
@@ -22,19 +22,22 @@ training_parameters:
   batch_shuffle: false
   patience: 100000000
   log_image_frequency: 50
-  n_folds: 4
-  reported_set: "val"
+  n_folds: 0
+  reported_set: "test"
 dataset_parameters:
   class_name: image_dataset
-  validation_split: 0.15
+  validation_split: 0.0
   test_split: 0.15
   process: true
   patients:
     - 001
+    #- 002
+    #- 003
+    #- 004
   random_seed: 123
   onehot_targets: true
   hot_load: false
-  image_file_path: "/data/3_extracted_features/EXC/image_paths_full.csv"
+  image_file_path: "/data/3_extracted_features/EXC/image_paths_p1-4.csv"
   annotations_path: "/data/1_cytomine_downloads/EXC/annotations/25/"
   feature_list:
     - 'path_25'
