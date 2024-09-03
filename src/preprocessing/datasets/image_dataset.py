@@ -53,6 +53,10 @@ class GlomImageDataset(HybridGraphDataset):
         # Drop rows where feature or image path is missing (most likely because no match through slices)
         df.dropna(subset=self.feature_list, inplace=True)
 
+        # Select only the patients that are in the train_patients list
+        if len(self.train_patients) > 0:
+            df = df[df['patient'].isin(self.train_patients)].reset_index(drop=True)
+
         self.target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
         self.targets = self.create_targets(df, self.target_labels)
         self.img_paths = self.create_features(df, [], self.feature_list)
