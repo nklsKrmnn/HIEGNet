@@ -82,7 +82,7 @@ class GlomImageDataset(HybridGraphDataset):
         image = read_image(self.img_paths[0][0])
         return image.shape[1]
 
-    def get_set_indices(self) -> tuple[list[int], list[int], list[int]]:
+    def get_set_indices(self) -> tuple[np.array, np.array, np.array]:
         return self.indices
 
     def create_set_indices(self):
