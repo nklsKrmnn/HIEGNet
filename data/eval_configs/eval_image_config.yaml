@@ -1,14 +1,15 @@
 use_gpu: true
-run_name: "eval_resnet18_d9"
+run_name: "eval_restnet152_p1_peaked"
 model_parameters:
   resnet:
     hidden_dims: [128, 64]
     output_dim: 3
     dropout: 0.9
+    layers: 152
 training_parameters:
-  batch_size: 100
+  batch_size: 20
   epochs: 300
-  learning_rate: 0.00001
+  learning_rate: 0.00001 # Will be ignored with OneCycleLR schduler
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
@@ -34,7 +35,7 @@ dataset_parameters:
   random_seed: 123
   onehot_targets: true
   hot_load: false
-  image_file_path: "/data/3_extracted_features/EXC/image_paths_full.csv"
+  image_file_path: "/data/3_extracted_features/EXC/image_paths_p1-4.csv"
   annotations_path: "/data/1_cytomine_downloads/EXC/annotations/25/"
   feature_list:
     - 'path_25'
