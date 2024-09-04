@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "eval_restnet152_p1_peaked"
+run_name: "eval_restnet152_p1_peaked_10Init"
 model_parameters:
   resnet:
     hidden_dims: [128, 64]
@@ -23,6 +23,7 @@ training_parameters:
   batch_shuffle: false
   patience: 100000000
   log_image_frequency: 50
+  n_test_initialisations: 10
   n_folds: 0
   reported_set: "test"
 dataset_parameters:
