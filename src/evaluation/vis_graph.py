@@ -46,7 +46,8 @@ def visualize_graph(coordinates, sparse_matrix, target_classes, predicted_classe
         node_color = target_color_map[target_class]
         edge_color = predicted_color_map[predicted_class]
 
-        alpha = 0.5 if train_indices[i] else 1.0
+        alpha = 0.4 if train_indices[i] else 1.0
+        shape = 'o' if train_indices[i] else 's'
 
         nx.draw_networkx_nodes(
             G, pos,
@@ -56,7 +57,7 @@ def visualize_graph(coordinates, sparse_matrix, target_classes, predicted_classe
             node_size=100,
             linewidths=3.5,
             alpha=alpha,
-
+            node_shape=shape
         )
 
     # Draw node labels

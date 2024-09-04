@@ -125,6 +125,27 @@ class ModelService():
         return str(path.absolute())
 
     @classmethod
+    def load_model(self, path: str, model_name: str, model_attributes: dict) -> nn.Module:
+        """
+        Loads a PyTorch model from the specified file.
+
+        The method loads the model from the specified file and sets the model to evaluation mode.
+
+        Args:
+            path (str): The path to the file containing the model.
+
+        Returns:
+            nn.Module: The loaded model.
+        """
+
+        state_dict = torch.load(path)
+        model = MODEL_NAME_MAPPING[model_name](**model_attributes)
+        model.load_state_dict(state_dict)
+        model.eval()
+
+        return model
+
+    @classmethod
     def load_newest_model(cls, model_name: str) -> nn.Module:
         """
         Loads the latest version of a PyTorch model of the specified class from the
