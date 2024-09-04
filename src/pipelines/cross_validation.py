@@ -72,6 +72,11 @@ def multi_init_evaluation(model_name: str,
     """
 
     for fold in range(n_test_initialisations):
+        print('##################################')
+        print(f'Test initialisation {fold}/{n_test_initialisations}')
+        print('##################################')
+
+
         model = ModelService.create_model(model_name=model_name,
                                           model_attributes=model_attributes)
         logger.fold_logger[fold].write_model(model)
