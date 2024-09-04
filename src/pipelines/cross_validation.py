@@ -92,5 +92,5 @@ def multi_init_evaluation(model_name: str,
         # Increasing torch seed by one
         torch.manual_seed(torch.initial_seed() + fold + 1)
 
-    logger.save_test_scores("./data/output/coding_test_scores.csv")
+    logger.save_test_scores("./data/output/test_scores.csv")
     logger.close()
