@@ -1,5 +1,4 @@
 import argparse
-from datetime import datetime
 from typing import Final
 
 import torch
@@ -7,12 +6,14 @@ from torch import cuda
 import yaml
 
 from src.pipelines.cnn_trainer import ImageTrainer
-from src.pipelines.grid_search import grid_search, cross_validation
+from src.pipelines.grid_search import grid_search
+from src.pipelines.cross_validation import cross_validation, multi_init_evaluation
 from src.utils.constants import DATASET_NAME_MAPPING
-from src.pipelines.trainer_constants import TRAINER_MAPPING
 from src.utils.model_service import ModelService
 from src.pipelines.trainer import Trainer
-from src.utils.logger import Logger, FoldLogger, CrossValLogger, MultiInstanceLogger
+from src.logger.logger import Logger
+from src.logger.multi_instance_logger import MultiInstanceLogger
+from src.logger.cross_val_logger import ManyFoldLogger
 from src.utils.validate_config import validate_config
 
 TRAIN_COMMAND: Final[str] = "train"
@@ -73,17 +74,21 @@ def main() -> None:
     with open(args.config, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
-    # Check validity of the config file values
-    #validate_config(config)
+    # Check validity of the config file values if not image_trainer
+    if args.trainer == 'graph':
+        validate_config(config)
 
     # Pop first parameter
     n_folds = config["training_parameters"].pop("n_folds")
+    n_test_init = config["training_parameters"].pop("n_test_initialisations") if "n_test_initialisations" in config[
+        "training_parameters"] else 1
     run_name = config.pop("run_name")
 
     # Initialize logger
+    n_logger = n_test_init if args.pipeline == EVAL_COMMAND else n_folds
     logger = MultiInstanceLogger(name=run_name, n_folds=n_folds) if args.pipeline == GRID_SEARCH_COMMAND else Logger(
-        run_name) if n_folds == 0 else CrossValLogger(n_folds, run_name)
-    logger.write_config(config)
+        run_name) if (n_logger <= 1) else ManyFoldLogger(n_logger, run_name)
+    logger.write_dict(config)
 
     # Setting up GPU based on availability and usage preference
     gpu_activated = config.pop("use_gpu") and cuda.is_available()
@@ -133,7 +138,7 @@ def main() -> None:
         model_attributes["image_size"] = dataset.image_size
         model_attributes["device"] = device
 
-    if (args.pipeline == TRAIN_COMMAND) & (n_folds == 0):
+    if (args.pipeline == TRAIN_COMMAND) & (n_folds <= 1):
         model = ModelService.create_model(model_name=model_name, model_attributes=model_attributes)
         logger.write_model(model)
 
@@ -147,7 +152,7 @@ def main() -> None:
         trainer.start_training()
         trainer.save_model()
 
-    if (args.pipeline == TRAIN_COMMAND) & (n_folds > 0):
+    if (args.pipeline == TRAIN_COMMAND) & (n_folds > 1):
         cross_validation(model_name=model_name,
                          model_attributes=model_attributes,
                          logger=logger,
@@ -184,7 +189,7 @@ def main() -> None:
                               )
         logger.close()
 
-    if args.pipeline == EVAL_COMMAND:
+    if (args.pipeline == EVAL_COMMAND) and (n_test_init <= 1):
 
         if 'test_patients' in dataset_parameters.keys():
             if (dataset_parameters['test_split'] == 0.0) or (dataset_parameters['test_patients'] == []) or (config['training_parameters']['reported_set'] == []):
@@ -216,6 +221,17 @@ def main() -> None:
                 'dataset': dataset_parameters
             }
         )
+
+    if (args.pipeline == EVAL_COMMAND) and (n_test_init > 1):
+        multi_init_evaluation(model_name=model_name,
+                              model_attributes=model_attributes,
+                              logger=logger,
+                              dataset=dataset,
+                              device=device,
+                              trainer_class=trainer_class,
+                              training_parameters=config['training_parameters'],
+                              n_test_initialisations=n_test_init
+                              )
 
     elif args.pipeline == PREDICT_COMMAND:
         pass

@@ -289,16 +289,16 @@ class GlomGraphDataset(Dataset):
     def image_size(self):
         return None
 
-    def get_set_indices(self) -> tuple[list[int], list[int], list[int]]:
+    def get_set_indices(self) -> tuple[np.array, np.array, np.array]:
         """
         Get the indices of the train, validation and test graphs.
         :return: Tuple of lists with the indices of the train and test graphs
         """
         with open(os.path.join(self.processed_dir, f"{self.processed_file_name}_filenames.pkl"), 'rb') as handle:
             file_names = pickle.load(handle)
-        train_indices = [i for i, file in enumerate(file_names) if file['train_patient']]
-        validation_indices = [i for i, file in enumerate(file_names) if file['validation_patient']]
-        test_indices = [i for i, file in enumerate(file_names) if file['test_patient']]
+        train_indices = np.array([i for i, file in enumerate(file_names) if file['train_patient']])
+        validation_indices = np.array([i for i, file in enumerate(file_names) if file['validation_patient']])
+        test_indices = np.array([i for i, file in enumerate(file_names) if file['test_patient']])
         return train_indices, validation_indices, test_indices
 
     def get_set_indicesold(self) -> tuple[list[int], list[int], list[int]]:

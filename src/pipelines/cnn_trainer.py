@@ -1,26 +1,19 @@
 """
 This module contains the Trainer class which is used to train a PyTorch model.
 """
-import math
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
-from typing import Final, Union
+from typing import Final
 
 import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Subset
 from torch_geometric.data import Dataset
 from torch_geometric.loader import DataLoader
 
-from tqdm import tqdm
-
-from src.evaluation.test_scores import calc_test_scores
 from src.pipelines.trainer import Trainer
-from src.utils.model_service import ModelService
-from src.utils.logger import Logger
+from src.logger.logger import Logger
 
 FIG_OUTPUT_PATH: Final[Path] = Path("./data/output/eval_plot")
 
@@ -97,7 +90,7 @@ class ImageTrainer(Trainer):
         return pred, targ, loss
 
 
-    def evaluate(self, parameters: dict[str, dict]) -> None:
+    def evaluate(self) -> None:
         """
 
 
@@ -112,25 +105,14 @@ class ImageTrainer(Trainer):
         if test_loader is None:
             raise ValueError("No test set to evaluate on.")
 
-        test_scores, test_results = self.test_step(test_loader, return_softmax=True)
+        test_scores, softmax_results = self.test_step(test_loader, "test", return_softmax=True)
+
+        self.visualize(predictions=softmax_results[0].argmax(dim=1),
+                       targets=softmax_results[1].argmax(dim=1),
+                       set='evaluation',
+                       epoch=1)
 
         # Unstack scores
         test_scores = {f'{metric}_{score}': value for metric, score_dict in test_scores.items() for score, value in
                        score_dict.items()}
-
-        # Save test scores and parameters
-        params = {f'params_{param_set}_{key}': value for param_set, param_dict in parameters.items() for key, value in
-                  param_dict.items()}
-        test_scores.update(params)
-        test_scores['name'] = self.logger.name.split('/')[-1]
-        test_scores = pd.DataFrame([test_scores])
-        try:
-            scores_file = pd.read_csv("./data/output/test_scores_images.csv")  # TODO: put as constant
-        except:
-            scores_file = pd.DataFrame({})
-
-        scores_file = pd.concat([scores_file, test_scores], ignore_index=True)
-        scores_file.to_csv("./data/output/test_scores_image.csv", index=False)
-
-
-
+        self.logger.write_dict(test_scores, name='score')

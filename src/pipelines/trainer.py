@@ -1,7 +1,6 @@
 """
 This module contains the Trainer class which is used to train a PyTorch model.
 """
-import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, Union
@@ -18,10 +17,11 @@ from tqdm import tqdm
 from src.evaluation.loss_functions import WeightedMSELoss
 from src.evaluation.test_scores import calc_test_scores
 from src.utils.model_service import ModelService
-from src.utils.logger import Logger
+from src.logger.logger import Logger
 from src.evaluation.vis_graph import visualize_graph
 
 FIG_OUTPUT_PATH: Final[Path] = Path("./data/output/eval_plot")
+EVAL_OUTPUT_PATH: Final[Path] = Path("./data/output/test_scores.csv")
 
 # create directory if it does not exist
 FIG_OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
@@ -288,6 +288,7 @@ class Trainer:
         """
         # Setup for early stopping
         min_loss = float('inf')
+        min_f1 = 0
         cur_patience = 0
 
         finish_reason = "Training terminated before training loop ran through."
@@ -353,7 +354,13 @@ class Trainer:
                             finish_reason = "Training finished because of early stopping."
                             self.save_model()
                             break
-                self.save_model()
+
+                # Save model if it has the best F1-Score
+                results_for_best_model = val_results if validation_loader is not None else train_results
+                f1_score = calc_test_scores(results_for_best_model[1], results_for_best_model[0])["f1_macro"]["0_total"]
+                if f1_score > min_f1:
+                    min_f1 = f1_score
+                    self.save_model()
 
             except KeyboardInterrupt:
                 finish_reason = "Training interrupted by user input."
@@ -386,12 +393,12 @@ class Trainer:
         complete_predictions = []
         complete_targets = []
 
-        for graph_data in dataloader:
+        for data in dataloader:
 
             # Reset optimizer
             self.optimizer.zero_grad()
 
-            pred, targ, loss = self.calc_batch(graph_data, mask_str="train")
+            pred, targ, loss = self.calc_batch(data, mask_str="train")
 
             # Backpropagation
             loss.backward()
@@ -432,6 +439,8 @@ class Trainer:
             mask = graph_data.val_mask
         elif mask_str == "test":
             mask = graph_data.test_mask
+        elif mask_str =="full":
+            mask = torch.ones_like(graph_data.train_mask, dtype=torch.bool)
         else:
             raise ValueError("Invalid mask string.")
 
@@ -557,7 +566,7 @@ class Trainer:
 
         self.model.eval()
 
-        set_idx = 1 if set == 'train' else 2 if set == 'val' else 3
+        set_idx = 1 if set == 'train' else 2 if set == 'val' else 3 if set == 'test' else 4
 
         # Transform to np.array
         predictions = predictions.numpy()
@@ -578,14 +587,28 @@ class Trainer:
         After the model is saved, the method logs a message to the console with the path
         to the file.
         """
-        path = ModelService.save_model(self.model)
-        self.logger.log_model_path(model_path=path)
-        print(f"Model saved to '{path}'.")
+        self.model_path = ModelService.save_model(self.model)
+        self.logger.log_model_path(model_path=self.model_path)
+        print(f"Model saved to '{self.model_path}'.")
 
-    def evaluate(self, parameters: dict[str, dict]) -> None:
+    def load_best_model(self, model_name: str, model_attributes: dict) -> None:
+        """
+        This method uses the `load_model` function to load the trained model from a file.
+        After the model is loaded, the method logs a message to the console with the path
+        to the file.
+        """
+        self.model = ModelService.load_model(path=self.model_path,
+                                             model_name=model_name,
+                                             model_attributes=model_attributes)
+        print(f"Model loaded from '{self.model_path}'.")
+
+    def evaluate(self) -> None:
         # TODO: Docstring
         """
+        Evaluate the model on the test set.
 
+        Args:
+            load_model (bool): Whether to load the model from the last checkpoint
 
         """
         self.model.to(self.device)
@@ -598,29 +621,35 @@ class Trainer:
         if test_loader is None:
             raise ValueError("No test set to evaluate on.")
 
-        test_scores, test_results = self.test_step(test_loader, "test", return_softmax=True)
+        test_scores, softmax_results = self.test_step(test_loader, "test", return_softmax=True)
+
+        self.visualize(predictions=softmax_results[0].argmax(dim=1),
+                       targets=softmax_results[1].argmax(dim=1),
+                       set='evaluation',
+                       epoch=1)
 
         # Unstack scores
         test_scores = {f'{metric}_{score}': value for metric, score_dict in test_scores.items() for score, value in score_dict.items()}
+        self.logger.write_dict(test_scores, name='score')
 
         # Save test scores and parameters
-        params = {f'params_{param_set}_{key}': value for param_set, param_dict in parameters.items() for key, value in param_dict.items()}
-        test_scores.update(params)
-        test_scores['name'] = self.logger.name.split('/')[-1]
-        test_scores = pd.DataFrame([test_scores])
-        try:
-            scores_file = pd.read_csv("./data/output/test_scores.csv") # TODO: put as constant
-        except:
-            scores_file = pd.DataFrame({})
+        #params = {f'params_{param_set}_{key}': value for param_set, param_dict in parameters.items() for key, value in param_dict.items()}
+        #test_scores.update(params)
+        #test_scores['name'] = self.logger.name.split('/')[-1]
+        #test_scores = pd.DataFrame([test_scores])
+        #try:
+        #    scores_file = pd.read_csv(EVAL_OUTPUT_PATH)
+        #except:
+        #    scores_file = pd.DataFrame({})
 
-        scores_file = pd.concat([scores_file, test_scores], ignore_index=True)
-        scores_file.to_csv("./data/output/test_scores.csv", index=False)
+        #scores_file = pd.concat([scores_file, test_scores], ignore_index=True)
+        #scores_file.to_csv(EVAL_OUTPUT_PATH, index=False)
 
 
         # Dump softmax scores (test results) as csv file
-        df_test_predictions = pd.DataFrame(test_results[0].numpy())
+        df_test_predictions = pd.DataFrame(softmax_results[0].numpy())
         df_test_predictions.columns = [f"prediction_{label}" for label in self.dataset[0].target_labels]
-        df_test_targets = pd.DataFrame(test_results[1].numpy())
+        df_test_targets = pd.DataFrame(softmax_results[1].numpy())
         df_test_targets.columns = [f"target_{label}" for label in self.dataset[0].target_labels]
         df_test_results = pd.concat([df_test_predictions, df_test_targets], axis=1)
 
@@ -638,7 +667,7 @@ class Trainer:
                 sparse_matrix = batch[('glomeruli', 'to', 'glomeruli')].edge_index.numpy()
                 target_classes = batch['y']
                 with torch.no_grad():
-                    prediction, _, _ = self.calc_batch(batch, torch.ones_like(batch.test_mask))
+                    prediction, _, _ = self.calc_batch(batch, 'full')
 
                 target_classes = target_classes.numpy().argmax(axis=1)
                 predicted_classes = prediction.numpy()

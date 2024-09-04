@@ -1,11 +1,10 @@
-import pandas as pd
 from itertools import product
 import random
 import copy
 
-from src.utils.logger import Logger, CrossValLogger, MultiInstanceLogger
+from src.pipelines.cross_validation import cross_validation
+from src.logger.multi_instance_logger import MultiInstanceLogger
 from src.utils.constants import PARAMETER_SEARCH_SPACE
-from src.utils.model_service import ModelService
 
 
 def grid_search(model_name: str,
@@ -75,48 +74,6 @@ def grid_search(model_name: str,
 
         logger.collect_final_results(train_params=training_parameters, model_params=model_attributes)
         logger.save_final_results()
-
-
-def cross_validation(model_name: str,
-                     model_attributes: dict,
-                     logger: CrossValLogger,
-                     dataset,
-                     device,
-                     trainer_class,
-                     training_parameters: dict,
-                     n_folds: int = 5
-                     ) -> None:
-    """
-
-    :param model_name:
-    :param model_attributes:
-    :param logger:
-    :param dataset:
-    :param device:
-    :param training_parameters:
-    :param n_folds:
-    :return: None
-    """
-    dataset.create_folds(n_folds)
-
-    for fold in range(n_folds):
-        model = ModelService.create_model(model_name=model_name,
-                                          model_attributes=model_attributes)
-        logger.fold_logger[fold].write_model(model)
-        dataset.activate_fold(fold)
-
-        trainer = trainer_class(
-            dataset=dataset,
-            model=model,
-            device=device,
-            logger=logger.fold_logger[fold],
-            **training_parameters)
-
-        trainer.start_training()
-        trainer.save_model()
-
-    logger.summarize()
-    logger.close()
 
 
 class SeachSampler:
