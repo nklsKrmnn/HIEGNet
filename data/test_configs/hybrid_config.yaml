@@ -1,17 +1,17 @@
 use_gpu: true
-run_name: "hyrbid_all_stains_k0_d7"
+run_name: "cnn_kernel4_gs"
 model_parameters:
   hybrid:
-    hidden_channels: [20, 30, 40, 50] #output dim: 361
+    hidden_channels: [16, 32, 48, 96]
     kernel_size: 4
-    input_channels: 12
+    input_channels: 3
     stride: 2
     gnn_params:
       class_name: mlp
-      input_dim: 150
-      hidden_dims: [80,40]
+      input_dim: 128
+      hidden_dims: [64,32]
       output_dim: 3
-      mlp_dropout: 0.7
+      mlp_dropout: gs
 training_parameters:
   batch_size: 1
   epochs: 500
@@ -19,7 +19,7 @@ training_parameters:
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: 0.003
+      max_lr: 0.0005
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000
@@ -28,8 +28,8 @@ training_parameters:
   seed: 69
   batch_shuffle: false
   patience: 10000
-  log_image_frequency: 20
-  n_folds: 5
+  log_image_frequency: 50
+  n_folds: 4
   reported_set: 'val'
 dataset_parameters:
   class_name: hybrid_graph_dataset
@@ -37,11 +37,12 @@ dataset_parameters:
   feature_file_path: "/data/3_extracted_features/EXC/glom_features.csv"
   image_file_path: "/data/3_extracted_features/EXC/image_paths_full.csv"
   annotations_path: "/data/1_cytomine_downloads/EXC/annotations/25/"
-  validation_split: 0.25
+  validation_split: 0.15
+  test_split: 0.15
   processed_file_name: "glom_graph"
   glom_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
-    k: 5 # Options: "k", "radius", ""
+    k: 0 # Options: "k", "radius", ""
   train_patients:
     - 001
   random_seed: 123
