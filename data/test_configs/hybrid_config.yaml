@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "cnn_kernel4_gs"
+run_name: "cnn_kernel4_2pot_gs"
 model_parameters:
   hybrid:
     hidden_channels: [16, 32, 48, 96]
@@ -44,6 +44,10 @@ dataset_parameters:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 0 # Options: "k", "radius", ""
   train_patients:
+    - 001
+  validation_patients:
+    - 001
+  test_patients:
     - 001
   random_seed: 123
   onehot_targets: true
