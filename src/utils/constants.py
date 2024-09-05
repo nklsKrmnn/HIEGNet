@@ -3,7 +3,7 @@ from src.models.cnn import CNN
 from src.models.full_model import FullHybrid, FullHybridJK
 from src.models.gnn_cnn_hybrid_skip import SkipHeteroHybridGNN
 from src.models.gnn_cnn_hyrbid import GnnCnnHybrid, HeteroHybridGNN
-from src.models.gnn_hetero import HeteroGNN
+from src.models.gnn_hetero import HeteroGNN, HeteroGnnJK
 from src.models.gnn_models import GCN, GCNJumpingKnowledge, GATv2
 from src.models.mlp import MLP
 from src.models.pretrained_cnn import initialize_resnet
@@ -38,14 +38,14 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'hidden_dim': [32, 64],
     'n_message_passings': [1, 2, 3, 4, 5],
     'n_fc_layers': [1, 2],
-    'dropout': [0.05, 0.1, 0.15],
+    'dropout': [0.1, 0.2, 0.3, 0.4, 0.5],
     'mlp_dropout': [0.8, 0.75, 0.7],
     'softmax_function': ['softmax', 'log_softmax', 'none'],
     'norm_fc_layers': ['batch', 'layer', 'none'],
     'norm': ['batch', 'layer', 'none'],
     'glom_to_glom': ['gcn'],
-    'cell_to_glom': ['gcn', 'gat_v2', 'gine', 'sage'],
-    'cell_to_cell': ['gcn', 'gat_v2', 'gine', 'sage'],
+    'cell_to_glom': ['gat_v2', 'sage'],
+    'cell_to_cell': ['gcn', 'gat_v2', 'gine'],
     "learning_rate": [0.003, 0.001, 0.0003, 0.0001],
     "max_lr": [0.0003, 0.0001, 0.00005]
 }
@@ -62,5 +62,6 @@ MODEL_NAME_MAPPING: Final[dict[str, any]] = {
     "hetero_hybrid_gnn": HeteroHybridGNN,
     "hetero_hybrid_gnn_skip": SkipHeteroHybridGNN,
     "hetero_full_model": FullHybrid,
-    "hetero_full_jk_model": FullHybridJK
+    "hetero_full_jk_model": FullHybridJK,
+    "hetero_jk": HeteroGnnJK
 }

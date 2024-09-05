@@ -1,10 +1,10 @@
 use_gpu: true
-run_name: "gs_eb_glom_r550_sage"
+run_name: "hetero_gnn_feature_skip"
 model_parameters:
-  hetero_gnn:
+  hetero_jk:
     hidden_dim: 32
-    n_message_passings: 5
-    n_fc_layers: 1
+    n_message_passings: gs
+    n_fc_layers: gs
     norm_fc_layers: batch
     output_dim: 3
     dropout: gs
@@ -12,11 +12,11 @@ model_parameters:
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
       glom_to_glom: sage
-      cell_to_glom: gat_v2
-      cell_to_cell: gine
+      cell_to_glom: gs
+      cell_to_cell: gs
 training_parameters:
   batch_size: 1
-  epochs: 500
+  epochs: 450
   learning_rate: 0.0003
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
@@ -44,7 +44,7 @@ dataset_parameters:
   processed_file_name: "glom_graph"
   glom_graph:
     method: "radius" # Options: "knn", "radius", "delaunay"
-    radius: 550 # Options: "k", "radius", ""
+    radius: 0 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 5 # Options: "k", "radius", ""
@@ -59,7 +59,7 @@ dataset_parameters:
   process: true
   preprocessing_params:
     scaler: 'MinMaxScaler'
-  send_msg_from_glom_to_cell: true
+  send_msg_from_glom_to_cell: false
   feature_list:
     - 'Area (microns²)'
     - 'Perimeter (mm)'
