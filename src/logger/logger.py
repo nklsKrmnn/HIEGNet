@@ -49,7 +49,7 @@ class Logger():
             tag (str): The tag for the text.
             text (str): The text to write.
         """
-        self._summary_writer.add_text(tag, text)
+        self._summary_writer.add_text(tag, str(text))
 
     def write_dict(self, data: dict, name:str='config') -> None:
         """
