@@ -661,25 +661,28 @@ class Trainer:
 
         df_test_results.to_csv(f"./data/output/test_results.csv", index=False)
 
-        if test_loader.batch_size == 1:
-            for i, batch in enumerate(test_loader):
-                coordinates = batch["coords"].numpy()
-                sparse_matrix = batch[('glomeruli', 'to', 'glomeruli')].edge_index.numpy()
-                target_classes = batch['y']
-                with torch.no_grad():
-                    prediction, _, _ = self.calc_batch(batch, 'full')
+        try:
+            if test_loader.batch_size == 1:
+                for i, batch in enumerate(test_loader):
+                    coordinates = batch["coords"].numpy()
+                    sparse_matrix = batch[('glomeruli', 'to', 'glomeruli')].edge_index.numpy()
+                    target_classes = batch['y']
+                    with torch.no_grad():
+                        prediction, _, _ = self.calc_batch(batch, 'full')
 
-                target_classes = target_classes.numpy().argmax(axis=1)
-                predicted_classes = prediction.numpy()
+                    target_classes = target_classes.numpy().argmax(axis=1)
+                    predicted_classes = prediction.numpy()
 
-                class_labels = self.dataset[0].target_labels
-                fig = visualize_graph(coordinates,
-                                      sparse_matrix,
-                                      target_classes,
-                                      predicted_classes,
-                                      class_labels,
-                                      batch.train_mask,
-                                      batch.test_mask)
-                self.logger.save_figure(fig, "graph", i)
+                    class_labels = self.dataset[0].target_labels
+                    fig = visualize_graph(coordinates,
+                                          sparse_matrix,
+                                          target_classes,
+                                          predicted_classes,
+                                          class_labels,
+                                          batch.train_mask,
+                                          batch.test_mask)
+                    self.logger.save_figure(fig, "graph", i)
+        except:
+            print("Could not visualize graphs.")
 
 
