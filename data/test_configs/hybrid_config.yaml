@@ -1,15 +1,15 @@
 use_gpu: true
-run_name: "cnn_kernel4_2pot_gs"
+run_name: "cnn_kernel4_2pot+128_gs"
 model_parameters:
   hybrid:
-    hidden_channels: [16, 32, 48, 96]
+    hidden_channels: [16, 32, 48, 96, 128]
     kernel_size: 4
     input_channels: 3
     stride: 2
     gnn_params:
       class_name: mlp
       input_dim: 128
-      hidden_dims: [64,32]
+      hidden_dims: [96,64,32]
       output_dim: 3
       mlp_dropout: gs
 training_parameters:
