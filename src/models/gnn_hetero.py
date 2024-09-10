@@ -10,7 +10,32 @@ def generate_helper_node_type(edge_type):
     return f'{edge_type[0]}->{edge_type[2]}'
 
 class HeteroMessagePassingLayer(nn.Module):
-    def __init__(self, output_dim, edge_types, dropout=0.5, norm: str = None):
+
+    """
+    This class implements a message passing layer for heterogeneous graphs, which can handle different message passing
+    types for different edge types. The class is a wrapper around the HeteroConv class from PyTorch Geometric, which
+    allows to define different message passing layers for different edge types. The class also supports different
+    normalization layers and dropout rates for the message passing layers.
+    """
+
+    def __init__(self, output_dim, edge_types: dict[tuple, str], dropout=0.5, norm: str = None):
+        """
+        Initialize the message passing layer.
+
+        For each edge type, a message passing layer is initialized according to the message passing type specified in
+        the edge_types dictionary. The message passing layers are stored in a dictionary, which is used to initialize
+        the HeteroConv class from PyTorch Geometric. Depending on the geo torch classes different attributes are
+        required for the message passing layers. The class also supports different normalization layers and dropout
+        rates for the message passing layers. For RGCN lazy init is not available and the output dimension is assumed to
+        be the input dimension.
+
+        :param output_dim: Output dimension of the message passing layer
+        :param edge_types: Dictionary of edge types as tuple of strings like ["node_type1", "to", "node_type2"] and
+        message passing types as strings
+        :param dropout: Dropout rate for the message passing layers
+        :param norm: Which normalisation to use. Options are "batch", "layer" or None
+        """
+
         super(HeteroMessagePassingLayer, self).__init__()
         self.edge_types = edge_types
 
@@ -25,6 +50,7 @@ class HeteroMessagePassingLayer(nn.Module):
             # Collect parameters for message passing layer
             params = {}
 
+            # Init parameters for different message passing types
             if msg_passing_type == "gine" or msg_passing_type == "gin":
                 params.update({
                     "nn": nn.Sequential(
@@ -81,7 +107,21 @@ class HeteroMessagePassingLayer(nn.Module):
             self.norm = nn.Identity()
         self.dropout_rate = dropout
 
-    def forward(self, x_dict, edge_index_dict, edge_attr_dict=None):
+    def forward(self, x_dict: dict, edge_index_dict: dict, edge_attr_dict=None):
+        """
+        Forward pass of the message passing layer.
+
+        The input dictionary of feature tensors, edge index tensors and edge attribute tensors is used to apply the
+        message passing layer to the input features. The output features are then normalized and passed through a ReLU
+        activation function. The dropout rate is applied to the output features.
+
+        :param x_dict: Dictionary of input feature tensors
+        :param edge_index_dict: Dictionary of edge index tensors
+        :param edge_attr_dict: Dictionary of edge attribute tensors (optional)
+        :return: Dictionary of output feature tensors
+        """
+
+
         input_msg_passing = {'x_dict': x_dict, 'edge_index_dict': edge_index_dict, 'edge_attr_dict': {},
                              'edge_weight_dict': {}}
         for edge_type, msg_passing_type in self.edge_types.items():
@@ -110,6 +150,8 @@ class HeteroMessagePassingLayer(nn.Module):
         x_dict = self.message_passing_layer(**input_msg_passing)
         x_dict = {key: self.norm(x) for key, x in x_dict.items()}
         x_dict = {key: F.relu(x) for key, x in x_dict.items()}
+
+        # Dropout only applied in fc between message passings
         # x_dict = {key: F.dropout(x, p=self.dropout_rate, training=self.training) for key, x in x_dict.items()}
 
         return x_dict
@@ -161,7 +203,7 @@ class HeteroGNN(nn.Module):
             )
         self.fc_layers.append(lin_dict)
 
-        # GAT and FC layers
+        # Message passings and FC layers
         for i in range(0, len(self.hidden_dims)):
             # Intermediate message passing layer
             self.message_passing_layers.append(HeteroMessagePassingLayer(

@@ -603,48 +603,33 @@ class Trainer:
         print(f"Model loaded from '{self.model_path}'.")
 
     def evaluate(self) -> None:
-        # TODO: Docstring
         """
         Evaluate the model on the test set.
 
-        Args:
-            load_model (bool): Whether to load the model from the last checkpoint
-
+        Makes prediction on the testset and calculates the test scores. Visualizes the results in a heatmap and every
+        graph and saves them to the logger. Saves the test scores and the predictions on the whole dataset to csv files.
         """
         self.model.to(self.device)
+        self.model.eval()
         self.loss.to(self.device)
 
-        self.model.eval()
-
+        # Get test loader
         _, _, test_loader = self.setup_dataloaders()
-
         if test_loader is None:
             raise ValueError("No test set to evaluate on.")
 
+        # Make prediction on testset
         test_scores, softmax_results = self.test_step(test_loader, "test", return_softmax=True)
 
+        # Visualize results in Heatmap
         self.visualize(predictions=softmax_results[0].argmax(dim=1),
                        targets=softmax_results[1].argmax(dim=1),
                        set='evaluation',
                        epoch=1)
 
-        # Unstack scores
+        # Unstack first level of scores dict and write results into logger
         test_scores = {f'{metric}_{score}': value for metric, score_dict in test_scores.items() for score, value in score_dict.items()}
         self.logger.write_dict(test_scores, name='score')
-
-        # Save test scores and parameters
-        #params = {f'params_{param_set}_{key}': value for param_set, param_dict in parameters.items() for key, value in param_dict.items()}
-        #test_scores.update(params)
-        #test_scores['name'] = self.logger.name.split('/')[-1]
-        #test_scores = pd.DataFrame([test_scores])
-        #try:
-        #    scores_file = pd.read_csv(EVAL_OUTPUT_PATH)
-        #except:
-        #    scores_file = pd.DataFrame({})
-
-        #scores_file = pd.concat([scores_file, test_scores], ignore_index=True)
-        #scores_file.to_csv(EVAL_OUTPUT_PATH, index=False)
-
 
         # Dump softmax scores (test results) as csv file
         df_test_predictions = pd.DataFrame(softmax_results[0].numpy())
@@ -653,27 +638,33 @@ class Trainer:
         df_test_targets.columns = [f"target_{label}" for label in self.dataset[0].target_labels]
         df_test_results = pd.concat([df_test_predictions, df_test_targets], axis=1)
 
-        # Get images for test set
+        # Add glomerulus index to the results
         glomeruli_indices = []
         for batch in test_loader:
             glomeruli_indices.append(batch["glom_indices"][batch["test_mask"]])
         df_test_results["glomerulus_index"] = torch.cat(glomeruli_indices).numpy()
-
         df_test_results.to_csv(f"./data/output/test_results.csv", index=False)
 
+
         try:
+            # Visualize graphs
             if test_loader.batch_size == 1:
+                # Each batch must be one graph
                 for i, batch in enumerate(test_loader):
+
+                    # Get graph data
                     coordinates = batch["coords"].numpy()
                     sparse_matrix = batch[('glomeruli', 'to', 'glomeruli')].edge_index.numpy()
                     target_classes = batch['y']
+
+                    # Make predictions on whole graph
                     with torch.no_grad():
                         prediction, _, _ = self.calc_batch(batch, 'full')
-
                     target_classes = target_classes.numpy().argmax(axis=1)
                     predicted_classes = prediction.numpy()
-
                     class_labels = self.dataset[0].target_labels
+
+                    # Visualize graph and log it
                     fig = visualize_graph(coordinates,
                                           sparse_matrix,
                                           target_classes,

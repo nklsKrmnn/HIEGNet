@@ -86,35 +86,6 @@ class FoldLogger(Logger):
         elif set == '3_test':
             self.test_loss[epoch] = value
 
-    # TODO remove bellow loss logging methods
-    def log_training_loss(self, value: float, epoch: int):
-        """
-        Logs the training loss for an epoch.
-
-        This method writes a message to the console, writes the train loss to the
-        TensorBoard log file and into a list as class attribute.
-
-        Args:
-            value (float): The training loss.
-            epoch (int): The epoch number.
-        """
-        super().log_training_loss(value, epoch)
-        self.train_loss[epoch] = value
-
-    def log_test_loss(self, value: float, epoch: int) -> None:
-        """
-        Logs the test loss for an epoch.
-
-        This method writes a message to the console, writes the test loss to the
-        TensorBoard log file and into a list as class attribute.
-
-        Args:
-            value (float): The test loss.
-            epoch (int): The epoch number.
-        """
-        super().log_test_loss(value, epoch)
-        self.test_loss[epoch] = value
-
     def log_test_score(self, value: float, epoch: int, class_label: str = '0_total', score: str = "Accuracy") -> None:
         """
         Logs the accuracy for an epoch.

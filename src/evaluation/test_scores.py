@@ -7,15 +7,16 @@ warnings.filterwarnings("ignore")
 
 def calc_accuracy(targets: torch.tensor, predictions: torch.tensor) -> dict[str, float]:
     """
-    Calculate the accuracy of the model.
+    Calculate the accuracy for passed predictions and targets.
 
-    Given the input of targets and predictions this function calculates the total accuracy and the separate accuracy for each class.
+    Given the input of targets and predictions this function calculates the total accuracy and the separate accuracy for
+    each class. If the class is not present in the predictions, the accuracy for that class is set to 0.
 
     :param targets: True labels
     :param predictions: Predicted labels
     :return: Dictionary of the total and separate accuracy for each class
     """
-    # TODO doc string
+
     total = accuracy_score(predictions,
                            targets)
 
@@ -24,13 +25,16 @@ def calc_accuracy(targets: torch.tensor, predictions: torch.tensor) -> dict[str,
 
     try:
         accuracy_healthy = accuracy_score(targets_np, predictions_np, sample_weight=(targets_np == 0).astype(np.int32))
-        accuracy_sclerotic = accuracy_score(targets_np, predictions_np, sample_weight=(targets_np == 1).astype(np.int32))
-        accuracy_dead = accuracy_score(targets_np, predictions_np, sample_weight=(targets_np == 2).astype(np.int32))
     except:
         accuracy_healthy = 0
+    try:
+        accuracy_sclerotic = accuracy_score(targets_np, predictions_np, sample_weight=(targets_np == 1).astype(np.int32))
+    except:
         accuracy_sclerotic = 0
+    try:
+        accuracy_dead = accuracy_score(targets_np, predictions_np, sample_weight=(targets_np == 2).astype(np.int32))
+    except:
         accuracy_dead = 0
-
 
     score_dict = {
             "0_total": total,
@@ -47,7 +51,7 @@ def calc_score(targets: torch.tensor,
                metric: classmethod,
                averaging: str = "macro") -> dict[str, float]:
     """
-    Calculate the accuracy, F1, precision, or recall score of the model.
+    Calculate the accuracy, F1, precision, or recall score for passed predictions and targets.
 
     Given the input of metric this function calculates the total score and the separate scores for each class.
 
@@ -57,7 +61,6 @@ def calc_score(targets: torch.tensor,
     :param averaging: The type of averaging to be used (marco or weighted)
     :return: Dictionary of the total and separate scores for each class
     """
-    # TODO doc string
     total = metric(predictions,
                    targets,
                    average=averaging)
@@ -78,7 +81,11 @@ def calc_score(targets: torch.tensor,
 
 def calc_test_scores(targets: torch.tensor, predictions: torch.tensor) -> dict[dict[str, float]]:
     """
-    Calculate the accuracy, F1, precision, and recall scores of the model.
+    Calculate the accuracy, F1, precision, and recall scores for passed predictions and targets.
+
+    Given the input of targets and predictions this function calculates the total score and the separate scores for each
+    class for each of the metrics.
+
     :param targets: True labels
     :param predictions: Predicted labels
     :return: A dict with a dict for each score containing the total and separate scores for each class
@@ -88,7 +95,6 @@ def calc_test_scores(targets: torch.tensor, predictions: torch.tensor) -> dict[d
     if predictions.dtype == torch.float:
         predictions = torch.round(predictions)
 
-    # TODO doc string
     scores = {
         "accuracy": calc_accuracy(targets, predictions),
         "f1_macro": calc_score(targets, predictions, f1_score),

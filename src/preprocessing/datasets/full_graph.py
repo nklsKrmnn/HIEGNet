@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 import os
 from src.preprocessing.datasets.hetero_hybrid_graph_dataset import HeteroHybridGraphDataset
-from src.preprocessing.feature_preprocessing import get_image_paths, feature_preprocessing
+from src.preprocessing.feature_preprocessing import feature_preprocessing
 from src.utils.path_io import get_path_up_to
 
 ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")
@@ -49,12 +49,7 @@ class FullGraphDataset(HeteroHybridGraphDataset):
         # Load graph
         item = torch.load(os.path.join(self.processed_dir, self.processed_file_names[idx]))
 
-        #for node_type in item.node_types:
-        #    # Check if node feature are numeric
-        #    if isinstance(item[node_type].x, tuple):
-        #        # Load images
-        #        item[node_type].x = (item[node_type].x[0], self.get_images_from_paths(idx, item[node_type].x[1]))
-
+        # Load images, if image features are used and transform to tensor
         item['glomeruli_image'].x = self.get_images_from_paths(idx, item['glomeruli'].x[1])
         item['glomeruli'].x = item['glomeruli'].x[0]
 
