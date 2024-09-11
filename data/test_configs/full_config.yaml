@@ -1,21 +1,22 @@
 use_gpu: true
-run_name: "full_model_jumping_knowledge_higherCNNdropout"
+run_name: "full_model_optCNN_optGNN2_noJKhandfeat"
 model_parameters:
   hetero_full_jk_model:
     cnn_params:
-      hidden_channels: [ 20, 30, 40, 50 ] #output dim: 361
+      hidden_channels: [16, 32, 48, 96] #output dim: 361
       kernel_size: 4
       input_channels: 3
       stride: 2
       cnn_softmax_function: "none" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
       mlp_params:
-        hidden_dims: [128, 64]
+        input_dim: 128
+        hidden_dims: [64]
         output_dim: 32
-        mlp_dropout: gs
+        mlp_dropout: 0.65
         mlp_softmax_function: "none" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
-    hidden_dim: 16
-    n_message_passings: 4
-    n_fc_layers: 3
+    hidden_dim: 64
+    n_message_passings: 2
+    n_fc_layers: 1
     norm_fc_layers: batch
     output_dim: 3
     dropout: gs
@@ -23,8 +24,8 @@ model_parameters:
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
       glom_to_glom: 'gcn'
-      cell_to_glom: 'gat_v2'
-      cell_to_cell: 'gcn'
+      cell_to_glom: 'sage'
+      cell_to_cell: 'gine'
 training_parameters:
   batch_size: 1
   epochs: 500
@@ -68,7 +69,7 @@ dataset_parameters:
   hot_load: true
   preprocessing_params:
     scaler: 'MinMaxScaler'
-  send_msg_from_glom_to_cell: false
+  send_msg_from_glom_to_cell: true
   feature_list:
     - 'path_25'
     #- 'path_106'
@@ -90,7 +91,7 @@ dataset_parameters:
     - 'lbp_8'
   cell_types:
     - "M0"
-    #- "tcell"
+    - "tcell"
   cell_features:
     - "area"
     - "perimeter"
@@ -98,4 +99,4 @@ dataset_parameters:
     - "aspect_ratio"
     - "compactness"
     - "solidity"
-    #- "is_in_glom"
+    - "is_in_glom"
