@@ -157,8 +157,9 @@ class ManyFoldLogger():
         # Calculate means and std
         for score in self.fold_logger[0].scores.keys():
             for class_label in self.fold_logger[0].scores[score].keys():
-                mean = np.mean([fold.scores[score][class_label][best_epoch] for fold in self.fold_logger])
-                std = np.std([fold.scores[score][class_label][best_epoch] for fold in self.fold_logger])
+                mean = np.mean([max_scores[f'{score}_{class_label}_fold{fold}'] for fold in range(len(self.fold_logger))])
+                std = np.std([max_scores[f'{score}_{class_label}_fold{fold}'] for fold in range(len(self.fold_logger))])
+
                 max_scores[f'{score}_{class_label}_mean'] = mean
                 max_scores[f'{score}_{class_label}_std'] = std
 
