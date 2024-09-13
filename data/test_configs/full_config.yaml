@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "full_model_optCNN_optGNN2_noJKhandfeat"
+run_name: "full_model_optCNN_optGNN2_noJKhandfeat_mlr0005"
 model_parameters:
   hetero_full_jk_model:
     cnn_params:
@@ -12,7 +12,7 @@ model_parameters:
         input_dim: 128
         hidden_dims: [64]
         output_dim: 32
-        mlp_dropout: 0.65
+        mlp_dropout: 0.55
         mlp_softmax_function: "none" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     hidden_dim: 64
     n_message_passings: 2
@@ -28,12 +28,12 @@ model_parameters:
       cell_to_cell: 'gine'
 training_parameters:
   batch_size: 1
-  epochs: 500
+  epochs: 900
   learning_rate: 0.0003
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: 0.003
+      max_lr: 0.0005
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
