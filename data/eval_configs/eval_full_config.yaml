@@ -1,38 +1,39 @@
 use_gpu: true
-run_name: "evaluation_full_model_jumping_knowledge_suboptimalGNN"
+run_name: "full_model_optCNN_optGNN2_noJKhandfeat_20init"
 model_parameters:
   hetero_full_jk_model:
     cnn_params:
-      hidden_channels: [ 20, 30, 40, 50 ] #output dim: 361
+      hidden_channels: [16, 32, 48, 96]
       kernel_size: 4
       input_channels: 3
       stride: 2
       cnn_softmax_function: "none" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
       mlp_params:
-        hidden_dims: [128, 64]
+        input_dim: 128
+        hidden_dims: [64]
         output_dim: 32
-        mlp_dropout: 0.65
+        mlp_dropout: 0.55
         mlp_softmax_function: "none" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
-    hidden_dim: 16
-    n_message_passings: 4
-    n_fc_layers: 3
+    hidden_dim: 64
+    n_message_passings: 2
+    n_fc_layers: 1
     norm_fc_layers: batch
     output_dim: 3
-    dropout: 0.15
+    dropout: 0.35
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
       glom_to_glom: 'gcn'
-      cell_to_glom: 'gat_v2'
-      cell_to_cell: 'gcn'
+      cell_to_glom: 'sage'
+      cell_to_cell: 'gine'
 training_parameters:
   batch_size: 1
-  epochs: 500
+  epochs: 750
   learning_rate: 0.0003
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: 0.003
+      max_lr: 0.0005
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
@@ -43,6 +44,7 @@ training_parameters:
   patience: 100000000
   log_image_frequency: 100
   n_folds: 0 # Set to 0 for no cross-validation
+  n_test_initialisations: 20
   reported_set: "test"
 dataset_parameters:
   class_name: full_graph_dataset
@@ -92,7 +94,7 @@ dataset_parameters:
     - 'lbp_8'
   cell_types:
     - "M0"
-    #- "tcell"
+    - "tcell"
   cell_features:
     - "area"
     - "perimeter"
@@ -100,4 +102,4 @@ dataset_parameters:
     - "aspect_ratio"
     - "compactness"
     - "solidity"
-    #- "is_in_glom"
+    - "is_in_glom"
