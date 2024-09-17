@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "eval_mlp_hc_features_10init"
+run_name: "eval_mlp_hc_features_20init"
 model_parameters:
   mlp:
     hidden_dims: [32, 32, 32]
@@ -25,7 +25,7 @@ training_parameters:
   patience: 100000000
   log_image_frequency: 100
   n_folds: 0 # Set to 0 for no cross-validation
-  n_test_initialisations: 10
+  n_test_initialisations: 20
   reported_set: "test"
 dataset_parameters:
   class_name: glom_graph_dataset

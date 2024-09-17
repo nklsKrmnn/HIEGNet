@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "eval_hetero_gnn_after_gs2"
+run_name: "eval_hetero_gnn_after_gs2_4p"
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
@@ -32,7 +32,7 @@ training_parameters:
   patience: 100000000
   log_image_frequency: 100
   n_folds: 0 # Set to 0 for no cross-validation
-  n_test_initialisations: 10
+  n_test_initialisations: 20
   reported_set: "test" # Options: "val", "test", 'train'
 dataset_parameters:
   class_name: hetero_graph_dataset
@@ -51,8 +51,14 @@ dataset_parameters:
     k: 5 # Options: "k", "radius", ""
   train_patients:
     - 001
+    - 002
+    - 003
+    - 004
   test_patients:
     - 001
+    - 002
+    - 003
+    - 004
   random_seed: 123
   onehot_targets: true
   process: true
