@@ -41,7 +41,7 @@ dataset_parameters:
   cell_node_dir_path: "/data/3_extracted_features/EXC/cell_nodes"
   annotations_path: "/data/1_cytomine_downloads/EXC/annotations/25/"
   validation_split: 0.0
-  test_split: 0.15
+  test_split: 1.0
   processed_file_name: "glom_graph"
   glom_graph:
     method: "radius" # Options: "knn", "radius", "delaunay"
@@ -53,11 +53,7 @@ dataset_parameters:
     - 001
     - 002
     - 003
-    - 004
   test_patients:
-    - 001
-    - 002
-    - 003
     - 004
   random_seed: 123
   onehot_targets: true
