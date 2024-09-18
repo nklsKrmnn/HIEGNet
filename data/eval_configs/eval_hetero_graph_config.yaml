@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "eval_hetero_gnn_after_gs2_p4_intertest"
+run_name: "eval_hetero_gnn_after_gs2_p4"
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
@@ -53,7 +53,11 @@ dataset_parameters:
     - 001
     - 002
     - 003
+    - 004
   test_patients:
+    - 001
+    - 002
+    - 003
     - 004
   random_seed: 123
   onehot_targets: true
