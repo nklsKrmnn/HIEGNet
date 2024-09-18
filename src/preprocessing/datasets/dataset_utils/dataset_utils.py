@@ -49,10 +49,18 @@ def get_train_val_test_indices(y,
     :param is_val_patient:
     :return:
     """
-    if (test_split > 0.0) and is_test_patient:
+    if (test_split == 1) and (val_split == 1):
+        raise ValueError("Both test and validation split cannot be 1.")
+
+    # TODO: Doc string
+    if (test_split > 0.0) and (test_split < 1) and is_test_patient:
         train_indices, test_indices = train_test_split(np.arange(len(y)), test_size=float(test_split),
                                                        random_state=random_seed, stratify=y.numpy())
         val_split_correction = test_split * val_split
+    elif (test_split == 1.0) and is_test_patient:
+        train_indices = np.array([])
+        test_indices = np.arange(len(y))
+        val_split_correction = 0
     else:
         val_split_correction = 0
         test_indices = np.array([])

@@ -7,6 +7,7 @@ import os
 
 from torch_geometric.data import HeteroData
 
+from preprocessing.preprocessing_constants import SCALER_OPTIONS
 from src.preprocessing.datasets.dataset_utils.dataset_utils import get_train_val_test_indices, create_mask
 from src.preprocessing.graph_preprocessing.hetero_graph_processing import drop_cell_glom_edges, create_cell_glom_edges
 from src.preprocessing.graph_preprocessing.knn_graph_constructor import graph_construction, graph_connection
@@ -58,11 +59,14 @@ class HeteroGraphDataset(GlomGraphDataset):
         y = self.create_targets(df_patient, data.target_labels)
 
         # Generate stratified train, val and test indices
-        train_indices, val_indices, test_indices = get_train_val_test_indices(y, self.test_split,
-                                                                              self.val_split,
-                                                                              self.random_seed,
-                                                                              self.test_patients,
-                                                                              self.validation_patients)
+        train_indices, val_indices, test_indices = get_train_val_test_indices(y,
+                                                                              test_split=self.test_split,
+                                                                              val_split=self.val_split,
+                                                                              random_seed=self.random_seed,
+                                                                              is_test_patient=(
+                                                                                      patient in self.test_patients),
+                                                                              is_val_patient=(
+                                                                                      patient in self.validation_patients))
 
         data.train_mask = create_mask(len(y), train_indices)
         data.val_mask = create_mask(len(y), val_indices)
@@ -70,7 +74,9 @@ class HeteroGraphDataset(GlomGraphDataset):
             len(y), test_indices)
 
         # Create the node features in tensor
-        data["glomeruli"].x = self.create_features(df_patient, train_indices, self.feature_list)
+        # No scaling here to scale later with all graphs
+        data["glomeruli"].x = self.create_features(df_patient, train_indices, self.feature_list,
+                                                   preprocessing_params={'scaler': None})
 
         data.y = y
 
@@ -125,9 +131,35 @@ class HeteroGraphDataset(GlomGraphDataset):
             data[self.cell_types[i]].x = self.create_features(df=df_cell_nodes,
                                                               train_indices=list(range(0, len(df_cell_nodes))),
                                                               feature_list=[c for c in df_cell_nodes.columns if
-                                                                            c in self.cell_features])
+                                                                            c in self.cell_features],
+                                                              preprocessing_params=self.preprocessing_params)
 
         return data
+
+    def scale_glomeruli(self, data_objects: dict) -> dict:
+        """
+        Scales glomeruli features across all graphs.
+
+        Unpacks all feature tensors from the data objects, fits the scaler to the whole train set and scales the features
+        for all graphs.
+
+        :param data_objects: Dict with graph data objects
+        :return: Dict with graph data object, where x for glomeruli is scaled
+        """
+
+        # Get all glomeruli features
+        all_glom_features = torch.cat([data['glomeruli'].x for data in data_objects.values()], dim=0)
+        all_train_masks = torch.cat([data.train_mask for data in data_objects.values()], dim=0)
+
+        # Fit the scaler to the whole train set
+        scaler = SCALER_OPTIONS[self.preprocessing_params['scaler']]()
+        scaler.fit(all_glom_features[all_train_masks])
+
+        # Scale the features for all graphs
+        for data in data_objects.values():
+            data['glomeruli'].x = torch.tensor(scaler.transform(data['glomeruli'].x), dtype=torch.float)
+
+        return data_objects
 
     def get(self, idx):
         item = torch.load(os.path.join(self.processed_dir, self.processed_file_names[idx]))

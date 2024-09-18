@@ -23,7 +23,7 @@ def feature_preprocessing(df: pd.DataFrame,
     """
     df = df[feature_list]
 
-    if scaler not in SCALER_OPTIONS:
+    if (scaler not in SCALER_OPTIONS) and (scaler is not None):
         raise ValueError(f"Scaler {scaler} not supported. Supported scalers are {list(SCALER_OPTIONS.keys())}")
 
     if scaler is not None:
