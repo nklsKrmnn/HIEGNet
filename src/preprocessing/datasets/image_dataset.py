@@ -78,9 +78,9 @@ class GlomImageDataset(HybridGraphDataset):
                                              random_seed=self.random_seed,
                                              is_val_patient=False,
                                              is_test_patient=(patient in self.test_patients))
-            train_indices += idx[0]
-            val_indices += idx[1]
-            test_indices += idx[2]
+            train_indices += [indices[i] for i in idx[0]]
+            val_indices += [indices[i] for i in idx[1]]
+            test_indices += [indices[i] for i in idx[2]]
 
         self.targets = self.create_targets(df, self.target_labels)
         self.img_paths = self.create_features(df, [], self.feature_list)
