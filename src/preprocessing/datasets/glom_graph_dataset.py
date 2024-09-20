@@ -10,6 +10,7 @@ from sklearn.utils import compute_class_weight
 from torch_geometric.data import Dataset, Data
 from sklearn.model_selection import StratifiedKFold
 
+from preprocessing.preprocessing_constants import SCALER_OPTIONS
 from src.preprocessing.datasets.dataset_utils.dataset_utils import list_annotation_file_names, \
     get_train_val_test_indices, create_mask
 from src.preprocessing.feature_preprocessing import feature_preprocessing
@@ -156,6 +157,7 @@ class GlomGraphDataset(Dataset):
         print('[Dataset]: Processing data')
 
         df = pd.read_csv(self.input_file_paths[0])
+        data_objects = {}
 
         # Load additional feature dataframes (like image paths for full dataset)
         for path2 in self.input_file_paths[1:]:
@@ -186,8 +188,7 @@ class GlomGraphDataset(Dataset):
 
                 # Save graph data object
                 file_name = f"{self.processed_file_name}_p{patient}.pt"
-                torch.save(data, os.path.join(self.processed_dir, file_name))
-                print(f'[Dataset]: Saves {file_name}')
+                data_objects.update({file_name: data})
 
                 # Save file names of processed files and if patient is in train/test set and save in settings dict
                 file_names.append({
@@ -196,6 +197,14 @@ class GlomGraphDataset(Dataset):
                     "validation_patient": patient in self.validation_patients,
                     "test_patient": patient in self.test_patients
                 })
+
+        # Scale glomeruli features in all graphs
+        data_objects = self.scale_glomeruli(data_objects)
+
+        # Save data objects
+        for file_name, data in data_objects.items():
+            torch.save(data, os.path.join(self.processed_dir, file_name))
+            print(f'[Dataset]: Saves {file_name}')
 
         # Save target labels
         self.target_labels = data.target_labels
@@ -230,11 +239,13 @@ class GlomGraphDataset(Dataset):
         y = self.create_targets(df_patient, data.target_labels)
 
         # Generate stratified train, val and test indices
-        train_indices, val_indices, test_indices = get_train_val_test_indices(y, self.test_split,
-                                                                              self.val_split,
-                                                                              self.random_seed,
-                                                                              self.test_patients == patient,
-                                                                              self.validation_patients == patient)
+        indices = get_train_val_test_indices(y,
+                                             test_split=self.test_split,
+                                             val_split=self.val_split,
+                                             random_seed=self.random_seed,
+                                             is_test_patient=(patient in self.test_patients),
+                                             is_val_patient=(patient in self.validation_patients))
+        train_indices, val_indices, test_indices = indices
 
         data.train_mask = create_mask(len(y), train_indices)
         data.val_mask = create_mask(len(y), val_indices)
@@ -242,7 +253,8 @@ class GlomGraphDataset(Dataset):
             len(y), test_indices)
 
         # Create the node features in tensor
-        x = self.create_features(df_patient, train_indices, self.feature_list)
+        # No scaling here to scale later with all graphs
+        x = self.create_features(df_patient, train_indices, self.feature_list, preprocessing_params={'scaler': None})
 
         data.x = x
         data.y = y
@@ -251,6 +263,31 @@ class GlomGraphDataset(Dataset):
         data.coords = torch.tensor(coords, dtype=torch.float)
 
         return data
+
+    def scale_glomeruli(self, data_objects: dict) -> dict:
+        """
+        Scales glomeruli features across all graphs.
+
+        Unpacks all feature tensors from the data objects, fits the scaler to the whole train set and scales the features
+        for all graphs.
+
+        :param data_objects: Dict with graph data objects
+        :return: Dict with graph data object, where x for glomeruli is scaled
+        """
+
+        # Get all glomeruli features
+        all_glom_features = torch.cat([data.x for data in data_objects.values()], dim=0)
+        all_train_masks = torch.cat([data.train_mask for data in data_objects.values()], dim=0)
+
+        # Fit the scaler to the whole train set
+        scaler = SCALER_OPTIONS[self.preprocessing_params['scaler']]()
+        scaler.fit(all_glom_features[all_train_masks])
+
+        # Scale the features for all graphs
+        for data in data_objects.values():
+            data.x = torch.tensor(scaler.transform(data.x), dtype=torch.float)
+
+        return data_objects
 
     def create_targets(self, df_patient: pd.DataFrame, target_labels: list[str]) -> torch.Tensor:
         """
@@ -280,37 +317,26 @@ class GlomGraphDataset(Dataset):
 
     def create_features(self, df: pd.DataFrame,
                         train_indices: list[int],
-                        feature_list: list[str]) -> torch.Tensor:
+                        feature_list: list[str],
+                        preprocessing_params: dict) -> torch.Tensor:
         # Get numerical features
-        x = feature_preprocessing(df, feature_list, train_indices, **self.preprocessing_params)
+        x = feature_preprocessing(df, feature_list, train_indices, **preprocessing_params)
         return x
 
     @property
     def image_size(self):
         return None
 
-    def get_set_indices(self) -> tuple[np.array, np.array, np.array]:
+    def get_set_indices(self) -> tuple[list, list, list]:
         """
         Get the indices of the train, validation and test graphs.
         :return: Tuple of lists with the indices of the train and test graphs
         """
         with open(os.path.join(self.processed_dir, f"{self.processed_file_name}_filenames.pkl"), 'rb') as handle:
             file_names = pickle.load(handle)
-        train_indices = np.array([i for i, file in enumerate(file_names) if file['train_patient']])
-        validation_indices = np.array([i for i, file in enumerate(file_names) if file['validation_patient']])
-        test_indices = np.array([i for i, file in enumerate(file_names) if file['test_patient']])
-        return train_indices, validation_indices, test_indices
-
-    def get_set_indicesold(self) -> tuple[list[int], list[int], list[int]]:
-        """
-        Get the indices of the train, validation and test graphs.
-        :return: Tuple of lists with the indices of the train and test graphs
-        """
-        with open(os.path.join(self.processed_dir, f"{self.processed_file_name}_filenames.pkl"), 'rb') as handle:
-            file_names = pickle.load(handle)
-        train_indices = [i for i, file_name in enumerate(file_names) if file_name['train']]
-        validation_indices = [i for i, file in enumerate(file_names) if file['set'] == 'validation']
-        test_indices = [i for i, file in enumerate(file_names) if file['set'] == 'test']
+        train_indices = [i for i, file in enumerate(file_names) if file['train_patient']]
+        validation_indices = [i for i, file in enumerate(file_names) if file['validation_patient']]
+        test_indices = [i for i, file in enumerate(file_names) if file['test_patient']]
         return train_indices, validation_indices, test_indices
 
     def get_class_weights(self) -> torch.Tensor:
@@ -355,7 +381,7 @@ class GlomGraphDataset(Dataset):
         # Get train and val graphs
         train_idx, val_idx, _ = self.get_set_indices()
         file_paths = [os.path.join(self.processed_dir, self.processed_file_names[idx]) for idx in
-                      train_idx + val_idx]
+                      list(set(train_idx) | set(val_idx))]
         graphs = [torch.load(fp) for fp in file_paths]
 
         # Get y data for stratified kfold

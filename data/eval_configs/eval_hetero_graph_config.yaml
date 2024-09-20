@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "eval_hetero_gnn_after_gs2_4p"
+run_name: "eval_hetero_gnn_after_gs2_p4"
 model_parameters:
   hetero_gnn:
     hidden_dim: 64

@@ -26,13 +26,15 @@ class GlomImageDataset(HybridGraphDataset):
                  random_seed: int = 42,
                  validation_split: float = 0.2,
                  test_split: float = 0.0,
-                 patients: list[str] = [],
+                 train_patients: list[str] = [],
+                 test_patients: list[str] = [],
                  hot_load: bool = False,
                  onehot_targets: bool = True):
 
         self.test_split = test_split
         self.val_split = validation_split
-        self.train_patients = patients
+        self.train_patients = train_patients
+        self.test_patients = test_patients
         self.path_file = ROOT_DIR + image_file_path
         self.annotations_paths = list_annotation_file_names(ROOT_DIR + annotations_path)
         self.random_seed = random_seed
@@ -41,6 +43,14 @@ class GlomImageDataset(HybridGraphDataset):
         self.feature_list = feature_list
         if self.hot_load:
             self.x_hot = []
+        self.target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
+
+        # Attributes to be set when data is processed
+        self.targets = None
+        self.img_paths = None
+        self.indices = None
+        self.patients = None
+        self.folds = {}
 
     def process(self) -> None:
 
@@ -57,16 +67,34 @@ class GlomImageDataset(HybridGraphDataset):
         if len(self.train_patients) > 0:
             df = df[df['patient'].isin(self.train_patients)].reset_index(drop=True)
 
-        self.target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
+        # Make set split per patient to be consistent with the graph datasets when selecting multiple patients and to
+        # enable to test for generalisation of a different patient
+        train_indices, val_indices, test_indices = [], [], []
+        for patient in df['patient'].unique():
+            indices = df[df['patient'] == patient].index
+            idx = get_train_val_test_indices(y=df.iloc[indices]["Term"],
+                                             test_split=self.test_split,
+                                             val_split=self.val_split,
+                                             random_seed=self.random_seed,
+                                             is_val_patient=False,
+                                             is_test_patient=(patient in self.test_patients))
+            train_indices += idx[0]
+            val_indices += idx[1]
+            test_indices += idx[2]
+
         self.targets = self.create_targets(df, self.target_labels)
         self.img_paths = self.create_features(df, [], self.feature_list)
+        self.indices = (train_indices, val_indices, test_indices)
 
-        self.create_set_indices()
+        # Safe patient ids for visualisation purposes
+        self.patients = df['patient']
+
 
     def create_features(self,
                         df: pd.DataFrame,
                         train_indices: list[int],
-                        feature_list: list[str]) -> list[list[str | Any]]:
+                        feature_list: list[str],
+                        preprocessing_params: dict = None) -> list[list[str | Any]]:
 
         # Get paths to images
         x = get_image_paths(df, feature_list, ROOT_DIR)
@@ -84,14 +112,6 @@ class GlomImageDataset(HybridGraphDataset):
 
     def get_set_indices(self) -> tuple[np.array, np.array, np.array]:
         return self.indices
-
-    def create_set_indices(self):
-        self.indices = get_train_val_test_indices(self.targets,
-                                                  self.test_split,
-                                                  self.val_split,
-                                                  self.random_seed,
-                                                  True,
-                                                  True)
 
     def get_class_weights(self) -> torch.Tensor:
         """
@@ -141,7 +161,6 @@ class GlomImageDataset(HybridGraphDataset):
         # Create folds
         skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=self.random_seed)
 
-        self.folds = {}
         for fold, (train_indices, val_indices) in enumerate(skf.split(indices, y_labels)):
             self.folds[fold] = (list(indices[train_indices]), list(indices[val_indices]))
 
