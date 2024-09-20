@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "eval_restnet152_p1_peaked_20Init"
+run_name: "eval_restnet152_p1-4"
 model_parameters:
   resnet:
     hidden_dims: [128, 64]
@@ -33,6 +33,9 @@ dataset_parameters:
   process: true
   patients:
     - 001
+    - 002
+    - 003
+    - 004
   random_seed: 123
   onehot_targets: true
   hot_load: false

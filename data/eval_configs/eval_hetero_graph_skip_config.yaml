@@ -1,7 +1,7 @@
 use_gpu: true
-run_name: "eval_hetero_gnn_after_gs3_20init"
+run_name: "eval_hetero_gnn_skip_after_gs3_20init"
 model_parameters:
-  hetero_gnn:
+  hetero_jk:
     hidden_dim: 32
     n_message_passings: 2
     n_fc_layers: 1
