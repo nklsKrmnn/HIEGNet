@@ -254,17 +254,17 @@ class Trainer:
         test_dateset = Subset(self.dataset, test_indices)
 
         # Check that dataset to report is not empty
-        if (self.reported_set == "test") and (test_indices.size == 0):
+        if (self.reported_set == "test") and (len(test_indices) == 0):
             raise ValueError("No test set to report performance on.")
-        if (self.reported_set == "val") and (validation_indices.size == 0):
+        if (self.reported_set == "val") and (len(validation_indices) == 0):
             raise ValueError("No validation set to report performance on.")
-        if train_indices.size == 0:
+        if len(train_indices) == 0:
             raise ValueError("No training set to train on.")
 
         # Create torch data loaders
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size)
-        validation_loader = DataLoader(validation_dataset, batch_size=self.batch_size) if validation_indices.size != 0 else None
-        test_loader = DataLoader(test_dateset, batch_size=self.batch_size) if test_indices.size != 0 else None
+        validation_loader = DataLoader(validation_dataset, batch_size=self.batch_size) if len(validation_indices) != 0 else None
+        test_loader = DataLoader(test_dateset, batch_size=self.batch_size) if len(test_indices) != 0 else None
 
         return train_loader, validation_loader, test_loader
 

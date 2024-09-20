@@ -42,7 +42,8 @@ class HybridGraphDataset(GlomGraphDataset):
     def create_features(self,
                         df: pd.DataFrame,
                         train_indices: list[int],
-                        feature_list: list[str]) -> list[list[str | Any]]:
+                        feature_list: list[str],
+                        preprocessing_params: dict) -> list[list[str | Any]]:
         return self.create_image_input_tensor(df, feature_list)
 
     @property
