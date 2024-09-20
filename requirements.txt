@@ -10,3 +10,4 @@ tensorboard
 torch_geometric==2.5.3
 opencv-python
 PyYAML
+xgboost
