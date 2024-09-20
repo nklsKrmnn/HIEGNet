@@ -239,14 +239,13 @@ class GlomGraphDataset(Dataset):
         y = self.create_targets(df_patient, data.target_labels)
 
         # Generate stratified train, val and test indices
-        train_indices, val_indices, test_indices = get_train_val_test_indices(y,
-                                                                              test_split=self.test_split,
-                                                                              val_split=self.val_split,
-                                                                              random_seed=self.random_seed,
-                                                                              is_test_patient=(
-                                                                                      patient in self.test_patients),
-                                                                              is_val_patient=(
-                                                                                          patient in self.validation_patients))
+        indices = get_train_val_test_indices(y,
+                                             test_split=self.test_split,
+                                             val_split=self.val_split,
+                                             random_seed=self.random_seed,
+                                             is_test_patient=(patient in self.test_patients),
+                                             is_val_patient=(patient in self.validation_patients))
+        train_indices, val_indices, test_indices = indices
 
         data.train_mask = create_mask(len(y), train_indices)
         data.val_mask = create_mask(len(y), val_indices)
@@ -328,28 +327,16 @@ class GlomGraphDataset(Dataset):
     def image_size(self):
         return None
 
-    def get_set_indices(self) -> tuple[np.array, np.array, np.array]:
+    def get_set_indices(self) -> tuple[list, list, list]:
         """
         Get the indices of the train, validation and test graphs.
         :return: Tuple of lists with the indices of the train and test graphs
         """
         with open(os.path.join(self.processed_dir, f"{self.processed_file_name}_filenames.pkl"), 'rb') as handle:
             file_names = pickle.load(handle)
-        train_indices = np.array([i for i, file in enumerate(file_names) if file['train_patient']])
-        validation_indices = np.array([i for i, file in enumerate(file_names) if file['validation_patient']])
-        test_indices = np.array([i for i, file in enumerate(file_names) if file['test_patient']])
-        return train_indices, validation_indices, test_indices
-
-    def get_set_indicesold(self) -> tuple[list[int], list[int], list[int]]:
-        """
-        Get the indices of the train, validation and test graphs.
-        :return: Tuple of lists with the indices of the train and test graphs
-        """
-        with open(os.path.join(self.processed_dir, f"{self.processed_file_name}_filenames.pkl"), 'rb') as handle:
-            file_names = pickle.load(handle)
-        train_indices = [i for i, file_name in enumerate(file_names) if file_name['train']]
-        validation_indices = [i for i, file in enumerate(file_names) if file['set'] == 'validation']
-        test_indices = [i for i, file in enumerate(file_names) if file['set'] == 'test']
+        train_indices = [i for i, file in enumerate(file_names) if file['train_patient']]
+        validation_indices = [i for i, file in enumerate(file_names) if file['validation_patient']]
+        test_indices = [i for i, file in enumerate(file_names) if file['test_patient']]
         return train_indices, validation_indices, test_indices
 
     def get_class_weights(self) -> torch.Tensor:
@@ -394,7 +381,7 @@ class GlomGraphDataset(Dataset):
         # Get train and val graphs
         train_idx, val_idx, _ = self.get_set_indices()
         file_paths = [os.path.join(self.processed_dir, self.processed_file_names[idx]) for idx in
-                      train_idx + val_idx]
+                      list(set(train_idx) | set(val_idx))]
         graphs = [torch.load(fp) for fp in file_paths]
 
         # Get y data for stratified kfold
