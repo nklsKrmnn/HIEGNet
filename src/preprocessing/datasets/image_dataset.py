@@ -60,8 +60,15 @@ class GlomImageDataset(HybridGraphDataset):
         df_annotations = pd.concat([pd.read_csv(path) for path in self.annotations_paths])
         df = pd.merge(df, df_annotations, left_on="glom_index", right_on="ID", how="left")
 
+        # Sort df the same order as the graph dataset
+        sorted_indices = pd.read_csv(ROOT_DIR + "/data/3_extracted_features/EXC/glom_index_order.csv")["glom_index"]
+        df = df.set_index("glom_index").loc[sorted_indices].reset_index()
+
         # Drop rows where feature or image path is missing (most likely because no match through slices)
         df.dropna(subset=self.feature_list, inplace=True)
+
+        # Create target labels
+        self.targets = self.create_targets(df, self.target_labels)
 
         # Select only the patients that are in the train_patients list
         if len(self.train_patients) > 0:
@@ -72,7 +79,7 @@ class GlomImageDataset(HybridGraphDataset):
         train_indices, val_indices, test_indices = [], [], []
         for patient in df['patient'].unique():
             indices = df[df['patient'] == patient].index
-            idx = get_train_val_test_indices(y=df.iloc[indices]["Term"],
+            idx = get_train_val_test_indices(y=self.targets[indices],
                                              test_split=self.test_split,
                                              val_split=self.val_split,
                                              random_seed=self.random_seed,
@@ -82,7 +89,7 @@ class GlomImageDataset(HybridGraphDataset):
             val_indices += [indices[i] for i in idx[1]]
             test_indices += [indices[i] for i in idx[2]]
 
-        self.targets = self.create_targets(df, self.target_labels)
+
         self.img_paths = self.create_features(df, [], self.feature_list)
         self.indices = (train_indices, val_indices, test_indices)
 

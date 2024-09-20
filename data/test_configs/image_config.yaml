@@ -32,9 +32,14 @@ dataset_parameters:
   process: true
   patients:
     - 001
-    #- 002
-    #- 003
-    #- 004
+    - 002
+    - 003
+    - 004
+  test_patients:
+    - 001
+    - 002
+    - 003
+    - 004
   random_seed: 123
   onehot_targets: true
   hot_load: false
