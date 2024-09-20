@@ -31,7 +31,12 @@ dataset_parameters:
   validation_split: 0.0
   test_split: 1.0
   process: true
-  patients:
+  train_patients:
+    - 001
+    - 002
+    - 003
+    - 004
+  test_patients:
     - 001
     - 002
     - 003
