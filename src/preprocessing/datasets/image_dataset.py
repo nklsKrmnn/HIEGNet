@@ -72,7 +72,7 @@ class GlomImageDataset(HybridGraphDataset):
 
         # Select only the patients that are in the train_patients list
         if len(self.train_patients) > 0:
-            df = df[df['patient'].isin(self.train_patients)].reset_index(drop=True)
+            df = df[df['patient'].isin(self.train_patients + self.test_patients)].reset_index(drop=True)
 
         # Make set split per patient to be consistent with the graph datasets when selecting multiple patients and to
         # enable to test for generalisation of a different patient
