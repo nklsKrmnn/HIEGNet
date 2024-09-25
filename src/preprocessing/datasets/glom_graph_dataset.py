@@ -46,6 +46,8 @@ class GlomGraphDataset(Dataset):
                  train_patients: list[str] = [],
                  validation_patients: list[str] = [],
                  test_patients: list[str] = [],
+                 split_action:str = 'load',
+                 set_indices_path: str = "/repos/histograph/data/input/set_indices/test15_val15",
                  onehot_targets: bool = True,
                  preprocessing_params: dict = None,
                  transform=None,
@@ -65,6 +67,8 @@ class GlomGraphDataset(Dataset):
         :param train_patients: Patients to train on
         :param validation_patients: Patients of only validate on
         :param test_patients: Patients to only test on
+        :param split_action: Action to perform on the set indices (load, save or split without save)
+        :param set_indices_path: Path to folder with the set index files
         :param onehot_targets: Bool if to use onehot encoding for targets
         :param preprocessing_params: Parameters for preprocessing (especially normalisation)
         :param transform: not used
@@ -79,6 +83,8 @@ class GlomGraphDataset(Dataset):
         self.train_patients = train_patients
         self.validation_patients = validation_patients
         self.test_patients = test_patients
+        self.split_action = split_action
+        self.set_indices_path = ROOT_DIR + set_indices_path
         self.feature_list = feature_list
         self.glom_graph = glom_graph
         self.random_seed = random_seed
@@ -244,7 +250,10 @@ class GlomGraphDataset(Dataset):
                                              val_split=self.val_split,
                                              random_seed=self.random_seed,
                                              is_test_patient=(patient in self.test_patients),
-                                             is_val_patient=(patient in self.validation_patients))
+                                             is_val_patient=(patient in self.validation_patients),
+                                             glom_indices=df_patient['glom_index'].values,
+                                             set_indices_path=self.set_indices_path,
+                                             split_action=self.split_action)
         train_indices, val_indices, test_indices = indices
 
         data.train_mask = create_mask(len(y), train_indices)

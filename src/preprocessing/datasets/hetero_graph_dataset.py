@@ -59,14 +59,16 @@ class HeteroGraphDataset(GlomGraphDataset):
         y = self.create_targets(df_patient, data.target_labels)
 
         # Generate stratified train, val and test indices
-        train_indices, val_indices, test_indices = get_train_val_test_indices(y,
-                                                                              test_split=self.test_split,
-                                                                              val_split=self.val_split,
-                                                                              random_seed=self.random_seed,
-                                                                              is_test_patient=(
-                                                                                      patient in self.test_patients),
-                                                                              is_val_patient=(
-                                                                                      patient in self.validation_patients))
+        indices = get_train_val_test_indices(y,
+                                             test_split=self.test_split,
+                                             val_split=self.val_split,
+                                             random_seed=self.random_seed,
+                                             is_test_patient=(patient in self.test_patients),
+                                             is_val_patient=(patient in self.validation_patients),
+                                             glom_indices=df_patient['glom_index'].values,
+                                             set_indices_path=self.set_indices_path,
+                                             split_action=self.split_action)
+        train_indices, val_indices, test_indices = indices
 
         data.train_mask = create_mask(len(y), train_indices)
         data.val_mask = create_mask(len(y), val_indices)
@@ -103,7 +105,8 @@ class HeteroGraphDataset(GlomGraphDataset):
                     # Skip same cell type
                     continue
 
-                df_other_cell_nodes = df_other_cell_nodes[df_other_cell_nodes['patient'] == patient].reset_index(drop=True)
+                df_other_cell_nodes = df_other_cell_nodes[df_other_cell_nodes['patient'] == patient].reset_index(
+                    drop=True)
 
                 other_cell_coords = df_other_cell_nodes[['center_x_global', 'center_y_global']].to_numpy()
                 other_cell_edge_index, other_cell_edge_weight = graph_connection(cell_coords, other_cell_coords,
@@ -115,7 +118,8 @@ class HeteroGraphDataset(GlomGraphDataset):
                     1)
 
             # Create connections between cells and glomeruli
-            cell_glom_edge_index, cell_glom_edge_distances = create_cell_glom_edges(df_cell_nodes, df_patient['glom_index'])
+            cell_glom_edge_index, cell_glom_edge_distances = create_cell_glom_edges(df_cell_nodes,
+                                                                                    df_patient['glom_index'])
 
             # Add cell to glom edge index and weights to data
             data[self.cell_types[i], 'to', 'glomeruli'].edge_index = cell_glom_edge_index
