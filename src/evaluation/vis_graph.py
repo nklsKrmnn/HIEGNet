@@ -18,6 +18,8 @@ def visualize_graph(coordinates, sparse_matrix, target_classes, predicted_classe
         target_classes (list): Target classes for the nodes.
         predicted_classes (list): Predicted classes for the nodes.
     """
+    n_target_classes = 3
+
     # Create the graph from the adjacency matrix
     if sparse_matrix.shape[1] != 0:
         adj_matrix = edge_list_to_adjacency_matrix(sparse_matrix.T)
@@ -27,8 +29,8 @@ def visualize_graph(coordinates, sparse_matrix, target_classes, predicted_classe
 
     # Define custom color map
     colors = ['green', 'goldenrod', 'red']
-    target_color_map = {i: colors[i % len(colors)] for i in range(len(set(target_classes)))}
-    predicted_color_map = {i: colors[i % len(colors)] for i in range(len(set(target_classes)))}
+    target_color_map = {i: colors[i % len(colors)] for i in range(n_target_classes)}
+    predicted_color_map = {i: colors[i % len(colors)] for i in range(n_target_classes)}
 
     # Create a dictionary for node positions
     pos = {i: coord for i, coord in enumerate(coordinates)}
@@ -66,15 +68,15 @@ def visualize_graph(coordinates, sparse_matrix, target_classes, predicted_classe
     # Create legend for target classes
     target_legend_handles = [
         plt.Line2D([0], [0], marker='o', color='lightgrey', markerfacecolor=colors[i % len(colors)], markersize=7)
-        for i in range(len(set(target_classes)))]
-    target_legend_labels = [f"Target: {class_labels[i]}" for i in range(len(set(target_classes)))]
+        for i in range(n_target_classes)]
+    target_legend_labels = [f"Target: {class_labels[i]}" for i in range(n_target_classes)]
     target_legend = plt.legend(handles=target_legend_handles, labels=target_legend_labels, loc='upper left')
 
     # Create legend for predicted classes
     predicted_legend_handles = [
         plt.Line2D([0], [0], marker='o', color=colors[i % len(colors)], markerfacecolor='lightgrey', markersize=10, markeredgewidth=2)
-        for i in range(len(set(class_labels)))]
-    predicted_legend_labels = [f"Prediction: {class_labels[i]}" for i in range(len(set(target_classes)))]
+        for i in range(n_target_classes)]
+    predicted_legend_labels = [f"Prediction: {class_labels[i]}" for i in range(n_target_classes)]
     predicted_legend = plt.legend(handles=predicted_legend_handles, labels=predicted_legend_labels, loc='upper right')
 
     # Add legends to the plot
