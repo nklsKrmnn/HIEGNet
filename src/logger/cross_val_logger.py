@@ -94,7 +94,7 @@ class ManyFoldLogger():
             for score in self.fold_logger[0].scores.keys():
                 for class_label in self.fold_logger[0].scores[score].keys():
                     if epoch in self.fold_logger[0].scores[score][class_label].keys():
-                        scores = [fold.scores[score][class_label].get(epoch) for fold in self.fold_logger]
+                        scores = [fold.scores[score][class_label].get(epoch) for fold in self.fold_logger if epoch in fold.scores[score][class_label]]
                         mean_score = np.mean(scores) if scores else 0
                         self.summary_logger.log_test_score(mean_score, epoch, class_label, score)
 
