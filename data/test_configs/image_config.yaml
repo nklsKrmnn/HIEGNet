@@ -2,10 +2,10 @@ use_gpu: true
 run_name: "resnet152_p1_test_instead_of_val"
 model_parameters:
   resnet:
-    hidden_dims: [128, 64]
+    hidden_dims: [128, 64, 32]
     output_dim: 3
-    dropout: 0.9
-    layers: 152
+    dropout: gs
+    layers: gs
 training_parameters:
   batch_size: 20
   epochs: 300
@@ -23,11 +23,11 @@ training_parameters:
   batch_shuffle: false
   patience: 100000000
   log_image_frequency: 50
-  n_folds: 0
-  reported_set: "test"
+  n_folds: 4
+  reported_set: "val"
 dataset_parameters:
   class_name: image_dataset
-  validation_split: 0.0
+  validation_split: 0.15
   test_split: 0.15
   process: true
   set_indices_path: "/repos/histograph/data/input/set_indices/test15_val15"
