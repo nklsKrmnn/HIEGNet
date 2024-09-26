@@ -61,6 +61,10 @@ class ManyFoldLogger():
         that is saved in a list of loggers and writes the mean values to the TensorBoard log file.
         :param loggers: A list of loggers for each fold of a cross validation.
         """
+        # Get a set of all keys for the epochs for all logger
+        all_epochs = set()
+        for fold in self.fold_logger:
+            all_epochs.update(fold.train_loss.keys())
 
         for key, value in self.fold_logger[0].text.items():
             if 'score' in key:
@@ -72,23 +76,27 @@ class ManyFoldLogger():
         if hasattr(self.fold_logger[0], 'model'):
             self.summary_logger.write_model(self.fold_logger[0].model)
 
-        for row in self.fold_logger[0].train_loss.keys():
-            mean_train_loss = np.mean([fold.train_loss[row] for fold in self.fold_logger])
-            self.summary_logger.log_loss(mean_train_loss, row, '1_train')
+        for epoch in all_epochs:
+            losses = [fold.train_loss.get(epoch) for fold in self.fold_logger if epoch in fold.train_loss]
+            mean_train_loss = np.mean(losses) if losses else 0
+            self.summary_logger.log_loss(mean_train_loss, epoch, '1_train')
 
-            if row in self.fold_logger[0].val_loss.keys():
-                mean_val_loss = np.mean([fold.val_loss[row] for fold in self.fold_logger])
-                self.summary_logger.log_loss(mean_val_loss, row, '2_validation')
+            if epoch in self.fold_logger[0].val_loss.keys():
+                losses = [fold.val_loss.get(epoch) for fold in self.fold_logger if epoch in fold.val_loss]
+                mean_val_loss = np.mean(losses) if losses else 0
+                self.summary_logger.log_loss(mean_val_loss, epoch, '2_validation')
 
-            if row in self.fold_logger[0].test_loss.keys():
-                mean_test_loss = np.mean([fold.test_loss[row] for fold in self.fold_logger])
-                self.summary_logger.log_loss(mean_test_loss, row, '3_test')
+            if epoch in self.fold_logger[0].test_loss.keys():
+                losses = [fold.test_loss.get(epoch) for fold in self.fold_logger if epoch in fold.test_loss]
+                mean_test_loss = np.mean(losses) if losses else 0
+                self.summary_logger.log_loss(mean_test_loss, epoch, '3_test')
 
             for score in self.fold_logger[0].scores.keys():
                 for class_label in self.fold_logger[0].scores[score].keys():
-                    if row in self.fold_logger[0].scores[score][class_label].keys():
-                        mean_value = np.mean([fold.scores[score][class_label][row] for fold in self.fold_logger])
-                        self.summary_logger.log_test_score(mean_value, row, class_label, score)
+                    if epoch in self.fold_logger[0].scores[score][class_label].keys():
+                        scores = [fold.scores[score][class_label].get(epoch) for fold in self.fold_logger]
+                        mean_score = np.mean(scores) if scores else 0
+                        self.summary_logger.log_test_score(mean_score, epoch, class_label, score)
 
     def get_final_scores(self):
         """
