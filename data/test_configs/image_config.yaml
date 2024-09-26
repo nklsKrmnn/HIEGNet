@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "resnet152_p1_test_instead_of_val"
+run_name: "resnet_gs_4p"
 model_parameters:
   resnet:
     hidden_dims: [128, 64, 32]
