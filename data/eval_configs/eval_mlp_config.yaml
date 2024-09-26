@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "eval_mlp_hc_features_p1-4_within"
+run_name: "eval_mlp_hc_features_p1-4_between"
 model_parameters:
   mlp:
     hidden_dims: [32, 32, 32]
@@ -35,7 +35,7 @@ dataset_parameters:
   set_indices_path: "/repos/histograph/data/input/set_indices/test15_val15"
   split_action: "load" # Options: "load", "save", "split"
   validation_split: 0.0
-  test_split: 0.15
+  test_split: 1.0
   processed_file_name: "glom_graph"
   glom_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
@@ -44,11 +44,7 @@ dataset_parameters:
     - 001
     - 002
     - 003
-    - 004
   test_patients:
-    - 001
-    - 002
-    - 003
     - 004
   random_seed: 123
   onehot_targets: true
