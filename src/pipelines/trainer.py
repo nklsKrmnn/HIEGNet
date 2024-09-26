@@ -305,8 +305,8 @@ class Trainer:
                     self.logger.log_loss(val_loss, epoch, "2_validation")
                     early_stopping_loss = val_loss
                 # Calculating test loss if loader exists, and we want to report it
-                elif train_loader is not None and self.reported_set == "test":
-                    test_loss, test_results = self.validation_step(test_loader)
+                elif test_loader is not None and self.reported_set == "test":
+                    test_loss, test_results = self.validation_step(test_loader, mask_str="test")
                     self.logger.log_loss(test_loss, epoch, "3_test")
                     early_stopping_loss = test_loss
 
@@ -471,7 +471,7 @@ class Trainer:
 
         return pred, targ, loss
 
-    def validation_step(self, validation_loader) -> tuple[float, tuple[torch.Tensor, torch.Tensor]]:
+    def validation_step(self, validation_loader, mask_str="val") -> tuple[float, tuple[torch.Tensor, torch.Tensor]]:
         """
         Calculates the target metric for the test set and generates visualisations for the train and the test set. This method is called in the frequency given in the config.
 
@@ -493,7 +493,7 @@ class Trainer:
 
         with torch.no_grad():
             for graph_data in validation_loader:
-                pred, targ, val_loss = self.calc_batch(graph_data, mask_str="val")
+                pred, targ, val_loss = self.calc_batch(graph_data, mask_str=mask_str)
 
                 total_val_loss += val_loss.item()
                 step_count += 1
@@ -609,6 +609,7 @@ class Trainer:
         Makes prediction on the testset and calculates the test scores. Visualizes the results in a heatmap and every
         graph and saves them to the logger. Saves the test scores and the predictions on the whole dataset to csv files.
         """
+        #TODO: Docstring
         self.model.to(self.device)
         self.model.eval()
         self.loss.to(self.device)

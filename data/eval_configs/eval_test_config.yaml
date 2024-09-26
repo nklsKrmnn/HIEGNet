@@ -32,6 +32,7 @@ training_parameters:
   patience: 100000000
   log_image_frequency: 100
   n_folds: 0 # Set to 0 for no cross-validation
+  n_test_initialisations: 2
   reported_set: "test" # Options: "val", "test", 'train'
 dataset_parameters:
   class_name: hetero_graph_dataset

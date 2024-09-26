@@ -8,6 +8,15 @@ from sklearn.model_selection import train_test_split
 
 
 def list_annotation_file_names(dir_path: str) -> list:
+    """
+    List all annotation file names (if it ends with ".csv") in the given directory.
+
+    Args:
+        dir_path (str): The directory path.
+
+    Returns:
+        list: List of file names.
+    """
     file_names = []
     for root, _, files in os.walk(dir_path):
         for file in files:
@@ -46,28 +55,43 @@ def get_train_val_test_indices(y: Union[torch.tensor, pd.Series, np.array, list]
                                set_indices_path: str,
                                split_action: str = "load") -> tuple[list, list, list]:
     """
+    Get the train, validation and test indices.
 
+    Generates the train, validation and test indices for the given y values. The indices are either loaded from a
+    file (split_action = "load") or generated based on the given parameters (split_action = "split"). The indices are
+    saved to a file if split_action is 'save'.
 
-    :param y:
-    :param test_split:
-    :param val_split:
-    :param random_seed:
-    :param is_test_patient:
-    :param is_val_patient:
-    :return:
+    Args:
+        y (Union[torch.tensor, pd.Series, np.array, list]): Target values.
+        test_split (float): Test split ratio.
+        val_split (float): Validation split ratio.
+        random_seed (int): Random seed.
+        is_test_patient (bool): If the patient is used in the test set.
+        is_val_patient (bool): If the patient is used in the validation set.
+        glom_indices (list): List of glomeruli indices.
+        set_indices_path (str): Path where to save the files.
+        split_action (str): Action to take, either 'load', 'split' or 'save'.
+
+    Returns:
+        tuple: Tuple of lists with train, val and test indices
+
     """
-    # TODO: Doc string
 
     if split_action == "load":
+        # Load indices from files
         train_indices, val_indices, test_indices = load_indices(glom_indices, set_indices_path)
 
+        # Change indices to different set based on given parameters
         if not is_test_patient or test_split == 0:
+            # Move test indices to train set if this patient is not in the test set
             train_indices = train_indices + test_indices
             test_indices = []
         if not is_val_patient or val_split == 0:
+            # Move val indices to train set if this patient is not in the val set
             train_indices = train_indices + val_indices
             val_indices = []
         if test_split == 1 and is_test_patient:
+            # Move all indices to test set if we test on the whole patient
             test_indices = test_indices + train_indices + val_indices
             train_indices = []
             val_indices = []
@@ -84,6 +108,7 @@ def get_train_val_test_indices(y: Union[torch.tensor, pd.Series, np.array, list]
         elif isinstance(y, list):
             y = np.array(y)
 
+        # Split test indices from whole set
         if (test_split > 0.0) and (test_split < 1) and is_test_patient:
             train_indices, test_indices = train_test_split(np.arange(len(y)), test_size=float(test_split),
                                                            random_state=random_seed, stratify=y)
@@ -97,6 +122,7 @@ def get_train_val_test_indices(y: Union[torch.tensor, pd.Series, np.array, list]
             test_indices = np.array([])
             train_indices = np.arange(len(y))
 
+        # Split remaining indices into train and val set
         if (val_split > 0.0) and is_val_patient:
             train_indices, val_indices = train_test_split(train_indices,
                                                           test_size=float(val_split + val_split_correction),
@@ -109,6 +135,7 @@ def get_train_val_test_indices(y: Union[torch.tensor, pd.Series, np.array, list]
         val_indices = val_indices.tolist()
         test_indices = test_indices.tolist()
 
+        # Save indices to file if required
         if split_action == "save":
             save_indices(train_indices, val_indices, test_indices, glom_indices, set_indices_path)
 
@@ -120,9 +147,14 @@ def create_mask(num_nodes, indices) -> torch.tensor:
     Create a mask for the train, validation or test data.
 
     Creates a torch mask tensor with True values for the indices of the given indices list.
-    :param num_nodes: Number of nodes in mask
-    :param indices: Indices to be True
-    :return: Mask
+
+    Args:
+        num_nodes (int): Number of nodes.
+        indices (list): List of indices.
+
+    Returns:
+        torch.tensor: Mask tensor.
+
     """
     mask = torch.zeros(num_nodes, dtype=torch.bool)
     mask[indices] = True
@@ -137,12 +169,17 @@ def save_indices(train_indices: list,
     """
     Save the indices to a file.
 
-    :param train_indices:
-    :param val_indices:
-    :param test_indices:
-    :param glom_indices:
-    :param set_indices_path:
-    :return:
+    Saves glomeruli indices of the patient for the train, val and test set in separate files at set_indices_path. The
+    indices for the different set are given as indices of the glom index list. Check for each glomeruli index first
+    if in already exists in the file, to avoid duplicates.
+
+    Args:
+        train_indices (list): List of train indices.
+        val_indices (list): List of validation indices.
+        test_indices (list): List of test indices.
+        glom_indices (list): List of glomeruli indices for the patient.
+        set_indices_path (str): Path where to save the files.
+
     """
     for i, indices in enumerate([train_indices, val_indices, test_indices]):
         # Create file name
@@ -171,14 +208,12 @@ def load_indices(glom_indices: list,
     and random_seed. It returns the indices of the glom_indices in the list, where the glom_index can be found in the
     loaded list of indices specific to a set.
 
-    :param val_split: Validation split.
-    :param test_split: Test split.
-    :param random_seed: Random seed.
-    :param is_test_patient: Boolean if the patient is in the test set.
-    :param is_val_patient: Boolean if the patient is in the validation set.
-    :param glom_indices: List of glomeruli indices for the patient.
-    :param set_indices_path: Path where to find file for index lists.
-    :return: Tuple of three lists, with indices for train, val and test set.
+    Args:
+        glom_indices (list): List of glomeruli indices.
+        set_indices_path (str): Path where the files are saved.
+
+    Returns:
+        tuple: Tuple of lists with train, val and test indices.
     """
 
     for i, set_type in enumerate(["train", "val", "test"]):

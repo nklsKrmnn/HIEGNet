@@ -63,7 +63,11 @@ class ManyFoldLogger():
         """
 
         for key, value in self.fold_logger[0].text.items():
-            self.summary_logger.write_text(key, value)
+            if 'score' in key:
+                mean = np.mean([fold.text[key] for fold in self.fold_logger])
+                self.summary_logger.write_text(key, mean)
+            else:
+                self.summary_logger.write_text(key, value)
 
         if hasattr(self.fold_logger[0], 'model'):
             self.summary_logger.write_model(self.fold_logger[0].model)

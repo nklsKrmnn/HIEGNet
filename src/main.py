@@ -214,13 +214,7 @@ def main() -> None:
             trainer.start_training()
             trainer.save_model()
 
-        trainer.evaluate(
-            parameters={
-                'model': model_attributes,
-                'training': config['training_parameters'],
-                'dataset': dataset_parameters
-            }
-        )
+        trainer.evaluate()
 
     if (args.pipeline == EVAL_COMMAND) and (n_test_init > 1):
         multi_init_evaluation(model_name=model_name,

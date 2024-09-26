@@ -6,6 +6,7 @@ from src.pipelines.cnn_trainer import ImageTrainer
 from src.pipelines.trainer import Trainer
 from src.utils.model_service import ModelService
 
+#TODO docstrings
 
 def cross_validation(model_name: str,
                      model_attributes: dict,
@@ -97,5 +98,6 @@ def multi_init_evaluation(model_name: str,
         # Increasing torch seed by one
         torch.manual_seed(torch.initial_seed() + fold + 1)
 
+    logger.summarize()
     logger.save_test_scores("./data/output/test_scores.csv")
     logger.close()
