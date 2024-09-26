@@ -28,6 +28,8 @@ class GlomImageDataset(HybridGraphDataset):
                  test_split: float = 0.0,
                  train_patients: list[str] = [],
                  test_patients: list[str] = [],
+                 split_action:str = 'load',
+                 set_indices_path: str = "/repos/histograph/data/input/set_indices/test15_val15",
                  hot_load: bool = False,
                  onehot_targets: bool = True):
 
@@ -35,6 +37,8 @@ class GlomImageDataset(HybridGraphDataset):
         self.val_split = validation_split
         self.train_patients = train_patients
         self.test_patients = test_patients
+        self.split_action = split_action
+        self.set_indices_path = ROOT_DIR + set_indices_path
         self.path_file = ROOT_DIR + image_file_path
         self.annotations_paths = list_annotation_file_names(ROOT_DIR + annotations_path)
         self.random_seed = random_seed
@@ -83,8 +87,11 @@ class GlomImageDataset(HybridGraphDataset):
                                              test_split=self.test_split,
                                              val_split=self.val_split,
                                              random_seed=self.random_seed,
-                                             is_val_patient=False,
-                                             is_test_patient=(patient in self.test_patients))
+                                             is_val_patient=(patient in self.train_patients),
+                                             is_test_patient=(patient in self.test_patients),
+                                             glom_indices=df[df['patient'] == patient]['glom_index'].values,
+                                             set_indices_path=self.set_indices_path,
+                                             split_action=self.split_action)
             train_indices += [indices[i] for i in idx[0]]
             val_indices += [indices[i] for i in idx[1]]
             test_indices += [indices[i] for i in idx[2]]

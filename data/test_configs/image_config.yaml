@@ -30,7 +30,9 @@ dataset_parameters:
   validation_split: 0.0
   test_split: 0.15
   process: true
-  patients:
+  set_indices_path: "/repos/histograph/data/input/set_indices/test15_val15"
+  split_action: "load" # Options: "load", "save", "split"
+  train_patients:
     - 001
     - 002
     - 003
