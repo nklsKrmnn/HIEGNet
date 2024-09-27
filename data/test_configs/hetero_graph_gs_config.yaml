@@ -22,7 +22,7 @@ training_parameters:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
       max_lr: 0.003
-  loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
+  loss: "nll" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
   balance_classes: true
@@ -66,7 +66,7 @@ dataset_parameters:
     - 003
     - 004
   random_seed: 123
-  onehot_targets: true
+  onehot_targets: false
   process: true
   preprocessing_params:
     scaler: 'MinMaxScaler'
