@@ -3,12 +3,12 @@ run_name: "hetero_gnn_4p_norm_gs"
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
-    n_message_passings: gs
+    n_message_passings: 2
     n_fc_layers: 1
     norm_fc_layers: gs
     output_dim: 3
     dropout: gs
-    norm: none
+    norm: gs
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
       glom_to_glom: sage
