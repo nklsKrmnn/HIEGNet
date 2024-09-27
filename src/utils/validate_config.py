@@ -33,7 +33,7 @@ def validate_config(config_dict: dict) -> None:
         print("\033[31mWARNING: Test set is reported, but validation set is given.\033[0m")
 
     # Check if targets are one-hot encoded if cross entropy loss is used
-    ce = training_params["loss"] == "crossentropy"
-    oh = dataset_params["onehot_targets"]
-    if (ce and not oh) or (not ce and oh):
-        raise ValueError("Targets must be one-hot encoded for cross entropy loss and vice versa.")
+    #ce = training_params["loss"] == "crossentropy"
+    #oh = dataset_params["onehot_targets"]
+    #if (ce and not oh) or (not ce and oh):
+    #    raise ValueError("Targets must be one-hot encoded for cross entropy loss and vice versa.")
