@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "hetero_gnn_4p"
+run_name: "hetero_gnn_4p_nll_test"
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
@@ -12,7 +12,7 @@ model_parameters:
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
       glom_to_glom: sage
-      cell_to_glom: sage
+      cell_to_glom: gat_v2
       cell_to_cell: gine
 training_parameters:
   batch_size: 1

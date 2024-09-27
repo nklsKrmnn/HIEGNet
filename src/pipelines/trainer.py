@@ -263,7 +263,8 @@ class Trainer:
 
         # Create torch data loaders
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size)
-        validation_loader = DataLoader(validation_dataset, batch_size=self.batch_size) if len(validation_indices) != 0 else None
+        validation_loader = DataLoader(validation_dataset, batch_size=self.batch_size) if len(
+            validation_indices) != 0 else None
         test_loader = DataLoader(test_dateset, batch_size=self.batch_size) if len(test_indices) != 0 else None
 
         return train_loader, validation_loader, test_loader
@@ -303,12 +304,13 @@ class Trainer:
                 if validation_loader is not None:
                     val_loss, val_results = self.validation_step(validation_loader)
                     self.logger.log_loss(val_loss, epoch, "2_validation")
-                    early_stopping_loss = val_loss
+                    early_stopping_loss = val_loss if not isinstance(self.loss, nn.NLLLoss) else -val_loss
+
                 # Calculating test loss if loader exists, and we want to report it
                 elif test_loader is not None and self.reported_set == "test":
                     test_loss, test_results = self.validation_step(test_loader, mask_str="test")
                     self.logger.log_loss(test_loss, epoch, "3_test")
-                    early_stopping_loss = test_loss
+                    early_stopping_loss = test_loss if not isinstance(self.loss, nn.NLLLoss) else -test_loss
 
                 # Calculate test scores on set we want to report
                 if test_loader is not None and self.reported_set == "test":
@@ -394,7 +396,6 @@ class Trainer:
         complete_targets = []
 
         for data in dataloader:
-
             # Reset optimizer
             self.optimizer.zero_grad()
 
@@ -417,7 +418,8 @@ class Trainer:
 
         return total_train_loss, (complete_predictions, complete_targets)
 
-    def calc_batch(self, graph_data, mask_str:str, return_softmax:bool=False) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def calc_batch(self, graph_data, mask_str: str, return_softmax: bool = False) -> tuple[
+        torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Calculates the predictions and targets for a batch of data.
 
@@ -439,7 +441,7 @@ class Trainer:
             mask = graph_data.val_mask
         elif mask_str == "test":
             mask = graph_data.test_mask
-        elif mask_str =="full":
+        elif mask_str == "full":
             mask = torch.ones_like(graph_data.train_mask, dtype=torch.bool)
         else:
             raise ValueError("Invalid mask string.")
@@ -449,19 +451,23 @@ class Trainer:
         # Determine model inputs as send to device
         if not isinstance(graph_data[0], HeteroData):
             input_graph_feature = graph_data.x if isinstance(graph_data.x, torch.Tensor) else graph_data.x
+            input_graph_edge_index = graph_data.edge_index
+            input_graph_attr = graph_data.edge_attr
         else:
             input_graph_feature = graph_data.x_dict
-        input_graph_edge_index = graph_data.edge_index if not isinstance(graph_data[0],
-                                                                         HeteroData) else graph_data.edge_index_dict
-        input_graph_attr = graph_data.edge_attr if not isinstance(graph_data[0],
-                                                                  HeteroData) else graph_data.edge_attr_dict
+            input_graph_edge_index = graph_data.edge_index_dict
+            input_graph_attr = graph_data.edge_attr_dict
+
         target = graph_data.y.long() if isinstance(self.loss, nn.NLLLoss) else graph_data.y
 
         prediction = self.model.forward(input_graph_feature, input_graph_edge_index, input_graph_attr)
         loss = self.loss(prediction[mask], target[mask])
 
-        if (len(graph_data.y.shape) == 1) or return_softmax:
+        if ((len(graph_data.y.shape) == 1 and len(prediction.shape) == 1)) or return_softmax:
+            targ = target[mask].detach().cpu()
             pred = prediction[mask].detach().cpu()
+        elif len(graph_data.y.shape) == 1 and prediction.shape[1] > 1:
+            pred = prediction[mask].detach().argmax(dim=1).cpu()
             targ = target[mask].detach().cpu()
         elif graph_data.y.shape[1] > 1:
             pred = prediction[mask].detach().argmax(dim=1).cpu()
@@ -609,7 +615,7 @@ class Trainer:
         Makes prediction on the testset and calculates the test scores. Visualizes the results in a heatmap and every
         graph and saves them to the logger. Saves the test scores and the predictions on the whole dataset to csv files.
         """
-        #TODO: Docstring
+        # TODO: Docstring
         self.model.to(self.device)
         self.model.eval()
         self.loss.to(self.device)
@@ -629,7 +635,8 @@ class Trainer:
                        epoch=1)
 
         # Unstack first level of scores dict and write results into logger
-        test_scores = {f'{metric}_{score}': value for metric, score_dict in test_scores.items() for score, value in score_dict.items()}
+        test_scores = {f'{metric}_{score}': value for metric, score_dict in test_scores.items() for score, value in
+                       score_dict.items()}
         self.logger.write_dict(test_scores, name='score')
 
         # Dump softmax scores (test results) as csv file
@@ -646,13 +653,11 @@ class Trainer:
         df_test_results["glomerulus_index"] = torch.cat(glomeruli_indices).numpy()
         df_test_results.to_csv(f"./data/output/test_results.csv", index=False)
 
-
         try:
             # Visualize graphs
             if test_loader.batch_size == 1:
                 # Each batch must be one graph
                 for i, batch in enumerate(test_loader):
-
                     # Get graph data
                     coordinates = batch["coords"].numpy()
                     sparse_matrix = batch[('glomeruli', 'to', 'glomeruli')].edge_index.numpy()
@@ -676,5 +681,3 @@ class Trainer:
                     self.logger.save_figure(fig, "graph", i)
         except:
             print("Could not visualize graphs.")
-
-
