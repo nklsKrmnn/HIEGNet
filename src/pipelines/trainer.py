@@ -304,13 +304,13 @@ class Trainer:
                 if validation_loader is not None:
                     val_loss, val_results = self.validation_step(validation_loader)
                     self.logger.log_loss(val_loss, epoch, "2_validation")
-                    early_stopping_loss = val_loss if not isinstance(self.loss, nn.NLLLoss) else -val_loss
+                    early_stopping_loss = val_loss
 
                 # Calculating test loss if loader exists, and we want to report it
                 elif test_loader is not None and self.reported_set == "test":
                     test_loss, test_results = self.validation_step(test_loader, mask_str="test")
                     self.logger.log_loss(test_loss, epoch, "3_test")
-                    early_stopping_loss = test_loss if not isinstance(self.loss, nn.NLLLoss) else -test_loss
+                    early_stopping_loss = test_loss
 
                 # Calculate test scores on set we want to report
                 if test_loader is not None and self.reported_set == "test":
