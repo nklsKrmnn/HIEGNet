@@ -1,15 +1,15 @@
 use_gpu: true
-run_name: "hetero_gnn_4p_nll_test"
+run_name: "hetero_gnn_4p_norm_gs"
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
     n_message_passings: gs
     n_fc_layers: 1
-    norm_fc_layers: batch
+    norm_fc_layers: gs
     output_dim: 3
     dropout: gs
     norm: none
-    softmax_function: "log_softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
+    softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
       glom_to_glom: sage
       cell_to_glom: gat_v2
@@ -22,7 +22,7 @@ training_parameters:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
       max_lr: 0.003
-  loss: "nll" # Options: "mse", "crossentropy", "nll"
+  loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
   balance_classes: true
@@ -66,7 +66,7 @@ dataset_parameters:
     - 003
     - 004
   random_seed: 123
-  onehot_targets: false
+  onehot_targets: true
   process: true
   preprocessing_params:
     scaler: 'MinMaxScaler'
