@@ -9,7 +9,7 @@ model_parameters:
     output_dim: 3
     dropout: gs
     norm: none
-    softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
+    softmax_function: "log_softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
       glom_to_glom: sage
       cell_to_glom: gat_v2
