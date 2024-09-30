@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "resnet_gs_4p"
+run_name: "resnet_gs_4p_smaller"
 model_parameters:
   resnet:
     hidden_dims: [128, 64, 32]
