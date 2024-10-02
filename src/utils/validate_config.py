@@ -32,6 +32,11 @@ def validate_config(config_dict: dict) -> None:
     if training_params['reported_set'] == "test" and dataset_params['validation_split'] > 0.0:
         print("\033[31mWARNING: Test set is reported, but validation set is given.\033[0m")
 
+    # Warn that patience is set for a test run
+    if training_params['patience'] < training_params['epochs'] and training_params['reported_set'] == "test":
+        print("\033[31mWARNING: Patience is set for a test run.\033[0m")
+
+
     # Check if targets are one-hot encoded if cross entropy loss is used
     #ce = training_params["loss"] == "crossentropy"
     #oh = dataset_params["onehot_targets"]

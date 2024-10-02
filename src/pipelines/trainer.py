@@ -353,8 +353,21 @@ class Trainer:
                     if self.patience > 0:
                         cur_patience += 1
                         if cur_patience == self.patience:
+                            print(f"Early stopping at epoch {epoch}.")
                             finish_reason = "Training finished because of early stopping."
                             self.save_model()
+
+                            # Log same values for remaining epochs
+                            for i in range(epoch + 1, self.epochs):
+                                self.logger.log_loss(train_loss, i, "1_train")
+                                if validation_loader is not None:
+                                    self.logger.log_loss(early_stopping_loss, i, "2_validation")
+                                if test_loader is not None and self.reported_set == "test":
+                                    self.logger.log_loss(test_loss, i, "3_test")
+                                for score, score_dict in test_scores.items():
+                                    for class_label, value in score_dict.items():
+                                        self.logger.log_test_score(value, i, class_label, score)
+
                             break
 
                 # Save model if it has the best F1-Score
