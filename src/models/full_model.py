@@ -60,7 +60,7 @@ class FullHybrid(HeteroGNN):
 
         fc_layer_index = 0
 
-        # Apply one FC to unify number of featues for all node types
+        # Apply one FC to unify number of features for all node types
         for node_type, x in x_dict.items():
             x_dict[node_type] = self.fc_layers[fc_layer_index][node_type](x)
         fc_layer_index += 1
@@ -124,6 +124,7 @@ class FullHybridJK(FullHybrid):
 
         self.output_layer = nn.Sequential(
             nn.LazyLinear(self.hidden_dims[-1]),
+            nn.ReLU(),
             nn.Linear(self.hidden_dims[-1], output_dim)
         )
 
