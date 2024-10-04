@@ -35,17 +35,17 @@ REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {
 }
 
 PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
-    'hidden_dim': [32, 64],
+    'hidden_dim': [64, 96],
     'n_message_passings': [2,3],
     'n_fc_layers': [1, 2],
-    'dropout': [0.4, 0.5, 0.6, 0.7],
+    'dropout': [0.1, 0.2, 0.3, 0.4],
     'mlp_dropout': [0.65, 0.7, 0.75, 0.8],
     'softmax_function': ['softmax', 'log_softmax', 'none'],
     'norm_fc_layers': ['batch', 'layer', 'none'],
     'norm': ['batch', 'layer', 'none'],
     'glom_to_glom': ['gcn'],
-    'cell_to_glom': ['gat_v2', 'sage'],
-    'cell_to_cell': ['gcn', 'gat_v2', 'gine'],
+    'cell_to_glom': ['gat_v2', 'sage', 'gine', 'gcn'],
+    'cell_to_cell': ['gcn', 'gat_v2', 'gine', 'sage'],
     "learning_rate": [0.003, 0.001, 0.0003, 0.0001],
     "max_lr": [0.0003, 0.0001, 0.00005],
     "layers": [34, 18]
