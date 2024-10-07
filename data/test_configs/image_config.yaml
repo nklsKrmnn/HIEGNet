@@ -1,19 +1,22 @@
 use_gpu: true
-run_name: "resnet_gs_4p_smaller"
+run_name: "resnet_gs_lr1e-4"
 model_parameters:
   resnet:
     hidden_dims: [128, 64, 32]
     output_dim: 3
-    dropout: gs
-    layers: gs
+    dropout: 0.4
+    layers: 18
 training_parameters:
   batch_size: 20
   epochs: 300
-  learning_rate: 0.00005
-  lr_scheduler_params:
-    scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
-    params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: 0.0001
+  learning_rate: gs
+  fc_learning_rate: 0.0001
+  #lr_scheduler_params:
+  #  scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
+  #  params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
+  #    max_lr:
+  #      - 0.00001
+  #      - 0.0001
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
@@ -21,7 +24,7 @@ training_parameters:
   momentum: 0.1
   seed: 69
   batch_shuffle: false
-  patience: 100000000
+  patience: 150
   log_image_frequency: 50
   n_folds: 4
   reported_set: "val"

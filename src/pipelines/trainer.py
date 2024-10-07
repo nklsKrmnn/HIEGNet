@@ -19,6 +19,7 @@ from src.evaluation.test_scores import calc_test_scores
 from src.utils.model_service import ModelService
 from src.logger.logger import Logger
 from src.evaluation.vis_graph import visualize_graph
+from utils.initialise_service import init_optimizer
 
 FIG_OUTPUT_PATH: Final[Path] = Path("./data/output/eval_plot")
 EVAL_OUTPUT_PATH: Final[Path] = Path("./data/output/test_scores.csv")
@@ -98,6 +99,7 @@ class Trainer:
             seed: int = None,
             batch_shuffle: bool = False,
             patience: int = 50,
+            fc_learning_rate: float = None,
             log_image_frequency: int = 10,
             reported_set: str = "val"
     ):
@@ -156,40 +158,14 @@ class Trainer:
             loss_instance = nn.MSELoss()
         print(f"[TRAINER]: Using {loss} loss function.")
 
-        # Setting up the optimizer
-        if optimizer == "adam":
-            optimizer_instance = optim.Adam(
-                model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-            if momentum != 0:
-                print(f"[TRAINER]: Momentum {momentum} is not used since the optimizer is set to Adam")
-        elif optimizer == "sgd":
-            optimizer_instance = optim.SGD(
-                model.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay
-            )
-        else:
-            print(f"[TRAINER]: Optimizer {optimizer} is not valid, defaulting to Adam")
-            optimizer_instance = optim.Adam(
-                model.parameters(), lr=learning_rate)
-
-        # Setting up the learning rate scheduler
-        if lr_scheduler_params is not None:
-            if lr_scheduler_params["scheduler"] == "ReduceLROnPlateau":
-                lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer_instance,
-                                                                    **lr_scheduler_params["params"])
-            elif lr_scheduler_params["scheduler"] == "CyclicLR":
-                lr_scheduler = optim.lr_scheduler.CyclicLR(optimizer_instance,
-                                                           **lr_scheduler_params["params"])
-            elif lr_scheduler_params["scheduler"] == "OneCycleLR":
-                total_steps = epochs
-                lr_scheduler = optim.lr_scheduler.OneCycleLR(optimizer_instance,
-                                                             total_steps=total_steps,
-                                                             **lr_scheduler_params["params"])
-            else:
-                print(
-                    f"[TRAINER]: Learning rate scheduler {lr_scheduler_params['scheduler']} is not valid, no scheduler is used.")
-                lr_scheduler = None
-        else:
-            lr_scheduler = None
+        optimizer_instance, lr_scheduler = init_optimizer(epochs=epochs,
+                                                          learning_rate=learning_rate,
+                                                          lr_scheduler_params=lr_scheduler_params,
+                                                          model=model,
+                                                          momentum=momentum,
+                                                          optimizer=optimizer,
+                                                          weight_decay=weight_decay,
+                                                          fc_learning_rate=fc_learning_rate)
 
         # Setting random seed for torch
         if seed is not None:

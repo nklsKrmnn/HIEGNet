@@ -38,7 +38,7 @@ def grid_search(model_name: str,
         "training_parameters": training_parameters
     }
 
-    grid = SeachSampler(config_params, PARAMETER_SEARCH_SPACE)
+    grid = SearchSampler(config_params, PARAMETER_SEARCH_SPACE)
 
     grid.create_grid_search_space()
     grid.shuffle()
@@ -76,7 +76,7 @@ def grid_search(model_name: str,
         logger.save_final_results()
 
 
-class SeachSampler:
+class SearchSampler:
 
     def __init__(self,
                  config: dict,
@@ -88,7 +88,7 @@ class SeachSampler:
         # Recursive init for sub parameters
         for key, value in self.config.items():
             if isinstance(value, dict):
-                self.config[key] = SeachSampler(value, parameter_search_space)
+                self.config[key] = SearchSampler(value, parameter_search_space)
 
         self.search_space = []
 
@@ -102,7 +102,7 @@ class SeachSampler:
 
         # Recursive call of the function for sub parameters
         for key, value in self.config.items():
-            if isinstance(value, SeachSampler):
+            if isinstance(value, SearchSampler):
                 self.parameter_search_space.update({key: value.create_grid_search_space()})
                 search_parameters.append(key)
 
@@ -114,15 +114,15 @@ class SeachSampler:
                 config[key] = params[i]
 
             # Adjust max lr for scheduler
-            if "lr_scheduler_params" in config.keys():
-                if ('max_lr' not in search_parameters) and ('learning_rate' in search_parameters):
-                    config["lr_scheduler_params"]['params']["max_lr"] = config["learning_rate"] * 10
+            #if "lr_scheduler_params" in config.keys():
+            #    if ('max_lr' not in search_parameters) and ('learning_rate' in search_parameters):
+            #        config["lr_scheduler_params"]['params']["max_lr"] = config["learning_rate"] * 10
 
             # Adjust epochs to learning rate
-            if 'learning_rate' in search_parameters:
-                config["epochs"] = max(
-                    int(0.0003 / config['learning_rate'] * config['epochs']), 1)
-                config['log_image_frequency'] = config['epochs'] // 5
+            #if 'learning_rate' in search_parameters:
+            #    config["epochs"] = max(
+            #        int(0.0003 / config['learning_rate'] * config['epochs']), 1)
+            #    config['log_image_frequency'] = config['epochs'] // 5
 
             # Check that gcn is only used for homogenous edge types
             if 'msg_passing_types' in config.keys():
@@ -133,7 +133,6 @@ class SeachSampler:
             else:
                 no_hetero_gcn = True
 
-            # if no_hetero_gcn:
             self.search_space.append(copy.deepcopy(config))
 
         return self.search_space
