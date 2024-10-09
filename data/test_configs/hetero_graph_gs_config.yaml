@@ -1,8 +1,8 @@
 use_gpu: true
-run_name: "hetero_gnn_4p_full_gs"
+run_name: "hetero_gnn_jk_3p_full_gs"
 model_parameters:
-  hetero_gnn:
-    hidden_dim: gs
+  hetero_jk:
+    hidden_dim: 64
     n_message_passings: gs
     n_fc_layers: 1
     norm_fc_layers: none
@@ -12,7 +12,7 @@ model_parameters:
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
       glom_to_glom: gcn
-      cell_to_glom: gs
+      cell_to_glom: gat_v2
       cell_to_cell: gs
 training_parameters:
   batch_size: 1
@@ -54,17 +54,17 @@ dataset_parameters:
     - 001
     - 002
     - 003
-    - 004
+    #- 004
   validation_patients:
     - 001
     - 002
     - 003
-    - 004
+    #- 004
   test_patients:
     - 001
     - 002
     - 003
-    - 004
+    #- 004
   random_seed: 123
   onehot_targets: true
   process: true
