@@ -1,4 +1,6 @@
 from typing import Final
+
+from models.resnet import resnet_custom
 from src.models.cnn import CNN
 from src.models.full_model import FullHybrid, FullHybridJK
 from src.models.gnn_cnn_hybrid_skip import SkipHeteroHybridGNN
@@ -58,7 +60,8 @@ MODEL_NAME_MAPPING: Final[dict[str, any]] = {
     "cnn": CNN,
     "gcn_jk": GCNJumpingKnowledge,
     "gat_v2": GATv2,
-    "resnet": initialize_resnet,
+    "resnet_pretrained": initialize_resnet,
+    "resnet_custom": resnet_custom,
     "hetero_gnn": HeteroGNN,
     "hetero_hybrid_gnn": HeteroHybridGNN,
     "hetero_hybrid_gnn_skip": SkipHeteroHybridGNN,
