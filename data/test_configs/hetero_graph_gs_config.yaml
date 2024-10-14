@@ -1,7 +1,7 @@
 use_gpu: true
-run_name: "hetero_gnn_jk_3p_full_gs"
+run_name: "hetero_gnn_3p_small_gs"
 model_parameters:
-  hetero_jk:
+  hetero_gnn:
     hidden_dim: 64
     n_message_passings: gs
     n_fc_layers: 1
