@@ -1,10 +1,11 @@
 use_gpu: true
-run_name: "custom_resnet_p3_channels.5"
+run_name: "custom_resnet_p3_gs_channels.25"
 model_parameters:
   resnet_custom:
-    channel_factor: 0.5
+    channel_factor: 0.25
     output_dim: 3
     num_layers: 10
+    dropout: gs
 training_parameters:
   batch_size: 20
   epochs: 300
