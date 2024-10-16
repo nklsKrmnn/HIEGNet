@@ -1,11 +1,11 @@
 use_gpu: true
-run_name: "eval_restnet152_p1-4_between"
+run_name: "eval_restnet18_p1-3_between_p4"
 model_parameters:
-  resnet:
-    hidden_dims: [128, 64]
+  resnet_pretrained:
+    layers: 18
     output_dim: 3
-    dropout: 0.9
-    layers: 152
+    hidden_dim: [ 128, 64, 32 ]
+    dropout: 0.4
 training_parameters:
   batch_size: 20
   epochs: 300
@@ -31,6 +31,7 @@ dataset_parameters:
   validation_split: 0.0
   test_split: 1.0
   process: true
+  split_action: "split" # Options: "load", "save", "split"
   train_patients:
     - 001
     - 002
