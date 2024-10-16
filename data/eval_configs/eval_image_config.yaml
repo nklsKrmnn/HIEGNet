@@ -4,7 +4,7 @@ model_parameters:
   resnet_pretrained:
     layers: 18
     output_dim: 3
-    hidden_dim: [ 128, 64, 32 ]
+    hidden_dims: [ 128, 64, 32 ]
     dropout: 0.4
 training_parameters:
   batch_size: 20
