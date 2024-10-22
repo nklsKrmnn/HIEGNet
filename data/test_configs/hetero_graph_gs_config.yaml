@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "hetero_gnn_3p_small_gs"
+run_name: "hetero_gnn_3p_gin_gs"
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
@@ -13,7 +13,7 @@ model_parameters:
     msg_passing_types:
       glom_to_glom: gcn
       cell_to_glom: gat_v2
-      cell_to_cell: gs
+      cell_to_cell: gin
 training_parameters:
   batch_size: 1
   epochs: 600
