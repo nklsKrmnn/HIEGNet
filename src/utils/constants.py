@@ -45,7 +45,7 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'softmax_function': ['softmax', 'log_softmax', 'none'],
     'norm_fc_layers': ['batch', 'layer', 'none'],
     'norm': ['batch', 'layer', 'none'],
-    'glom_to_glom': ['gcn'],
+    'glom_to_glom': ["gin"],#['gcn', "gine", 'sage', 'gat_v2', 'gin'],
     'cell_to_glom': ['gat_v2', 'sage'],
     'cell_to_cell': ['gcn', 'gat_v2', 'gine', 'sage'],
     "learning_rate": [3e-5, 1e-5, 3e-6, 1e-6, 3e-7, 1e-7],

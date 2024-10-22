@@ -1,9 +1,9 @@
 use_gpu: true
-run_name: "hetero_gnn_3p_small_gs"
+run_name: "hetero_gnn_gs10_p1-3_within_g2g_r550"
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
-    n_message_passings: gs
+    n_message_passings: 2
     n_fc_layers: 1
     norm_fc_layers: none
     output_dim: 3
@@ -11,9 +11,9 @@ model_parameters:
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
-      glom_to_glom: gcn
-      cell_to_glom: gat_v2
-      cell_to_cell: gs
+      glom_to_glom: gs
+      cell_to_glom: 'gat_v2'
+      cell_to_cell: 'gine'
 training_parameters:
   batch_size: 1
   epochs: 600
@@ -46,7 +46,7 @@ dataset_parameters:
   processed_file_name: "glom_graph"
   glom_graph:
     method: "radius" # Options: "knn", "radius", "delaunay"
-    radius: 0 # Options: "k", "radius", ""
+    radius: 550 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 5 # Options: "k", "radius", ""
