@@ -2,7 +2,7 @@ use_gpu: true
 run_name: "gs_efficientnetV2_p1-3"
 model_parameters:
   efficientnet_v2_pretrained:
-    size: gs
+    enet_size: gs
     output_dim: 3
     dropout: gs
 training_parameters:
