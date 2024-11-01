@@ -7,7 +7,7 @@ from src.models.model_constants import RESNET_MODEL_MAPPING
 
 
 def initialize_resnet(output_dim: int,
-                      hidden_dims:list[int],
+                      hidden_dims: list[int],
                       image_size: int,
                       layers: int,
                       device,
@@ -25,7 +25,6 @@ def initialize_resnet(output_dim: int,
     """
     model = RESNET_MODEL_MAPPING[layers](pretrained=pre_trained)
 
-
     latent_dim = model.fc.in_features
     fc_modules = nn.ModuleList()
 
@@ -40,11 +39,11 @@ def initialize_resnet(output_dim: int,
     # Hidden layer
     for i in range(1, len(hidden_dims)):
         fc_modules.append(nn.Sequential(
-                    nn.Linear(hidden_dims[i - 1], hidden_dims[i]),
-                    init_norm_layer(fc_norm)(hidden_dims[i]),
-                    nn.ReLU(),
-                    nn.Dropout(p=dropout)
-                ))
+            nn.Linear(hidden_dims[i - 1], hidden_dims[i]),
+            init_norm_layer(fc_norm)(hidden_dims[i]),
+            nn.ReLU(),
+            nn.Dropout(p=dropout)
+        ))
 
     # Last layer
     fc_modules.append(nn.Linear(hidden_dims[-1], output_dim))
@@ -53,10 +52,12 @@ def initialize_resnet(output_dim: int,
 
     return model
 
+
 def initialize_efficientnet_v2(output_dim: int,
-                      enet_size: str,
-                      device,
-                      dropout: float = 0.5):
+                               enet_size: str,
+                               image_size: int,
+                               device,
+                               dropout: float = 0.5):
     """
     Initialize a ResNet model.
 
