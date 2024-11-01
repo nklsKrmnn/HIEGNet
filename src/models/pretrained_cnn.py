@@ -1,6 +1,7 @@
 from torch import nn
 from torchvision import models
 
+from models.model_constants import EFFICIENT_NET_MAPPING
 from src.models.model_utils import init_norm_layer
 from src.models.model_constants import RESNET_MODEL_MAPPING
 
@@ -49,5 +50,29 @@ def initialize_resnet(output_dim: int,
     fc_modules.append(nn.Linear(hidden_dims[-1], output_dim))
 
     model.fc = nn.Sequential(*fc_modules)
+
+    return model
+
+def initialize_efficientnet_v2(output_dim: int,
+                      enet_size: str,
+                      device,
+                      dropout: float = 0.5):
+    """
+    Initialize a ResNet model.
+
+    Args:
+        pre_trained (bool): If True, the model will be initialized with pre-trained weights.
+
+    Returns:
+        models.resnet.ResNet: The initialized ResNet model.
+    """
+    model = EFFICIENT_NET_MAPPING[enet_size](weights='DEFAULT')
+
+    # Modify the classifier to fit the number of output classes
+    num_features = model.classifier[1].in_features  # Get the number of input features to the classifier
+    model.classifier = nn.Sequential(
+        nn.Dropout(dropout),
+        nn.Linear(num_features, output_dim)  # Replace 'num_classes' with the number of your output classes
+    )
 
     return model
