@@ -1,26 +1,26 @@
 use_gpu: true
-run_name: "gs2_efficientnetV2_p1-3"
+run_name: "gs3_efficientnetV2_p1-3"
 model_parameters:
   efficientnet_v2_pretrained:
     enet_size: s
     output_dim: 3
-    dropout: gs
+    dropout: 0.8
 training_parameters:
   batch_size: 14
-  epochs: 3000
-  learning_rate: 0.001
-  #fc_learning_rate: 0.0001
-  lr_scheduler_params:
-    scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
-    params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: gs
+  epochs: 300
+  learning_rate: gs
+  fc_learning_rate: gs
+  #lr_scheduler_params:
+  #  scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
+  #  params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
+  #    max_lr: gs
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
   balance_classes: true
   momentum: 0.1
   seed: 69
-  batch_shuffle: false
+  batch_shuffle: true
   patience: 75
   log_image_frequency: 50
   n_folds: 4
