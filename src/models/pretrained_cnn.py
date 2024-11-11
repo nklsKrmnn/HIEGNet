@@ -73,7 +73,10 @@ def initialize_efficientnet_v2(output_dim: int,
     num_features = model.classifier[1].in_features  # Get the number of input features to the classifier
     model.classifier = nn.Sequential(
         nn.Dropout(dropout),
-        nn.Linear(num_features, output_dim)  # Replace 'num_classes' with the number of your output classes
+        nn.Linear(num_features, 32),  # Replace 'num_classes' with the number of your output classes
+        nn.ReLU(),
+        nn.Dropout(dropout),
+        nn.Linear(32, output_dim)
     )
 
     return model
