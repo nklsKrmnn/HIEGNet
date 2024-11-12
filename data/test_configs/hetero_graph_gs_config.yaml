@@ -95,6 +95,7 @@ dataset_parameters:
     - 'lbp_uniform_6'
     - 'lbp_uniform_7'
     #- 'lbp_uniform_8'
+    - 'lbp_uniform_9'
   cell_types:
     - "M0"
     - "tcell"
