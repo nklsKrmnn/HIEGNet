@@ -26,9 +26,10 @@ class BasicBlock(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10, channel_factor=1):
+    def __init__(self, block, num_blocks, num_classes=10, channel_factor=1, dropout=0.0):
         super(ResNet, self).__init__()
         self.channels_in = int(64 * channel_factor)
+        self.dropout = dropout
 
         self.conv1 = nn.Conv2d(3, int(64 * channel_factor), kernel_size=5, stride=2, padding=2, bias=False)
         self.bn1 = nn.BatchNorm2d(int(64 * channel_factor))
@@ -55,11 +56,13 @@ class ResNet(nn.Module):
         out = self.layer4(out)
         out = self.avg_pooling(out)
         out = out.view(out.size(0), -1)
+        out = nn.functional.dropout(out, p=self.dropout, training=self.training)
         out = self.linear(out)
+        out = nn.functional.softmax(out, dim=1)
         return out
 
 
-def resnet_custom(num_layers, output_dim=10, channel_factor=1, **kwargs):
+def resnet_custom(num_layers, output_dim=10, channel_factor=1, dropout=0.0, **kwargs):
     """
     Create a ResNet model with a specified number of layers.
 
@@ -72,11 +75,11 @@ def resnet_custom(num_layers, output_dim=10, channel_factor=1, **kwargs):
         model (nn.Module): The ResNet model.
     """
     if num_layers == 10:
-        return ResNet(BasicBlock, [1, 1, 1, 1], output_dim, channel_factor)
+        return ResNet(BasicBlock, [1, 1, 1, 1], output_dim, channel_factor, dropout=dropout)
     if num_layers == 18:
-        return ResNet(BasicBlock, [2, 2, 2, 2], output_dim, channel_factor)
+        return ResNet(BasicBlock, [2, 2, 2, 2], output_dim, channel_factor, dropout=dropout)
     elif num_layers == 34:
-        return ResNet(BasicBlock, [3, 4, 6, 3], output_dim, channel_factor)
+        return ResNet(BasicBlock, [3, 4, 6, 3], output_dim, channel_factor, dropout=dropout)
     elif num_layers == 50:
         return ResNet(Bottleneck, [3, 4, 6, 3], output_dim)
     elif num_layers == 101:
