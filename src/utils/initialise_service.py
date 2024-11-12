@@ -1,5 +1,6 @@
 from torch import optim
 from torch import nn
+import warnings
 
 
 def init_optimizer(epochs: int,
@@ -29,10 +30,19 @@ def init_optimizer(epochs: int,
 
     # Setting up the model parameters as input for optimizer
     if fc_learning_rate is not None:
-        model_params_list = [
-            {"params": model.fc.parameters(), "lr": fc_learning_rate},
-            {"params": [p[1] for p in model.named_parameters() if 'fc' not in p[0]]}
-        ]
+        if "fc" in [p[0] for p in model.named_parameters()]:
+            model_params_list = [
+                {"params": model.fc.parameters(), "lr": fc_learning_rate},
+                {"params": [p[1] for p in model.named_parameters() if 'fc' not in p[0]]}
+            ]
+        elif 'classifier' in [p[0] for p in model.named_parameters()]:
+            model_params_list = [
+                {"params": model.classifier.parameters(), "lr": fc_learning_rate},
+                {"params": [p[1] for p in model.named_parameters() if 'classifier' not in p[0]]}
+            ]
+        else:
+            warnings.warn(f"[TRAINER]: No fully connected layer found in model, defaulting to standard parameters.")
+            model_params_list = model.parameters()
     else:
         model_params_list = model.parameters()
 
