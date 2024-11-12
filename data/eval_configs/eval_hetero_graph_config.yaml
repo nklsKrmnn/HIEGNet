@@ -11,7 +11,7 @@ model_parameters:
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
-      glom_to_glom: 'gat_v2'
+      glom_to_glom: 'sage'
       cell_to_glom: 'gat_v2'
       cell_to_cell: 'gine'
 training_parameters:
@@ -21,7 +21,7 @@ training_parameters:
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: 0.003
+      max_lr: 0.002
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll", "weighted_mse"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
@@ -47,7 +47,7 @@ dataset_parameters:
   processed_file_name: "glom_graph"
   glom_graph:
     method: "radius" # Options: "knn", "radius", "delaunay"
-    radius: 0 # Options: "k", "radius", ""
+    radius: 550 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 5 # Options: "k", "radius", ""
@@ -82,6 +82,15 @@ dataset_parameters:
     - 'lbp_6'
     - 'lbp_7'
     - 'lbp_8'
+    #- 'lbp_uniform_0'
+    #- 'lbp_uniform_1'
+    #- 'lbp_uniform_2'
+    #- 'lbp_uniform_3'
+    #- 'lbp_uniform_4'
+    #- 'lbp_uniform_5'
+    #- 'lbp_uniform_6'
+    #- 'lbp_uniform_7'
+    #- 'lbp_uniform_8'
   cell_types:
     - "M0"
     - "tcell"
