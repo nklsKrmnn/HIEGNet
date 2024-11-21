@@ -135,6 +135,8 @@ class CBR(nn.Module):
         x = nn.functional.adaptive_avg_pool2d(x, (1, 1))
         x = F.relu(x)
 
+        x = torch.squeeze(x)
+
         # MLP
         x = self.mlp(x)
 
