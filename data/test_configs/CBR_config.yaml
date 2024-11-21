@@ -1,15 +1,15 @@
 use_gpu: true
-run_name: "cbr_tiny_gs"
+run_name: "cbr_small_gs"
 model_parameters:
   cbr:
-    hidden_channels: [64, 128, 256, 512]
+    hidden_channels: [32, 64, 128, 256]
     mlp_params:
-        hidden_dims: [512, 128, 32]
+        hidden_dims: [256, 128, 32]
         output_dim: 3
         mlp_dropout: gs
         norm: none
     input_channels: 3
-    kernel_size: 5
+    kernel_size: 7
     stride: 1
 training_parameters:
   batch_size: 14
@@ -24,14 +24,14 @@ training_parameters:
         - 90
       gamma: 0.1
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
-  optimizer: "sgd" # Options: "adam", "sgd"
+  optimizer: gs # Options: "adam", "sgd"
   weight_decay: 0.000000
   balance_classes: true
   momentum: 0.9
   seed: 69
   batch_shuffle: true
-  patience: 75
-  log_image_frequency: 50
+  patience: 100
+  log_image_frequency: 25
   n_folds: 4
   reported_set: "val"
 dataset_parameters:

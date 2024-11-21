@@ -54,6 +54,7 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     "max_lr": [0.01, 0.001, 0.0001, 0.00001],
     "layers": [34, 18],
     "enet_size": ['s', 'm'],
+    "optimizer": ['adam', 'sgd']
 }
 
 MODEL_NAME_MAPPING: Final[dict[str, any]] = {
