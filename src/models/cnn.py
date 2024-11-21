@@ -91,7 +91,7 @@ class CBR(nn.Module):
                  padding=0,
                  cnn_softmax_function="softmax",
                  device=torch.device('cpu')):
-        super(CNN, self).__init__()
+        super(CBR, self).__init__()
         self.device = device
 
         self.hidden_channels = hidden_channels
