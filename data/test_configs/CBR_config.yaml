@@ -1,0 +1,63 @@
+use_gpu: true
+run_name: "cbr_tiny_gs"
+model_parameters:
+  CNN:
+    hidden_channels: [64, 128, 256, 512]
+    mlp_params:
+        hidden_dims: [512, 128, 32]
+        output_dim: 3
+        mlp_dropout: gs
+        norm: none
+    input_channels: 3
+    kernel_size: 5
+    stride: 1
+training_parameters:
+  batch_size: 14
+  epochs: 120
+  learning_rate: 0.0125
+  lr_scheduler_params:
+    scheduler: "MultiStepLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR", "MultiStepLR"
+    params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
+      milestones:
+        - 30
+        - 60
+        - 90
+      gamma: 0.1
+  loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
+  optimizer: "sgd" # Options: "adam", "sgd"
+  weight_decay: 0.000000
+  balance_classes: true
+  momentum: 0.9
+  seed: 69
+  batch_shuffle: true
+  patience: 75
+  log_image_frequency: 50
+  n_folds: 4
+  reported_set: "val"
+dataset_parameters:
+  class_name: image_dataset
+  validation_split: 0.15
+  test_split: 0.15
+  process: true
+  set_indices_path: "/repos/histograph/data/input/set_indices/test15_val15"
+  split_action: "load" # Options: "load", "save", "split"
+  train_patients:
+    - 001
+    - 002
+    - 003
+    #- 004
+  test_patients:
+    - 001
+    - 002
+    - 003
+    #- 004
+  random_seed: 123
+  onehot_targets: true
+  hot_load: false
+  image_file_path: "/data/3_extracted_features/EXC/image_paths_p1-4.csv"
+  annotations_path: "/data/1_cytomine_downloads/EXC/annotations/25/"
+  feature_list:
+    - 'path_25'
+    #- 'path_106'
+    #- 'path_107'
+    #- 'path_108'
