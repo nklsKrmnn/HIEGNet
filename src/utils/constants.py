@@ -2,7 +2,7 @@ from typing import Final
 
 from models.pretrained_cnn import initialize_efficientnet_v2
 from models.resnet import resnet_custom
-from src.models.cnn import CNN
+from src.models.cnn import CNN, CBR
 from src.models.full_model import FullHybrid, FullHybridJK
 from src.models.gnn_cnn_hybrid_skip import SkipHeteroHybridGNN
 from src.models.gnn_cnn_hyrbid import GnnCnnHybrid, HeteroHybridGNN
@@ -42,7 +42,7 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'n_message_passings': [2,3],
     'n_fc_layers': [1, 2],
     'dropout': [0.1, 0.2, 0.3, 0.4, 0.5],
-    'mlp_dropout': [0.65, 0.7, 0.75, 0.8],
+    'mlp_dropout': [0.0, 0.2, 0.4, 0.6, 0.8],
     'softmax_function': ['softmax', 'log_softmax', 'none'],
     'norm_fc_layers': ['batch', 'layer', 'none'],
     'norm': ['batch', 'layer', 'none'],
@@ -71,5 +71,6 @@ MODEL_NAME_MAPPING: Final[dict[str, any]] = {
     "hetero_hybrid_gnn_skip": SkipHeteroHybridGNN,
     "hetero_full_model": FullHybrid,
     "hetero_full_jk_model": FullHybridJK,
-    "hetero_jk": HeteroGnnJK
+    "hetero_jk": HeteroGnnJK,
+    "cbr": CBR
 }

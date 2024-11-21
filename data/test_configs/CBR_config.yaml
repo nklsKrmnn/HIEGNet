@@ -1,7 +1,7 @@
 use_gpu: true
 run_name: "cbr_tiny_gs"
 model_parameters:
-  CNN:
+  cbr:
     hidden_channels: [64, 128, 256, 512]
     mlp_params:
         hidden_dims: [512, 128, 32]
