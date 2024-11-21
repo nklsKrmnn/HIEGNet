@@ -74,6 +74,14 @@ def init_optimizer(epochs: int,
             lr_scheduler = optim.lr_scheduler.OneCycleLR(optimizer_instance,
                                                          total_steps=total_steps,
                                                          **lr_scheduler_params["params"])
+        elif lr_scheduler_params["scheduler"] == "MultiStepLR":
+            # Set initial lr parameter in optimizer (required for this optimiser)
+            if 'initial_lr' not in optimizer_instance.param_groups[0].keys():
+                optimizer_instance.param_groups[0]['initial_lr'] = learning_rate
+
+            lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer_instance,
+                                                          last_epoch=-1,
+                                                          **lr_scheduler_params["params"])
         else:
             print(
                 f"[TRAINER]: Learning rate scheduler {lr_scheduler_params['scheduler']} is not valid, no scheduler is used.")
