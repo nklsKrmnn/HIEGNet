@@ -56,8 +56,10 @@ class ImageTrainer(Trainer):
         super().__init__(**kwargs)
 
 
-    def calc_batch(self, data, return_softmax: bool = False, mask_str:bool=None) -> tuple[
-        torch.Tensor, torch.Tensor, torch.Tensor]:
+    def calc_batch(self,
+                   data,
+                   return_softmax: bool = False,
+                   mask_str:bool=None) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Calculates the predictions and targets for a batch of data.
 
@@ -65,13 +67,14 @@ class ImageTrainer(Trainer):
         for the training and validation data. The method returns the predictions and targets for the batch.
 
         Args:
-            graph_data (DataLoader): DataLoader for the training and validation graphs.
-            mask_str (str): The mask to use for separating the dataset into training and validation data.
+            data (DataLoader): DataLoader for the training and validation graphs.
+            mask_str (str): The mask to use for separating the dataset into training and validation data (not used for image data).
             return_softmax (bool): Whether to return the softmax results.
 
         Returns:
             torch.Tensor: The predictions for the batch.
             torch.Tensor: The targets for the batch.
+            torch.Tensor: The loss for the batch.
         """
         image, labels = data[0].to(self.device), data[1].to(self.device)
 

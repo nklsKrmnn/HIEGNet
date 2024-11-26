@@ -198,5 +198,6 @@ class GlomImageDataset(HybridGraphDataset):
             image = self.x_hot[idx]
         else:
             image = load_images([self.img_paths[idx]])[0]
+        image = self.transform_image(image)
         label = self.targets[idx]
         return image, label
