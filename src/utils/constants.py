@@ -49,7 +49,7 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'glom_to_glom': ["gin"],#['gcn', "gine", 'sage', 'gat_v2', 'gin'],
     'cell_to_glom': ['gat_v2', 'sage'],
     'cell_to_cell': ['gcn', 'gat_v2', 'gine', 'sage'],
-    "learning_rate": [1e-3, 1e-4, 1e-5, 1e-6],
+    "learning_rate": [1e-2, 1e-3, 1e-4, 1e-5],
     "fc_learning_rate": [1e-1, 1e-2, 1e-3, 1e-4],
     "max_lr": [0.01, 0.001, 0.0001, 0.00001],
     "layers": [34, 18],
