@@ -31,6 +31,8 @@ class GlomImageDataset(HybridGraphDataset):
                  split_action:str = 'load',
                  set_indices_path: str = "/repos/histograph/data/input/set_indices/test15_val15",
                  hot_load: bool = False,
+                 norm_mean: float = 0.0,
+                 norm_std: float = 1.0,
                  onehot_targets: bool = True):
 
         self.test_split = test_split
@@ -45,6 +47,8 @@ class GlomImageDataset(HybridGraphDataset):
         self.onehot_targets = onehot_targets
         self.hot_load = hot_load
         self.feature_list = feature_list
+        self.norm_mean = norm_mean
+        self.norm_std = norm_std
         if self.hot_load:
             self.x_hot = []
         self.target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
@@ -191,7 +195,9 @@ class GlomImageDataset(HybridGraphDataset):
         return len(self.img_paths)
 
     def transform_image(self, image):
-        return image / 255.0
+        image_standardised = (image - image.min()) / ((image.max() - image.min()) + 0.0000001) #image / 255
+        image_normalised = (image_standardised - self.norm_mean) / self.norm_std
+        return image_normalised
 
     def __getitem__(self, idx):
         if self.hot_load:
