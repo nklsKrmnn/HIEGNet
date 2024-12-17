@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "cbr_small_gs"
+run_name: "cbr_small_gs2"
 model_parameters:
   cbr:
     hidden_channels: [32, 64, 128, 256]
@@ -13,24 +13,24 @@ model_parameters:
     stride: 1
 training_parameters:
   batch_size: 25
-  epochs: 120
-  learning_rate: 0.0125
+  epochs: 500
+  learning_rate: gs
   lr_scheduler_params:
-    scheduler: "MultiStepLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR", "MultiStepLR"
-    params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      milestones:
-        - 30
-        - 60
-        - 90
-      gamma: 0.1
+    #scheduler: "MultiStepLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR", "MultiStepLR"
+    #params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
+    #  milestones:
+    #    - 30
+    #    - 60
+    #    - 90
+    #  gamma: 0.1
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
-  optimizer: gs # Options: "adam", "sgd"
+  optimizer: adam # Options: "adam", "sgd"
   weight_decay: 0.000000
   balance_classes: true
   momentum: 0.9
   seed: 69
   batch_shuffle: true
-  patience: 100
+  patience: 75
   log_image_frequency: 25
   n_folds: 4
   reported_set: "val"
