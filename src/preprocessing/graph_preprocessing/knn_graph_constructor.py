@@ -36,7 +36,7 @@ def knn_graph_construction(X: np.array, k: int) -> np.array:
     return A
 
 
-def knn_feature_graph_construction(X_1: np.array, X_2: np.array, k: int) -> csr_matrix:
+def knn_feature_graph_construction(X_1: np.array, X_2: np.array, k: int, lim: float=np.inf) -> csr_matrix:
     """
     Construct a k-nearest neighbor graph between two sets of data points X_1 and X_2 and add the distnace as edge
     features. To use one set of data points, set X_1 and X_2 to the same value.
@@ -49,6 +49,8 @@ def knn_feature_graph_construction(X_1: np.array, X_2: np.array, k: int) -> csr_
         A numpy array of shape (n, d) where n is the number of data points and d is the number of features.
     k : int
         The number of nearest neighbors to consider for each data point.
+    lim : float
+        The maximum distance to consider for the k-nearest neighbors. Default is infinity.
 
     Returns
     -------
@@ -76,14 +78,17 @@ def knn_feature_graph_construction(X_1: np.array, X_2: np.array, k: int) -> csr_
         distances = distances[:, first_nbr_idx:]
         indices = indices[:, first_nbr_idx:]
 
-        # Normalize the distances to the range [0, 1]
-        # max_distance = np.max(distances)
-        # distances = distances / max_distance if max_distance > 0 else distances
-
         # Create the sparse matrix
         row_indices = np.repeat(np.arange(n_1), k - first_nbr_idx)
         col_indices = indices.flatten()
         data = distances.flatten()
+
+        # Remove edges with distances larger than the limit from the graph
+        if lim < np.inf:
+            mask = data <= lim
+            row_indices = row_indices[mask]
+            col_indices = col_indices[mask]
+            data = data[mask]
 
         A = csr_matrix((data, (row_indices, col_indices)), shape=(n_1, n_2))
 
