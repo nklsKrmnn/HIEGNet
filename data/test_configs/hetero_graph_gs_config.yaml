@@ -1,19 +1,19 @@
 use_gpu: true
-run_name: "hetero_gnn_gs12_p1-3_within_g2g_uniform_features"
+run_name: "gs14_gnn_g2g2200_c2cLim400"
 model_parameters:
   hetero_gnn:
-    hidden_dim: 64
-    n_message_passings: 2
-    n_fc_layers: 1
+    hidden_dim: gs
+    n_message_passings: gs
+    n_fc_layers: gs
     norm_fc_layers: none
     output_dim: 3
     dropout: gs
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
-      glom_to_glom: 'sage'
-      cell_to_glom: 'gat_v2'
-      cell_to_cell: 'gin'
+      glom_to_glom: gs
+      cell_to_glom: gs
+      cell_to_cell: gs
 training_parameters:
   batch_size: 1
   epochs: 600
@@ -21,7 +21,7 @@ training_parameters:
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: 0.002
+      max_lr: 0.001
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
@@ -46,10 +46,11 @@ dataset_parameters:
   processed_file_name: "glom_graph"
   glom_graph:
     method: "radius" # Options: "knn", "radius", "delaunay"
-    radius: 550 # Options: "k", "radius", ""
+    radius: 2200 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
-    k: 5 # Options: "k", "radius", ""
+    k: 5
+    lim: 400 # Options: "k", "radius", ""
   train_patients:
     - 001
     - 002
@@ -75,8 +76,8 @@ dataset_parameters:
     - 'Area (microns²)'
     - 'Perimeter (mm)'
     - 'circularity'
-    - 'aspect_ratio'
-    - 'eccentricity'
+    #- 'aspect_ratio'
+    #- 'eccentricity'
     #- 'lbp_0'
     #- 'lbp_1'
     #- 'lbp_2'
@@ -104,7 +105,7 @@ dataset_parameters:
     - "perimeter"
     - "eccentricity"
     - "aspect_ratio"
-    - "compactness"
-    - "solidity"
+    - "circularity"
+    #- "solidity"
     - "is_in_glom"
 

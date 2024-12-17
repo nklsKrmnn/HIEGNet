@@ -2,6 +2,7 @@ from typing import Final
 from torchvision import models
 
 from torch_geometric.nn import GCNConv, GATv2Conv, GINConv, GINEConv, RGCNConv, SAGEConv
+from src.models.schnet_msg_passing import SchNetMessagePassing
 
 MESSAGE_PASSING_MAPPING: Final[dict[str, any]] = {
     "gcn": GCNConv,
@@ -9,7 +10,8 @@ MESSAGE_PASSING_MAPPING: Final[dict[str, any]] = {
     "gin": GINConv,
     "gine": GINEConv,
     "rgcn": RGCNConv,
-    'sage': SAGEConv
+    'sage': SAGEConv,
+    'cfconv': SchNetMessagePassing
 }
 
 RESNET_MODEL_MAPPING: Final[dict[int, any]] = {

@@ -1,3 +1,5 @@
+import warnings
+
 import cv2
 import pandas as pd
 import numpy as np
@@ -91,6 +93,10 @@ class GlomGraphDataset(Dataset):
         self.onehot_targets = onehot_targets
         self.annot_path = ROOT_DIR + str(annotations_path)
         self.preprocessing_params = preprocessing_params
+        self.node_scalers = {}
+        self.edge_scalers = {}
+
+
 
         root = ROOT_DIR + root
         super(GlomGraphDataset, self).__init__(root, transform, pre_transform)
@@ -205,7 +211,7 @@ class GlomGraphDataset(Dataset):
                 })
 
         # Scale glomeruli features in all graphs
-        data_objects = self.scale_glomeruli(data_objects)
+        data_objects = self.scale_features(data_objects)
 
         # Save data objects
         for file_name, data in data_objects.items():
@@ -241,6 +247,8 @@ class GlomGraphDataset(Dataset):
         edge_index, edge_weights = graph_construction(coords, **self.glom_graph)
         data.edge_index = torch.tensor(edge_index, dtype=torch.long)
         data.edge_attr = torch.tensor(edge_weights, dtype=torch.float).unsqueeze(1)
+        # TODO: Implement edge scalers
+        warnings.warn("Edge scalers are not implemented yet")
 
         y = self.create_targets(df_patient, data.target_labels)
 
@@ -273,7 +281,7 @@ class GlomGraphDataset(Dataset):
 
         return data
 
-    def scale_glomeruli(self, data_objects: dict) -> dict:
+    def scale_features(self, data_objects: dict) -> dict:
         """
         Scales glomeruli features across all graphs.
 

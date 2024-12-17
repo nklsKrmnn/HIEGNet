@@ -33,6 +33,9 @@ def feature_preprocessing(df: pd.DataFrame,
     else:
         df_scaled = df
 
+    # Convert true false to 1 and 0
+    df_scaled = df_scaled.replace({True: 1, False: 0})
+
     x = torch.tensor(df_scaled.to_numpy(), dtype=torch.float)
 
     return x

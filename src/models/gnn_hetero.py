@@ -39,8 +39,13 @@ class HeteroMessagePassingLayer(nn.Module):
         super(HeteroMessagePassingLayer, self).__init__()
         self.edge_types = edge_types
 
+        edge_types_to_remove = []
+
         hetero_conv_dict = {}
-        for edge_type, msg_passing_type in edge_types.items():
+        for i in range(len(edge_types)):
+            edge_type = list(edge_types.keys())[i]
+            msg_passing_type = list(edge_types.values())[i]
+
             # Only add self loops for message passing between equal node types
             add_self_loops = edge_type[0] == edge_type[2]
 
@@ -79,7 +84,7 @@ class HeteroMessagePassingLayer(nn.Module):
                     "num_relations": 1
                 })
 
-            if msg_passing_type == "sage":
+            if msg_passing_type == "sage" or msg_passing_type == "cfconv":
                 params.update({
                     "in_channels": input_dim,
                     "out_channels": output_dim
@@ -88,14 +93,24 @@ class HeteroMessagePassingLayer(nn.Module):
             if params == {}:
                 raise ValueError(f"Message passing type {msg_passing_type} not supported.")
 
-            # Adjust edge type for gcn on hetero edges to enable special handling in forward pass
-            if (msg_passing_type == "gcn") and (edge_type[0] != edge_type[2]):
+            # TODO: Optimise this (move this to the forward function)
+            # Adjust edge type for gcn or cfconv on hetero edges to enable special handling in forward pass
+            if msg_passing_type in ["gcn", "cfconv"] and (edge_type[0] != edge_type[2]):
                 helper_node_type = generate_helper_node_type(edge_type)
-                edge_type = (helper_node_type, 'to', helper_node_type)
+                new_edge_type = (helper_node_type, 'to', helper_node_type)
+
+                # Add new edge type to edge types and save old edge type for removal
+                self.edge_types[new_edge_type] = msg_passing_type
+                edge_types_to_remove.append(edge_type)
+                edge_type = new_edge_type
 
             # Initialize message passing layer
             message_passing_class = MESSAGE_PASSING_MAPPING[msg_passing_type]
             hetero_conv_dict[edge_type] = message_passing_class(**params)
+
+        # Remove replaced edge types
+        for et in edge_types_to_remove:
+            del self.edge_types[et]
 
         self.message_passing_layer = HeteroConv(hetero_conv_dict, aggr="sum")
 
@@ -125,29 +140,55 @@ class HeteroMessagePassingLayer(nn.Module):
         input_msg_passing = {'x_dict': x_dict, 'edge_index_dict': edge_index_dict, 'edge_attr_dict': {},
                              'edge_weight_dict': {}}
         for edge_type, msg_passing_type in self.edge_types.items():
-            if msg_passing_type == "gat_v2":
-                input_msg_passing['edge_attr_dict'].update({edge_type: edge_attr_dict[edge_type]})
-            if msg_passing_type == "gine":
-                input_msg_passing['edge_attr_dict'].update({edge_type: edge_attr_dict[edge_type]})
-            if msg_passing_type in ["gcn", "rgcn"]:
-                input_msg_passing['edge_weight_dict'].update({edge_type: edge_attr_dict[edge_type]})
-            if msg_passing_type == "rgcn":
-                # Insert edge type tensor (required for rgcn class)
-                input_msg_passing['edge_type'].update({edge_type: torch.zeros(edge_attr_dict[edge_type].shape[0])})
 
-            if (msg_passing_type == "gcn") and ("->" in edge_type[0]):
+            # Merge feature vectors to enable hetero msg passing (for gcn and cfconv)
+            if msg_passing_type in ["gcn", 'cfconv'] and ("->" in edge_type[0]):
                 edge_source = edge_type[0].split("->")[0]
                 edge_target = edge_type[0].split("->")[1]
+
                 # Concat feature vectors into one tensor for gcn on hetero edges
                 input_msg_passing['x_dict'].update({edge_type: torch.cat([x_dict[edge_source], x_dict[edge_target]])})
+
                 # Adjust edge index for concatenated feature vectors
+                previous_edge_name = (edge_source, 'to', edge_target)
+                edge_source_indices = edge_index_dict[previous_edge_name][0].unsqueeze(0)
+                edge_target_indices = edge_index_dict[previous_edge_name][1].unsqueeze(0)
                 input_msg_passing['edge_index_dict'].update(
                     {edge_type:
-                         torch.cat([edge_index_dict[edge_type][0].unsqueeze(0),
-                                    edge_index_dict[edge_type][1].unsqueeze(0) + x_dict[edge_type[0]].shape[0]], dim=0)
+                         torch.cat([edge_source_indices,
+                                    edge_target_indices + x_dict[previous_edge_name[0]].shape[0]], dim=0)
                      })
 
+                # Copy edge attribute for new edge type
+                if edge_attr_dict is not None:
+                    edge_attr_dict[edge_type] = edge_attr_dict[previous_edge_name]
+
+            # prepare message passing input, if edges exist for that edge type
+            if edge_index_dict[edge_type].shape[1] != 0:
+
+                if msg_passing_type in ["gat_v2","gine"] :
+                    input_msg_passing['edge_attr_dict'].update({edge_type: edge_attr_dict[edge_type]})
+
+                if msg_passing_type in ["gcn", "rgcn", 'cfconv']:
+                    # Divide by max to invert distance as weights -> higher distance ==> lower weight
+                    edge_weight_dict = {edge_type: edge_attr_dict[edge_type] / edge_attr_dict[edge_type].max()}
+                    input_msg_passing['edge_weight_dict'].update(edge_weight_dict)
+
+                if msg_passing_type == "rgcn":
+                    # Insert edge type tensor (required for rgcn class)
+                    input_msg_passing['edge_type'].update({edge_type: torch.zeros(edge_attr_dict[edge_type].shape[0])})
+
+
         x_dict = self.message_passing_layer(**input_msg_passing)
+
+        # Aggregate helper node types with regular node types
+        for edge_type in self.edge_types.keys():
+            if "->" in edge_type[0]:
+                edge_target = edge_type[0].split("->")[1]
+                n_target_indices = x_dict[edge_target].size()[0]
+                x_dict[edge_target] += x_dict[edge_type[0]][-n_target_indices:]
+                x_dict.pop(edge_type[0])
+
         x_dict = {key: self.norm(x) for key, x in x_dict.items()}
         x_dict = {key: F.relu(x) for key, x in x_dict.items()}
 

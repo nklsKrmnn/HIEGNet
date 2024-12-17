@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import torch
 
+MAX_GLOM_CELL_DISTANCE: float = 2200.0
 
 def drop_cell_glom_edges(cell_data: pd.DataFrame) -> pd.DataFrame:
     """
@@ -51,14 +52,18 @@ def create_cell_glom_edges(df_cell_nodes: pd.DataFrame,
     df_glom_connection = df_cells_exploded.merge(df_glom_connection, right_on='glom_index',
                                                  left_on='glom_index', how='inner')
 
+
+    # Norm and invert distances to get weights
+    #df_glom_connection['distance'] = 1 - df_glom_connection['distance'] / df_glom_connection['distance'].max()
+
+    # Drop edges with distance greater than MAX_GLOM_CELL_DISTANCE
+    df_glom_connection = df_glom_connection[df_glom_connection['distance'] <= MAX_GLOM_CELL_DISTANCE]
+
     # Create edge index
     cell_glom_edge_index = (df_glom_connection['cell_row'], df_glom_connection['glom_row'])
 
-    # Norm and invert distances to get weights
-    df_glom_connection['distance'] = 1 - df_glom_connection['distance'] / df_glom_connection['distance'].max()
-
     # Create tensor for edge distances and index
     cell_glom_edge_distances = torch.tensor(df_glom_connection['distance'].values, dtype=torch.float).unsqueeze(1)
-    cell_glom_edge_index = torch.tensor(cell_glom_edge_index, dtype=torch.long)
+    cell_glom_edge_index = torch.tensor(df_glom_connection[['cell_row', 'glom_row']].values, dtype=torch.long).T
 
     return cell_glom_edge_index, cell_glom_edge_distances

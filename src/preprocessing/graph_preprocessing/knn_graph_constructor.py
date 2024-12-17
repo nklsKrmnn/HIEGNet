@@ -36,11 +36,10 @@ def knn_graph_construction(X: np.array, k: int) -> np.array:
     return A
 
 
-def knn_weighted_graph_construction(X_1: np.array, X_2: np.array, k: int) -> csr_matrix:
+def knn_feature_graph_construction(X_1: np.array, X_2: np.array, k: int, lim: float=np.inf) -> csr_matrix:
     """
-    Construct a k-nearest neighbor graph between two sets of data points X_1 and X_2 and add a weight to each edge
-    based on the distance. The weights are normalized to the range [0, 1]. To use one set of data points, set X_1 and
-    X_2 to the same value.
+    Construct a k-nearest neighbor graph between two sets of data points X_1 and X_2 and add the distnace as edge
+    features. To use one set of data points, set X_1 and X_2 to the same value.
 
     Parameters
     ----------
@@ -50,6 +49,8 @@ def knn_weighted_graph_construction(X_1: np.array, X_2: np.array, k: int) -> csr
         A numpy array of shape (n, d) where n is the number of data points and d is the number of features.
     k : int
         The number of nearest neighbors to consider for each data point.
+    lim : float
+        The maximum distance to consider for the k-nearest neighbors. Default is infinity.
 
     Returns
     -------
@@ -77,14 +78,17 @@ def knn_weighted_graph_construction(X_1: np.array, X_2: np.array, k: int) -> csr
         distances = distances[:, first_nbr_idx:]
         indices = indices[:, first_nbr_idx:]
 
-        # Normalize the distances to the range [0, 1]
-        max_distance = np.max(distances)
-        distances = distances / max_distance if max_distance > 0 else distances
-
         # Create the sparse matrix
-        row_indices = np.repeat(np.arange(n_1), k-first_nbr_idx)
+        row_indices = np.repeat(np.arange(n_1), k - first_nbr_idx)
         col_indices = indices.flatten()
         data = distances.flatten()
+
+        # Remove edges with distances larger than the limit from the graph
+        if lim < np.inf:
+            mask = data <= lim
+            row_indices = row_indices[mask]
+            col_indices = col_indices[mask]
+            data = data[mask]
 
         A = csr_matrix((data, (row_indices, col_indices)), shape=(n_1, n_2))
 
@@ -94,15 +98,13 @@ def knn_weighted_graph_construction(X_1: np.array, X_2: np.array, k: int) -> csr
             # Normalize the weights to the range [0, 1] after adding transposed
             A.data = A.data / np.max(A.data)
 
-
         return A
-
 
 
 def delaunay_graph_construction(X: np.array) -> csr_matrix:
     """
     Construct a graph from the data points in X using Delaunay triangulation.
-    Add a weight to each edge based on the distance, normalized to the range [0, 1].
+    The distance between the nodes is added as edge feature.
 
     Parameters
     ----------
@@ -141,11 +143,11 @@ def delaunay_graph_construction(X: np.array) -> csr_matrix:
         data.append(dist)
 
     # Normalize the distances to the range [0, 1]
-    max_distance = np.max(data)
-    data = np.array(data) / max_distance if max_distance > 0 else np.array(data)
+    # max_distance = np.max(data)
+    # data = np.array(data) / max_distance if max_distance > 0 else np.array(data)
 
     # Invert the distances to get weights
-    data = 1 - data
+    # data = 1 - data
 
     # Create the sparse matrix
     A = csr_matrix((data, (row_indices, col_indices)), shape=(n, n))
@@ -156,7 +158,7 @@ def delaunay_graph_construction(X: np.array) -> csr_matrix:
 def radius_based_graph_construction(X: np.array, radius: float) -> csr_matrix:
     """
     Construct a graph from the data points in X using radius-based connectivity.
-    Add a weight to each edge based on the distance, normalized to the range [0, 1].
+    The distance between the nodes is added as edge feature.
 
     Parameters
     ----------
@@ -173,16 +175,16 @@ def radius_based_graph_construction(X: np.array, radius: float) -> csr_matrix:
     # Compute the radius neighbors graph
     A = radius_neighbors_graph(X, radius, mode='distance', include_self=False)
 
-    if A.data.size > 0:
-        # Normalize the distances to the range [0, 1]
-        max_distance = A.data.max()
-        A.data = A.data / max_distance if max_distance > 0 else A.data
+    # if A.data.size > 0:
+    #    # Normalize the distances to the range [0, 1]
+    #    max_distance = A.data.max()
+    #    A.data = A.data / max_distance if max_distance > 0 else A.data
 
-        # Invert the distances to get weights
-        A.data = 1 - A.data
+    #    # Invert the distances to get weights
+    #    A.data = 1 - A.data
 
     # Add a small value to the distances to avoid zero values
-    A.data[A.data == 0] = 1e-10
+    # A.data[A.data == 0] = 1e-10
 
     return A
 
@@ -205,7 +207,7 @@ def graph_construction(X: np.array, method: str, **kwargs) -> tuple[np.array, np
         A sparse matrix of shape (n, n) representing the adjacency matrix of the graph.
     """
     if method == 'knn':
-        sparse_matrix = knn_weighted_graph_construction(X, X, **kwargs)
+        sparse_matrix = knn_feature_graph_construction(X, X, **kwargs)
     elif method == 'delaunay':
         sparse_matrix = delaunay_graph_construction(X)
     elif method == 'radius':
@@ -216,6 +218,7 @@ def graph_construction(X: np.array, method: str, **kwargs) -> tuple[np.array, np
     edge_index = sparse_matrix.nonzero()
     edge_weights = sparse_matrix.data
     return edge_index, edge_weights
+
 
 def graph_connection(X_1: np.array, X_2: np.array, method: str, **kwargs) -> tuple[np.array, np.array]:
     """
@@ -228,7 +231,7 @@ def graph_connection(X_1: np.array, X_2: np.array, method: str, **kwargs) -> tup
     :return:
     """
     if method == 'knn':
-        sparse_matrix = knn_weighted_graph_construction(X_1, X_2, **kwargs)
+        sparse_matrix = knn_feature_graph_construction(X_1, X_2, **kwargs)
     elif method == 'delaunay':
         raise ValueError("Delaunay triangulation is not supported for connecting two sets of data points.")
     elif method == 'radius':
@@ -237,11 +240,11 @@ def graph_connection(X_1: np.array, X_2: np.array, method: str, **kwargs) -> tup
         raise ValueError(f"Unknown graph construction method: {method}")
 
     edge_index = sparse_matrix.nonzero()
-    edge_weights = sparse_matrix.data
-    return edge_index, edge_weights
+    edge_features = sparse_matrix.data
+    return edge_index, edge_features
 
 
-def plot_graph(X, A, title, node_class:list = None):
+def plot_graph(X, A, title, node_class: list = None):
     G = nx.from_scipy_sparse_array(A)
     pos = {i: (X[i, 0], X[i, 1]) for i in range(len(X))}
     plt.figure(figsize=(8, 8))
@@ -268,24 +271,23 @@ if __name__ == "__main__":
     np.random.seed(42)
     points_1 = np.random.rand(20, 2)
     points_2 = np.random.rand(30, 2)
-    #points = data[['center_x_global', 'center_y_global']].to_numpy()
+    # points = data[['center_x_global', 'center_y_global']].to_numpy()
 
     # Construct graphs
-    #delaunay_graph = delaunay_graph_construction(points_1)
-    #radius_graph = radius_based_graph_construction(points_1, radius=100)
-    knn_graph = knn_weighted_graph_construction(points_1, points_1, k=5)
+    # delaunay_graph = delaunay_graph_construction(points_1)
+    # radius_graph = radius_based_graph_construction(points_1, radius=100)
+    knn_graph = knn_feature_graph_construction(points_1, points_1, k=5)
 
     # Connect two sets of data points
-    #knn_graph = knn_weighted_graph_construction(points_1, points_2, k=5)
-
+    # knn_graph = knn_weighted_graph_construction(points_1, points_2, k=5)
 
     # Plot the graphs
-    #plot_graph(points_1, delaunay_graph, "Delaunay Triangulation Graph")
-    #plot_graph(points_1, radius_graph, "Radius-based Connectivity Graph (radius=0.3)")
+    # plot_graph(points_1, delaunay_graph, "Delaunay Triangulation Graph")
+    # plot_graph(points_1, radius_graph, "Radius-based Connectivity Graph (radius=0.3)")
     plot_graph(points_1, knn_graph, "5-Nearest Neighbors Graph")
 
-    #set_annotation = ["A"] * 20 + ["B"] * 30
-    #upper_half = hstack([csr_matrix((A.shape[0], A.shape[0])), A])
-    #lower_half = hstack([A.T, csr_matrix((A.shape[1], A.shape[1]))])
-    #A = vstack([upper_half, lower_half])
-    #plot_graph(np.vstack((points_1, points_2)), knn_graph, "3-Nearest Neighbors Graph", set_annotation)
+    # set_annotation = ["A"] * 20 + ["B"] * 30
+    # upper_half = hstack([csr_matrix((A.shape[0], A.shape[0])), A])
+    # lower_half = hstack([A.T, csr_matrix((A.shape[1], A.shape[1]))])
+    # A = vstack([upper_half, lower_half])
+    # plot_graph(np.vstack((points_1, points_2)), knn_graph, "3-Nearest Neighbors Graph", set_annotation)

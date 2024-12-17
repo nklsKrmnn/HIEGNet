@@ -55,6 +55,10 @@ class HeteroGraphDataset(GlomGraphDataset):
         edge_index, edge_weights = graph_construction(coords, **self.glom_graph)
         data[('glomeruli', 'to', 'glomeruli')].edge_index = torch.tensor(edge_index, dtype=torch.long)
         data[('glomeruli', 'to', 'glomeruli')].edge_attr = torch.tensor(edge_weights, dtype=torch.float).unsqueeze(1)
+        # Fit scaler to edge attributes
+        if patient in self.train_patients:
+            self.create_and_fit_edge_scaler(data, ('glomeruli', 'to', 'glomeruli'), patient)
+
 
         y = self.create_targets(df_patient, data.target_labels)
 
@@ -89,18 +93,27 @@ class HeteroGraphDataset(GlomGraphDataset):
 
         # Add other cells to graph
         for i, df_cell_nodes in enumerate(list_cell_nodes):
+            current_cell_type = self.cell_types[i]
+
+            # Add scaler for cell type if not existing
+            if current_cell_type not in self.node_scalers.keys():
+                self.node_scalers.update({current_cell_type: SCALER_OPTIONS[self.preprocessing_params['scaler']]()})
+
+            # Gat all nodes for that patient
             df_cell_nodes = df_cell_nodes[df_cell_nodes['patient'] == patient].reset_index(drop=True)
 
             # Create connections between cells
+            edge_type = (current_cell_type, 'to', current_cell_type)
             cell_coords = df_cell_nodes[['center_x_global', 'center_y_global']].to_numpy()
             cell_edge_index, cell_edge_weight = graph_construction(cell_coords, **self.cell_graph_params)
-            data[self.cell_types[i], 'to', self.cell_types[i]].edge_index = torch.tensor(cell_edge_index,
-                                                                                         dtype=torch.long)
-            data[self.cell_types[i], 'to', self.cell_types[i]].edge_attr = torch.tensor(cell_edge_weight,
-                                                                                        dtype=torch.float).unsqueeze(1)
+            data[edge_type].edge_index = torch.tensor(cell_edge_index, dtype=torch.long)
+            data[edge_type].edge_attr = torch.tensor(cell_edge_weight, dtype=torch.float).unsqueeze(1)
+            # Fit scaler to edge attributes
+            self.create_and_fit_edge_scaler(data, edge_type, patient)
 
             # Create connections to other cell types
             for j, df_other_cell_nodes in enumerate(list_cell_nodes):
+                edge_type = (current_cell_type, 'to', self.cell_types[j])
                 if i == j:
                     # Skip same cell type
                     continue
@@ -111,46 +124,75 @@ class HeteroGraphDataset(GlomGraphDataset):
                 other_cell_coords = df_other_cell_nodes[['center_x_global', 'center_y_global']].to_numpy()
                 other_cell_edge_index, other_cell_edge_weight = graph_connection(cell_coords, other_cell_coords,
                                                                                  **self.cell_graph_params)
-                data[self.cell_types[i], 'to', self.cell_types[j]].edge_index = torch.tensor(other_cell_edge_index,
-                                                                                             dtype=torch.long)
-                data[self.cell_types[i], 'to', self.cell_types[j]].edge_attr = torch.tensor(other_cell_edge_weight,
-                                                                                            dtype=torch.float).unsqueeze(
-                    1)
+                data[edge_type].edge_index = torch.tensor(other_cell_edge_index,dtype=torch.long)
+                data[edge_type].edge_attr = torch.tensor(other_cell_edge_weight,dtype=torch.float).unsqueeze(1)
+
+                # Fit scaler to edge attributes
+                self.create_and_fit_edge_scaler(data, edge_type, patient)
 
             # Create connections between cells and glomeruli
             cell_glom_edge_index, cell_glom_edge_distances = create_cell_glom_edges(df_cell_nodes,
                                                                                     df_patient['glom_index'])
-
             # Add cell to glom edge index and weights to data
-            data[self.cell_types[i], 'to', 'glomeruli'].edge_index = cell_glom_edge_index
-            data[self.cell_types[i], 'to', 'glomeruli'].edge_attr = cell_glom_edge_distances
+            edge_type = (current_cell_type, 'to', 'glomeruli')
+            data[edge_type].edge_index = cell_glom_edge_index
+            data[edge_type].edge_attr = cell_glom_edge_distances
+            # Fit scaler to edge attributes
+            self.create_and_fit_edge_scaler(data, edge_type, patient)
 
             # Add same edges back from glom to cells
             if self.cell_glom_connection:
-                data['glomeruli', 'to', self.cell_types[i]].edge_index = torch.stack(
+                data['glomeruli', 'to', current_cell_type].edge_index = torch.stack(
                     [cell_glom_edge_index[1], cell_glom_edge_index[0]], dim=0).long()
-                data['glomeruli', 'to', self.cell_types[i]].edge_attr = cell_glom_edge_distances
+                data['glomeruli', 'to', current_cell_type].edge_attr = cell_glom_edge_distances
+                # Fit scaler to edge attributes
+                self.create_and_fit_edge_scaler(data, ('glomeruli', 'to', current_cell_type), patient)
+
 
             # Get node features
-            data[self.cell_types[i]].x = self.create_features(df=df_cell_nodes,
-                                                              train_indices=list(range(0, len(df_cell_nodes))),
-                                                              feature_list=[c for c in df_cell_nodes.columns if
-                                                                            c in self.cell_features],
-                                                              preprocessing_params=self.preprocessing_params)
+            data[current_cell_type].x = self.create_features(df=df_cell_nodes,
+                                                             train_indices=list(range(0, len(df_cell_nodes))),
+                                                             feature_list=[c for c in df_cell_nodes.columns if
+                                                                           c in self.cell_features],
+                                                             preprocessing_params={'scaler': None})
+            # Partial fit of scaler to node features
+            if patient in self.train_patients:
+                self.node_scalers[current_cell_type].partial_fit(data[current_cell_type].x)
 
         return data
 
-    def scale_glomeruli(self, data_objects: dict) -> dict:
+    def create_and_fit_edge_scaler(self, data: torch.tensor, edge_type: tuple, patient: str) -> None:
+        """
+        Create and fit the edge scaler for the given edge type.
+
+        Creates new scaler only if not existing yet. Fits it to the edge attributes of the given edge type if patient is not a test patient.
+
+        :param data: Edge attributes.
+        :param edge_type: Edge type to scale.
+        :param patient: Patient number.
+        :return: -
+        """
+        # Check if edges exist
+        if len(data[edge_type].edge_attr) > 0:
+            # Create new scaler if not existing yet
+            if edge_type not in self.edge_scalers.keys():
+                self.edge_scalers.update({edge_type: SCALER_OPTIONS[self.preprocessing_params['scaler']]()})
+            # Fit scaler to edge attributes if patient is not in test set
+            if patient in self.train_patients:
+                self.edge_scalers[edge_type].partial_fit(data[edge_type].edge_attr)
+
+    def scale_features(self, data_objects: dict) -> dict:
         """
         Scales glomeruli features across all graphs.
 
-        Unpacks all feature tensors from the data objects, fits the scaler to the whole train set and scales the features
-        for all graphs.
+        For glomeruli, the node features and train masks are first concatenated and the sclaer is fitted to the train
+        set only. Then, the features are scaled for all graphs. For all other cell types, the features are scaled
+        with their respective scalers fitted partially before in the create_graph_object method.
 
         :param data_objects: Dict with graph data objects
         :return: Dict with graph data object, where x for glomeruli is scaled
         """
-
+        # TODO: Implement partial scaling for glomeruli as well
         # Get all glomeruli features
         all_glom_features = torch.cat([data['glomeruli'].x for data in data_objects.values()], dim=0)
         all_train_masks = torch.cat([data.train_mask for data in data_objects.values()], dim=0)
@@ -162,6 +204,24 @@ class HeteroGraphDataset(GlomGraphDataset):
         # Scale the features for all graphs
         for data in data_objects.values():
             data['glomeruli'].x = torch.tensor(scaler.transform(data['glomeruli'].x), dtype=torch.float)
+
+        # Scale node features for other cell types
+        for key in data_objects:
+            data = data_objects[key]
+            for cell_type in self.cell_types:
+                if (cell_type in data.node_types) and (cell_type != 'glomeruli'):
+                    data_transformed = torch.tensor(self.node_scalers[cell_type].transform(data[cell_type].x),
+                                                     dtype=torch.float)
+                    data_objects[key][cell_type].x = data_transformed
+
+        # Scale edge attributes for all edges
+        for data in data_objects.values():
+            for edge_type in self.edge_scalers.keys():
+                try:
+                    data[edge_type].edge_attr = torch.tensor(self.edge_scalers[edge_type].transform(data[edge_type].edge_attr),
+                                                            dtype=torch.float)
+                except:
+                    pass
 
         return data_objects
 

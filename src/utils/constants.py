@@ -38,20 +38,20 @@ REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {
 }
 
 PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
-    'hidden_dim': [64, 96],
-    'n_message_passings': [2,3],
-    'n_fc_layers': [1, 2],
+    'hidden_dim': [16, 32, 64],
+    'n_message_passings': [1, 2, 3],
+    'n_fc_layers': [1, 2, 3],
     'dropout': [0.1, 0.2, 0.3, 0.4, 0.5],
     'mlp_dropout': [0.0, 0.2, 0.4, 0.6, 0.8],
     'softmax_function': ['softmax', 'log_softmax', 'none'],
     'norm_fc_layers': ['batch', 'layer', 'none'],
     'norm': ['batch', 'layer', 'none'],
-    'glom_to_glom': ["gin"],#['gcn', "gine", 'sage', 'gat_v2', 'gin'],
-    'cell_to_glom': ['gat_v2', 'sage'],
-    'cell_to_cell': ['gcn', 'gat_v2', 'gine', 'sage'],
-    "learning_rate": [1e-2, 1e-3, 1e-4, 1e-5],
+    'glom_to_glom': ['gcn', 'sage', 'gat_v2', 'gin', 'cfconv'],
+    'cell_to_glom': ['gcn', 'sage', 'gat_v2', 'gin', 'cfconv'],
+    'cell_to_cell': ['gcn', 'sage', 'gat_v2', 'gin', 'cfconv'],
+    "learning_rate": [1e-3, 1e-4, 1e-5, 1e-6],
     "fc_learning_rate": [1e-1, 1e-2, 1e-3, 1e-4],
-    "max_lr": [0.01, 0.001, 0.0001, 0.00001],
+    "max_lr": [0.01, 0.001],
     "layers": [34, 18],
     "enet_size": ['s', 'm'],
     "optimizer": ['adam', 'sgd']
