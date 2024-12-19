@@ -77,11 +77,10 @@ class HeteroMessagePassingLayer(nn.Module):
                     "add_self_loops": add_self_loops
                 })
 
-            if msg_passing_type == "rgcn":
+            if msg_passing_type == "gcn" and edge_type[0] != edge_type[2]:
+                # Do not normalise, this causes 0 passes for heterogene passes
                 params.update({
-                    "in_channels": output_dim,
-                    "out_channels": output_dim,
-                    "num_relations": 1
+                    "normalize": False
                 })
 
             if msg_passing_type == "sage" or msg_passing_type == "cfconv":
@@ -93,15 +92,14 @@ class HeteroMessagePassingLayer(nn.Module):
             if params == {}:
                 raise ValueError(f"Message passing type {msg_passing_type} not supported.")
 
-            # TODO: Optimise this (move this to the forward function)
-            # Adjust edge type for gcn or cfconv on hetero edges to enable special handling in forward pass
-            if msg_passing_type in ["gcn", "cfconv"] and (edge_type[0] != edge_type[2]):
+            # Add edge type with helper node types for gcn and cfconv
+            if msg_passing_type in ["gcn", 'cfconv'] and (edge_type[0] != edge_type[2]):
+                #edge_types_to_remove.append(edge_type)
                 helper_node_type = generate_helper_node_type(edge_type)
                 new_edge_type = (helper_node_type, 'to', helper_node_type)
 
-                # Add new edge type to edge types and save old edge type for removal
-                self.edge_types[new_edge_type] = msg_passing_type
-                edge_types_to_remove.append(edge_type)
+                # Replace new edge type in edge_types
+                self.edge_types = {new_edge_type if k == edge_type else k:v for k,v in self.edge_types.items()}
                 edge_type = new_edge_type
 
             # Initialize message passing layer
@@ -142,26 +140,37 @@ class HeteroMessagePassingLayer(nn.Module):
         for edge_type, msg_passing_type in self.edge_types.items():
 
             # Merge feature vectors to enable hetero msg passing (for gcn and cfconv)
-            if msg_passing_type in ["gcn", 'cfconv'] and ("->" in edge_type[0]):
+            if msg_passing_type in ["gcn", 'cfconv'] and ('->' in edge_type[0]):
+                # Generate new edge type for helper node
+                helper_node_type = edge_type[0]
+
                 edge_source = edge_type[0].split("->")[0]
                 edge_target = edge_type[0].split("->")[1]
 
+                old_edge_type = (edge_source, 'to', edge_target)
+
                 # Concat feature vectors into one tensor for gcn on hetero edges
-                input_msg_passing['x_dict'].update({edge_type: torch.cat([x_dict[edge_source], x_dict[edge_target]])})
+                input_msg_passing['x_dict'].update({helper_node_type:
+                                                        torch.cat([x_dict[edge_source].clone(),
+                                                                   x_dict[edge_target].clone()])
+                                                    })
 
                 # Adjust edge index for concatenated feature vectors
                 previous_edge_name = (edge_source, 'to', edge_target)
-                edge_source_indices = edge_index_dict[previous_edge_name][0].unsqueeze(0)
-                edge_target_indices = edge_index_dict[previous_edge_name][1].unsqueeze(0)
+                edge_source_indices = edge_index_dict[old_edge_type][0].unsqueeze(0)
+                edge_target_indices = edge_index_dict[old_edge_type][1].unsqueeze(0)
                 input_msg_passing['edge_index_dict'].update(
                     {edge_type:
                          torch.cat([edge_source_indices,
                                     edge_target_indices + x_dict[previous_edge_name[0]].shape[0]], dim=0)
                      })
 
+                # Remove old edge type
+                input_msg_passing['edge_index_dict'].pop(old_edge_type)
+
                 # Copy edge attribute for new edge type
                 if edge_attr_dict is not None:
-                    edge_attr_dict[edge_type] = edge_attr_dict[previous_edge_name]
+                    edge_attr_dict[edge_type] = edge_attr_dict[old_edge_type]
 
             # prepare message passing input, if edges exist for that edge type
             if edge_index_dict[edge_type].shape[1] != 0:
@@ -169,9 +178,9 @@ class HeteroMessagePassingLayer(nn.Module):
                 if msg_passing_type in ["gat_v2","gine"] :
                     input_msg_passing['edge_attr_dict'].update({edge_type: edge_attr_dict[edge_type]})
 
-                if msg_passing_type in ["gcn", "rgcn", 'cfconv']:
+                if msg_passing_type in ["gcn", 'cfconv']:
                     # Divide by max to invert distance as weights -> higher distance ==> lower weight
-                    edge_weight_dict = {edge_type: edge_attr_dict[edge_type] / edge_attr_dict[edge_type].max()}
+                    edge_weight_dict = {edge_type: edge_attr_dict[edge_type].max() - edge_attr_dict[edge_type]}
                     input_msg_passing['edge_weight_dict'].update(edge_weight_dict)
 
                 if msg_passing_type == "rgcn":
@@ -186,7 +195,7 @@ class HeteroMessagePassingLayer(nn.Module):
             if "->" in edge_type[0]:
                 edge_target = edge_type[0].split("->")[1]
                 n_target_indices = x_dict[edge_target].size()[0]
-                x_dict[edge_target] += x_dict[edge_type[0]][-n_target_indices:]
+                x_dict[edge_target] = x_dict[edge_target] + x_dict[edge_type[0]][-n_target_indices:]
                 x_dict.pop(edge_type[0])
 
         x_dict = {key: self.norm(x) for key, x in x_dict.items()}
@@ -227,8 +236,7 @@ class HeteroGNN(nn.Module):
         edge_types = {('glomeruli', 'to', 'glomeruli'): msg_passing_types['glom_to_glom']}
         for cell_type in cell_types:
             edge_types[(cell_type, 'to', 'glomeruli')] = msg_passing_types['cell_to_glom']
-            if ('glomeruli', 'to', cell_type) in edge_types:
-                edge_types[('glomeruli', 'to', cell_type)] = msg_passing_types['cell_to_glom']
+            edge_types[('glomeruli', 'to', cell_type)] = msg_passing_types['cell_to_glom']
             for cell_type2 in cell_types:
                 edge_types[(cell_type, 'to', cell_type2)] = msg_passing_types['cell_to_cell']
         node_types = ['glomeruli'] + cell_types

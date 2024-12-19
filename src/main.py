@@ -178,6 +178,8 @@ def main() -> None:
         trainer.save_model()
 
     if args.pipeline == GRID_SEARCH_COMMAND:
+        if 'gs_start_index' not in config.keys():
+            config['gs_start_index'] = 1
         results = grid_search(model_name=model_name,
                               model_attributes=model_attributes,
                               logger=logger,
@@ -185,7 +187,8 @@ def main() -> None:
                               device=device,
                               trainer_class=trainer_class,
                               training_parameters=config['training_parameters'],
-                              n_folds=n_folds
+                              n_folds=n_folds,
+                              start_index=config['gs_start_index'] - 1
                               )
         logger.close()
 

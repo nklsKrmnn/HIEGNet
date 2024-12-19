@@ -7,6 +7,9 @@ from src.logger.multi_instance_logger import MultiInstanceLogger
 from src.utils.constants import PARAMETER_SEARCH_SPACE
 
 
+# Set random seed
+random.seed(42)
+
 def grid_search(model_name: str,
                 model_attributes: dict,
                 logger: MultiInstanceLogger,
@@ -14,7 +17,8 @@ def grid_search(model_name: str,
                 device,
                 trainer_class,
                 training_parameters: dict,
-                n_folds: int = 5
+                n_folds: int = 5,
+                start_index: int = 0
                 ):
     """
     Perform a grid search over the model and training parameters
@@ -31,6 +35,7 @@ def grid_search(model_name: str,
     :param device: Device to use
     :param training_parameters: Dict of training parameters with 'gs' at all parameters that should be optimized
     :param n_folds: Number of folds to use for crossvalidation
+    :param start_index: Index to start the grid search at. Defaults to 0
     :return: None
     """
     config_params = {
@@ -49,7 +54,7 @@ def grid_search(model_name: str,
 
     print(f"Start grid search with {size} settings")
 
-    for i in range(0, size):
+    for i in range(start_index, size):
         print("###################################")
         print(f"Setting {i + 1}/{size}")
         print("###################################")
