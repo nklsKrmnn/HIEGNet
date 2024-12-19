@@ -135,7 +135,7 @@ class HeteroMessagePassingLayer(nn.Module):
         """
 
 
-        input_msg_passing = {'x_dict': x_dict, 'edge_index_dict': edge_index_dict, 'edge_attr_dict': {},
+        input_msg_passing = {'x_dict': x_dict, 'edge_index_dict': edge_index_dict.copy(), 'edge_attr_dict': {},
                              'edge_weight_dict': {}}
         for edge_type, msg_passing_type in self.edge_types.items():
 
@@ -151,8 +151,8 @@ class HeteroMessagePassingLayer(nn.Module):
 
                 # Concat feature vectors into one tensor for gcn on hetero edges
                 input_msg_passing['x_dict'].update({helper_node_type:
-                                                        torch.cat([x_dict[edge_source].clone(),
-                                                                   x_dict[edge_target].clone()])
+                                                        torch.cat([x_dict[edge_source],
+                                                                   x_dict[edge_target]])
                                                     })
 
                 # Adjust edge index for concatenated feature vectors
@@ -173,7 +173,7 @@ class HeteroMessagePassingLayer(nn.Module):
                     edge_attr_dict[edge_type] = edge_attr_dict[old_edge_type]
 
             # prepare message passing input, if edges exist for that edge type
-            if edge_index_dict[edge_type].shape[1] != 0:
+            if input_msg_passing['edge_index_dict'][edge_type].shape[1] != 0:
 
                 if msg_passing_type in ["gat_v2","gine"] :
                     input_msg_passing['edge_attr_dict'].update({edge_type: edge_attr_dict[edge_type]})
