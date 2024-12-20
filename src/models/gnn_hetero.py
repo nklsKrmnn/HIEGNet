@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import HeteroConv
+from typing import Union
 
 from src.models.model_constants import MESSAGE_PASSING_MAPPING
 from src.models.model_utils import init_norm_layer
@@ -211,7 +212,7 @@ class HeteroGNN(nn.Module):
     def __init__(self,
                  output_dim: int,
                  cell_types: list[str],
-                 msg_passing_types: dict[str, str],
+                 msg_passing_types: Union[dict[str, str],str],
                  hidden_dims: list[int] = None,
                  hidden_dim: int = None,
                  n_message_passings: int = None,

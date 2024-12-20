@@ -49,6 +49,7 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'glom_to_glom': ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv'],
     'cell_to_glom': ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv'],
     'cell_to_cell': ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv'],
+    "msg_passing_types": ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv'],
     "learning_rate": [1e-3, 1e-4, 1e-5, 1e-6],
     "fc_learning_rate": [1e-1, 1e-2, 1e-3, 1e-4],
     "max_lr": [0.01, 0.001],

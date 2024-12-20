@@ -118,26 +118,6 @@ class SearchSampler:
             for i, key in enumerate(search_parameters):
                 config[key] = params[i]
 
-            # Adjust max lr for scheduler
-            #if "lr_scheduler_params" in config.keys():
-            #    if ('max_lr' not in search_parameters) and ('learning_rate' in search_parameters):
-            #        config["lr_scheduler_params"]['params']["max_lr"] = config["learning_rate"] * 10
-
-            # Adjust epochs to learning rate
-            #if 'learning_rate' in search_parameters:
-            #    config["epochs"] = max(
-            #        int(0.0003 / config['learning_rate'] * config['epochs']), 1)
-            #    config['log_image_frequency'] = config['epochs'] // 5
-
-            # Check that gcn is only used for homogenous edge types
-            if 'msg_passing_types' in config.keys():
-                hetero_edge_types = [et for et in config['msg_passing_types'].keys() if
-                                     et.split('_')[0] != et.split('_')[2]]
-                no_hetero_gcn = not any(
-                    config['msg_passing_types'][et] == 'gcn' for et in hetero_edge_types)
-            else:
-                no_hetero_gcn = True
-
             self.search_space.append(copy.deepcopy(config))
 
         return self.search_space
