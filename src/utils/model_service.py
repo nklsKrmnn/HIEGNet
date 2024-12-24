@@ -49,6 +49,11 @@ class ModelService():
         model_attributes = model_attributes.copy()
         model_path = model_attributes.pop("model_path") if "model_path" in model_attributes else None
 
+        # Decompose the msg_passing_types attribute if it is set the same for all edge groups
+        if isinstance(model_attributes['msg_passing_types'], str):
+            edge_groups = ['glom_to_glom', 'cell_to_glom', 'cell_to_cell']
+            model_attributes['msg_passing_types'] = {key: model_attributes['msg_passing_types'] for key in edge_groups}
+
         model = MODEL_NAME_MAPPING[model_name](**model_attributes)
 
         if model_path is not None:
