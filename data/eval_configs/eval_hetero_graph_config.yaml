@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "eval_hetero_gnn_after_gs12_uniform_features_g2g_p1-3_between_p4"
+run_name: "eval_hetero_gnn_after_gs14_g2g1100_sameMSGP_1_within"
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
@@ -10,10 +10,7 @@ model_parameters:
     dropout: 0.2
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
-    msg_passing_types:
-      glom_to_glom: 'sage'
-      cell_to_glom: 'gat_v2'
-      cell_to_cell: 'gin'
+    msg_passing_types: 'gat_v2'
 training_parameters:
   batch_size: 1
   epochs: 600
@@ -21,7 +18,7 @@ training_parameters:
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: 0.002
+      max_lr: 0.001
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll", "weighted_mse"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
@@ -47,20 +44,21 @@ dataset_parameters:
   processed_file_name: "glom_graph"
   glom_graph:
     method: "radius" # Options: "knn", "radius", "delaunay"
-    radius: 550 # Options: "k", "radius", ""
+    radius: 1100 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
-    k: 5 # Options: "k", "radius", ""
+    k: 5
+    lim: 400 # Options: "k", "radius", ""
   train_patients:
     - 001
     - 002
     - 003
     #- 004
   test_patients:
-    #- 001
-    #- 002
-    #- 003
-    - 004
+    - 001
+    - 002
+    - 003
+    #- 004
   random_seed: 123
   onehot_targets: true
   process: true
@@ -100,7 +98,7 @@ dataset_parameters:
     - "perimeter"
     - "eccentricity"
     - "aspect_ratio"
-    - "compactness"
-    - "solidity"
+    - "circularity"
+    #- "solidity"
     - "is_in_glom"
 
