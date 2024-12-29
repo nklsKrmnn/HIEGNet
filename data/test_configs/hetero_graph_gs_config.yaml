@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "gs14_gnn_g2g2200_c2cLim400"
+run_name: "gs14_gnn_g2g1100_maxlr001_sameMSGP"
 model_parameters:
   hetero_gnn:
     hidden_dim: gs
@@ -10,10 +10,7 @@ model_parameters:
     dropout: gs
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
-    msg_passing_types:
-      glom_to_glom: gs
-      cell_to_glom: gs
-      cell_to_cell: gs
+    msg_passing_types: gs
 training_parameters:
   batch_size: 1
   epochs: 600
@@ -46,7 +43,7 @@ dataset_parameters:
   processed_file_name: "glom_graph"
   glom_graph:
     method: "radius" # Options: "knn", "radius", "delaunay"
-    radius: 2200 # Options: "k", "radius", ""
+    radius: 1100 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 5
