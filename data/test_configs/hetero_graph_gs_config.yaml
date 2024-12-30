@@ -1,7 +1,7 @@
 use_gpu: true
-run_name: "gs15_gnn_jk_g2g1100_maxlr001_sameMSGP"
+run_name: "gs15_gnn_g2g1100_maxlr001_sameMSGP"
 model_parameters:
-  hetero_jk:
+  hetero:
     hidden_dim: gs
     n_message_passings: gs
     n_fc_layers: gs
