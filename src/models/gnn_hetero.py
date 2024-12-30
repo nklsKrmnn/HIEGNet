@@ -313,18 +313,7 @@ class HeteroGNN(nn.Module):
 class HeteroGnnJK(HeteroGNN):
 
     def __init__(self, **kwargs):
-
         super(HeteroGnnJK ,self).__init__(**kwargs)
-
-        self.last_layer = nn.Sequential(
-            nn.LazyLinear(self.hidden_dims[-1]),
-            nn.ReLU(),
-            nn.Dropout(p=kwargs['dropout']),
-            nn.Linear(self.hidden_dims[-1], self.hidden_dims[-1]),
-            nn.ReLU(),
-            nn.Dropout(p=kwargs['dropout']),
-            nn.Linear(self.hidden_dims[-1], kwargs['output_dim'])
-        )
 
     def forward(self, x_dict, edge_index_dict, edge_attr_dict=None):
         fc_layer_index = 0
@@ -334,11 +323,15 @@ class HeteroGnnJK(HeteroGNN):
             x_dict[node_type] = self.fc_layers[fc_layer_index][node_type](x)
         fc_layer_index += 1
 
-        # Get glom feature for jumping knowledge
-        x_glom = x_dict['glomeruli']
+        # Append glom feature for jumping knowledge
+        glom_hidden_features = []
+        glom_hidden_features.append(x_dict['glomeruli'].clone())
 
         for i, message_passing_layer in enumerate(self.message_passing_layers):
             x_dict = message_passing_layer(x_dict, edge_index_dict, edge_attr_dict)
+
+            # Append hidden features for jumping knowledge
+            glom_hidden_features.append(x_dict['glomeruli'].clone())
 
             # Apply fully connected layers between GAT layers
             for _ in range(self.n_fc_layers):
@@ -346,7 +339,7 @@ class HeteroGnnJK(HeteroGNN):
                     x_dict[node_type] = self.fc_layers[fc_layer_index][node_type](x)
                 fc_layer_index += 1
 
-        x = self.output_layer(torch.cat((x_dict['glomeruli'], x_glom), dim=1))
+        x = self.output_layer(torch.cat(glom_hidden_features, dim=1))
 
         # Apply softmax if needed
         if self.softmax_function == "softmax":
