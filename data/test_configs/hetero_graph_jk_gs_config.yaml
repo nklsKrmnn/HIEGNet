@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "gs15_gnn_jk_g2g1100_maxlr001_sameMSGP"
+run_name: "gs15_gnn_jk_g2g1100_maxlr001_sameMSGP_withoutClone"
 model_parameters:
   hetero_jk:
     hidden_dim: gs
