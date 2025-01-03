@@ -14,6 +14,7 @@ from torch_geometric.data import Dataset, HeteroData
 from torch_geometric.loader import DataLoader
 from tqdm import tqdm
 
+from pipelines.pipeline_utils import drop_edges
 from src.evaluation.loss_functions import WeightedMSELoss
 from src.evaluation.test_scores import calc_test_scores
 from src.utils.model_service import ModelService
@@ -78,6 +79,7 @@ class Trainer:
     log_image_frequency: int
     dataset: Dataset
     test_split: float
+    drop_edge_types: Union[str, list]
 
     def __init__(
             self,
@@ -101,7 +103,8 @@ class Trainer:
             patience: int = 50,
             fc_learning_rate: float = None,
             log_image_frequency: int = 10,
-            reported_set: str = "val"
+            reported_set: str = "val",
+            drop_edge_types: Union[str, list] = None
     ):
         """
         Creates a Trainer instance from an unpacked configuration file.
@@ -129,6 +132,7 @@ class Trainer:
             patience (int, optional): Number of epochs to wait for improvement before stopping. Defaults to 50.
             log_image_frequency (int, optional): Frequency of logging images. Defaults to 10.
             reported_set (str, optional): The set to report the performance measures on. Defaults to "test".
+            drop_edge_types (Union[str, list], optional): The edges to drop from the graph. Defaults to None.
 
         Returns:
             Trainer: A Trainer instance with the specified configuration.
@@ -192,6 +196,7 @@ class Trainer:
         self.dataset = dataset
         self.test_split = test_split
         self.reported_set = reported_set
+        self.drop_edge_types = drop_edge_types
         print("[TRAINER]: Trainer was successfully set up.")
 
     def start_training(self) -> None:
@@ -448,6 +453,10 @@ class Trainer:
             input_graph_attr = graph_data.edge_attr_dict
 
         target = graph_data.y.long() if isinstance(self.loss, nn.NLLLoss) else graph_data.y
+
+        # Remove edge if give in config (for ablation study)
+        if self.drop_edge_types is not None:
+            input_graph_edge_index = drop_edges(input_graph_edge_index, self.drop_edge_types)
 
         prediction = self.model.forward(input_graph_feature, input_graph_edge_index, input_graph_attr)
         loss = self.loss(prediction[mask], target[mask])

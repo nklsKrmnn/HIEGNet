@@ -1,19 +1,19 @@
 use_gpu: true
-run_name: "gs3_efficientnetV2_p1-3"
+run_name: "eval_restnet18_p1-3_within"
 model_parameters:
-  efficientnet_v2_pretrained:
-    enet_size: s
+  resnet_pretrained:
+    layers: 18
     output_dim: 3
-    dropout: 0.8
+    hidden_dims: [ 128, 64, 32 ]
+    dropout: 0.4
 training_parameters:
-  batch_size: 14
+  batch_size: 20
   epochs: 300
-  learning_rate: gs
-  fc_learning_rate: gs
-  #lr_scheduler_params:
-  #  scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
-  #  params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-  #    max_lr: gs
+  learning_rate: 0.00001 # Will be ignored with OneCycleLR schduler
+  lr_scheduler_params:
+    scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
+    params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
+      max_lr: 0.0001
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
@@ -30,8 +30,6 @@ dataset_parameters:
   validation_split: 0.15
   test_split: 0.15
   process: true
-  norm_mean: 0.6532708406448364
-  norm_std: 0.19844505190849304
   set_indices_path: "/repos/histograph/data/input/set_indices/test15_val15"
   split_action: "load" # Options: "load", "save", "split"
   train_patients:
