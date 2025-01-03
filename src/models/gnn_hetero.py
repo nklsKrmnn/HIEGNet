@@ -325,13 +325,13 @@ class HeteroGnnJK(HeteroGNN):
 
         # Append glom feature for jumping knowledge
         glom_hidden_features = []
-        glom_hidden_features.append(x_dict['glomeruli'].clone())
+        glom_hidden_features.append(x_dict['glomeruli'])
 
         for i, message_passing_layer in enumerate(self.message_passing_layers):
             x_dict = message_passing_layer(x_dict, edge_index_dict, edge_attr_dict)
 
             # Append hidden features for jumping knowledge
-            glom_hidden_features.append(x_dict['glomeruli'].clone())
+            glom_hidden_features.append(x_dict['glomeruli'])
 
             # Apply fully connected layers between GAT layers
             for _ in range(self.n_fc_layers):
