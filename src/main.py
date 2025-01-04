@@ -5,6 +5,7 @@ import torch
 from torch import cuda
 import yaml
 
+from pipelines.ablation_run import ablation_run
 from src.pipelines.cnn_trainer import ImageTrainer
 from src.pipelines.grid_search import grid_search
 from src.pipelines.cross_validation import cross_validation, multi_init_evaluation
@@ -21,6 +22,7 @@ TRAIN_IMAGE_COMMAND: Final[str] = "train_image"
 GRID_SEARCH_COMMAND: Final[str] = "grid_search"
 EVAL_COMMAND: Final[str] = "evaluate"
 PREDICT_COMMAND: Final[str] = "predict"
+ABLATION_COMMAND: Final[str] = "ablation"
 
 GRAPH_COMMAND: Final[str] = "graph"
 IMAGE_COMMAND: Final[str] = "image"
@@ -52,7 +54,7 @@ def setup_parser() -> argparse.ArgumentParser:
         "--pipeline",
         "-p",
         required=True,
-        choices=[TRAIN_COMMAND, TRAIN_IMAGE_COMMAND, PREDICT_COMMAND, EVAL_COMMAND, GRID_SEARCH_COMMAND],
+        choices=[TRAIN_COMMAND, TRAIN_IMAGE_COMMAND, PREDICT_COMMAND, EVAL_COMMAND, GRID_SEARCH_COMMAND, ABLATION_COMMAND],
         help="Pipeline to be started",
     )
 
@@ -85,9 +87,14 @@ def main() -> None:
     run_name = config.pop("run_name")
 
     # Initialize logger
-    n_logger = n_test_init if args.pipeline == EVAL_COMMAND else n_folds
-    logger = MultiInstanceLogger(name=run_name, n_folds=n_folds) if args.pipeline == GRID_SEARCH_COMMAND else Logger(
-        run_name) if (n_logger <= 1) else ManyFoldLogger(n_logger, run_name)
+    n_logger = n_test_init if args.pipeline in [ABLATION_COMMAND, EVAL_COMMAND] else n_folds
+    n_folds = n_test_init if args.pipeline == ABLATION_COMMAND else n_folds
+    if args.pipeline == GRID_SEARCH_COMMAND or args.pipeline == ABLATION_COMMAND:
+        logger = MultiInstanceLogger(name=run_name, n_folds=n_folds)
+    elif n_logger <= 1:
+        logger = Logger(run_name)
+    else:
+        logger = ManyFoldLogger(n_logger, run_name)
     logger.write_dict(config)
 
     # Setting up GPU based on availability and usage preference
@@ -229,6 +236,17 @@ def main() -> None:
                               training_parameters=config['training_parameters'],
                               n_test_initialisations=n_test_init
                               )
+
+    if args.pipeline == ABLATION_COMMAND:
+        ablation_run(model_name=model_name,
+                     model_attributes=model_attributes,
+                     logger=logger,
+                     dataset=dataset,
+                     device=device,
+                     trainer_class=trainer_class,
+                     training_parameters=config['training_parameters'],
+                     ablation_parameters=config['ablation_parameters'],
+                     n_test_initialisations=n_test_init)
 
     elif args.pipeline == PREDICT_COMMAND:
         pass

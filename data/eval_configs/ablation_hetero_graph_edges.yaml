@@ -1,5 +1,20 @@
 use_gpu: true
-run_name: "eval_hetero_gnn_after_gs14_g2g1100_sameMSGP_1_within"
+run_name: "0104_ablation_hetero_gnn_after_gs14_g2g1100_sameMSGP_1_within"
+ablation_parameters:
+  drop_edge_types:
+    - ('glom', 'to', 'glom')
+    - ('tcell', 'to', 'glom')
+    - ('M0', 'to', 'glom')
+    - - ('glom', 'to', 'M0')
+      - ('glom', 'to', 'tcell')
+    - - ('M0', 'to', 'glom')
+      - ('tcell', 'to', 'glom')
+    - ('M0', 'to', 'M0')
+    - ('tcell', 'to', 'tcell')
+    - - ('M0', 'to', 'M0')
+      - ('tcell', 'to', 'tcell')
+    - - ('tcell', 'to', 'M0')
+      - ('M0', 'to', 'tcell')
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
@@ -13,7 +28,7 @@ model_parameters:
     msg_passing_types:
       glom_to_glom: 'gat_v2'
       cell_to_glom: 'gat_v2'
-      cell_to_cell: 'cfconv'
+      cell_to_cell: 'gat_v2'
 training_parameters:
   batch_size: 1
   epochs: 600
@@ -34,9 +49,7 @@ training_parameters:
   n_folds: 0 # Set to 0 for no cross-validation
   n_test_initialisations: 20
   reported_set: "test" # Options: "val", "test", 'train'
-  drop_edge_types:
-    - ('M0', 'to', 'M0')
-    - ('tcell', 'to', 'tcell')
+  drop_edge_types: abl
 dataset_parameters:
   class_name: hetero_graph_dataset
   root: "/data/4_input_data_graphs/glob_graphs/"
