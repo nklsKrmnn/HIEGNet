@@ -42,7 +42,7 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'n_message_passings': [1, 2, 3],
     'n_fc_layers': [1, 2, 3],
     'dropout': [0.1, 0.2, 0.3, 0.4, 0.5],
-    'mlp_dropout': [0.0, 0.2, 0.4, 0.6, 0.8],
+    'mlp_dropout': [0.0, 0.2, 0.4],
     'softmax_function': ['softmax', 'log_softmax', 'none'],
     'norm_fc_layers': ['batch', 'layer', 'none'],
     'norm': ['batch', 'layer', 'none'],
@@ -55,7 +55,9 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     "max_lr": [0.01, 0.001],
     "layers": [34, 18],
     "enet_size": ['s', 'm'],
-    "optimizer": ['adam', 'sgd']
+    "optimizer": ['adam', 'sgd'],
+    "mlp_hidden_dim": [256, 512],
+    "mlp_hidden_layers": [8, 16],
 }
 
 MODEL_NAME_MAPPING: Final[dict[str, any]] = {

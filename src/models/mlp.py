@@ -6,8 +6,8 @@ from src.models.model_utils import init_norm_layer
 class MLP(nn.Module):
 
     def __init__(self,
-                 hidden_dims: list[int],
                  output_dim,
+                 hidden_dims: list[int]=None,
                  mlp_dropout=0.5,
                  input_dim: int = None,
                  mlp_hidden_dim: int = None,
@@ -41,7 +41,7 @@ class MLP(nn.Module):
             self.fc_layers.append(nn.Sequential(
                 nn.Linear(hidden_dims[i - 1], hidden_dims[i]),
                 init_norm_layer(self.norm)(hidden_dims[i]),
-                nn.ReLU(),
+                nn.LeakyReLU(),
                 nn.Dropout(p=mlp_dropout)
             ))
 
