@@ -7,11 +7,12 @@ from typing import Union
 from src.models.model_constants import MESSAGE_PASSING_MAPPING
 from src.models.model_utils import init_norm_layer
 
+
 def generate_helper_node_type(edge_type):
     return f'{edge_type[0]}->{edge_type[2]}'
 
-class HeteroMessagePassingLayer(nn.Module):
 
+class HeteroMessagePassingLayer(nn.Module):
     """
     This class implements a message passing layer for heterogeneous graphs, which can handle different message passing
     types for different edge types. The class is a wrapper around the HeteroConv class from PyTorch Geometric, which
@@ -84,7 +85,7 @@ class HeteroMessagePassingLayer(nn.Module):
                     "normalize": False
                 })
 
-            if msg_passing_type == "sage" or msg_passing_type == "cfconv":
+            if msg_passing_type in ['sage', 'e_sage', 'cfconv']:
                 params.update({
                     "in_channels": input_dim,
                     "out_channels": output_dim
@@ -95,12 +96,12 @@ class HeteroMessagePassingLayer(nn.Module):
 
             # Add edge type with helper node types for gcn and cfconv
             if msg_passing_type in ["gcn", 'cfconv'] and (edge_type[0] != edge_type[2]):
-                #edge_types_to_remove.append(edge_type)
+                # edge_types_to_remove.append(edge_type)
                 helper_node_type = generate_helper_node_type(edge_type)
                 new_edge_type = (helper_node_type, 'to', helper_node_type)
 
                 # Replace new edge type in edge_types
-                self.edge_types = {new_edge_type if k == edge_type else k:v for k,v in self.edge_types.items()}
+                self.edge_types = {new_edge_type if k == edge_type else k: v for k, v in self.edge_types.items()}
                 edge_type = new_edge_type
 
             # Initialize message passing layer
@@ -134,7 +135,6 @@ class HeteroMessagePassingLayer(nn.Module):
         :param edge_attr_dict: Dictionary of edge attribute tensors (optional)
         :return: Dictionary of output feature tensors
         """
-
 
         input_msg_passing = {'x_dict': x_dict, 'edge_index_dict': edge_index_dict.copy(), 'edge_attr_dict': {},
                              'edge_weight_dict': {}}
@@ -176,7 +176,7 @@ class HeteroMessagePassingLayer(nn.Module):
             # prepare message passing input, if edges exist for that edge type
             if input_msg_passing['edge_index_dict'][edge_type].shape[1] != 0:
 
-                if msg_passing_type in ["gat_v2","gine"] :
+                if msg_passing_type in ["gat_v2", "gine", 'e_sage']:
                     input_msg_passing['edge_attr_dict'].update({edge_type: edge_attr_dict[edge_type]})
 
                 if msg_passing_type in ["gcn", 'cfconv']:
@@ -187,7 +187,6 @@ class HeteroMessagePassingLayer(nn.Module):
                 if msg_passing_type == "rgcn":
                     # Insert edge type tensor (required for rgcn class)
                     input_msg_passing['edge_type'].update({edge_type: torch.zeros(edge_attr_dict[edge_type].shape[0])})
-
 
         x_dict = self.message_passing_layer(**input_msg_passing)
 
@@ -212,7 +211,7 @@ class HeteroGNN(nn.Module):
     def __init__(self,
                  output_dim: int,
                  cell_types: list[str],
-                 msg_passing_types: Union[dict[str, str],str],
+                 msg_passing_types: Union[dict[str, str], str],
                  hidden_dims: list[int] = None,
                  hidden_dim: int = None,
                  n_message_passings: int = None,
@@ -313,7 +312,7 @@ class HeteroGNN(nn.Module):
 class HeteroGnnJK(HeteroGNN):
 
     def __init__(self, **kwargs):
-        super(HeteroGnnJK ,self).__init__(**kwargs)
+        super(HeteroGnnJK, self).__init__(**kwargs)
 
     def forward(self, x_dict, edge_index_dict, edge_attr_dict=None):
         fc_layer_index = 0
@@ -352,4 +351,3 @@ class HeteroGnnJK(HeteroGNN):
             raise ValueError(f"Unknown softmax function: {self.softmax_function}")
 
         return output
-
