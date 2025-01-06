@@ -1,7 +1,7 @@
 use_gpu: true
 run_name: "overfitting"
 model_parameters:
-  hetero:
+  hetero_gnn:
     hidden_dim: 64
     n_message_passings: 2
     n_fc_layers: 1
