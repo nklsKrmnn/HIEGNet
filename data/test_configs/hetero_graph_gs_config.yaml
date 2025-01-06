@@ -1,10 +1,11 @@
 use_gpu: true
-run_name: "gs14_gnn_g2g550_maxlr001_gatv2MSGP"
+run_name: "gs14_gnn_g2g550_maxlr001_gatv2MSGP_nMSGP1"
+gs_start_index: 15 #(starting from 1)
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
     n_message_passings: gs
-    n_fc_layers: 1
+    n_fc_layers: gs
     norm_fc_layers: none
     output_dim: 3
     dropout: gs
