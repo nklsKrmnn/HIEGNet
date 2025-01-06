@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "mlp_overfit"
+run_name: "gs16_mlp_large"
 model_parameters:
   mlp:
     mlp_hidden_dim: gs
