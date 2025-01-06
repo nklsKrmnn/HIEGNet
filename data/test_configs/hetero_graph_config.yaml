@@ -7,7 +7,7 @@ model_parameters:
     n_fc_layers: 1
     norm_fc_layers: batch
     output_dim: 3
-    dropout: 0.1
+    dropout: 0.0
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
