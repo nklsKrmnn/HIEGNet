@@ -1,10 +1,10 @@
 use_gpu: true
-run_name: "coding"
+run_name: "overfitting"
 model_parameters:
-  hetero_gnn:
-    hidden_dim: 16
-    n_message_passings: 4
-    n_fc_layers: 3
+  hetero:
+    hidden_dim: 64
+    n_message_passings: 2
+    n_fc_layers: 1
     norm_fc_layers: batch
     output_dim: 3
     dropout: 0.1
@@ -13,15 +13,15 @@ model_parameters:
     msg_passing_types:
       glom_to_glom: 'gat_v2'
       cell_to_glom: 'gat_v2'
-      cell_to_cell: 'cfconv'
+      cell_to_cell: 'gat_v2'
 training_parameters:
   batch_size: 1
-  epochs: 500
+  epochs: 600
   learning_rate: 0.0003
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: 0.003
+      max_lr: 0.001
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll", "weighted_mse"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
@@ -45,11 +45,12 @@ dataset_parameters:
   test_split: 0.15
   processed_file_name: "glom_graph"
   glom_graph:
-    method: "knn" # Options: "knn", "radius", "delaunay"
-    k: 0 # Options: "k", "radius", ""
+    method: "radius" # Options: "knn", "radius", "delaunay"
+    radius: 550 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 5 # Options: "k", "radius", ""
+    lim: 400
   train_patients:
     - 001
     - 002
@@ -74,15 +75,16 @@ dataset_parameters:
     - 'circularity'
     - 'aspect_ratio'
     - 'eccentricity'
-    - 'lbp_0'
-    - 'lbp_1'
-    - 'lbp_2'
-    - 'lbp_3'
-    - 'lbp_4'
-    - 'lbp_5'
-    - 'lbp_6'
-    - 'lbp_7'
-    - 'lbp_8'
+    - 'lbp_uniform_0'
+    - 'lbp_uniform_1'
+    - 'lbp_uniform_2'
+    - 'lbp_uniform_3'
+    - 'lbp_uniform_4'
+    - 'lbp_uniform_5'
+    - 'lbp_uniform_6'
+    - 'lbp_uniform_7'
+    #- 'lbp_uniform_8'
+    - 'lbp_uniform_9'
   cell_types:
     - "M0"
     - "tcell"
@@ -92,6 +94,6 @@ dataset_parameters:
     - "eccentricity"
     - "aspect_ratio"
     - "compactness"
-    - "solidity"
-    #- "is_in_glom"
+    #- "solidity"
+    - "is_in_glom"
 
