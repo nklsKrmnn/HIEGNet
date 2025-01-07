@@ -39,7 +39,7 @@ REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {
 
 PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'hidden_dim': [16, 32, 64],
-    'n_message_passings': [1, 2, 3],
+    'n_message_passings': [2,3,4],
     'n_fc_layers': [1, 2, 3],
     'dropout': [0.1, 0.2, 0.3, 0.4, 0.5],
     'mlp_dropout': [0.0, 0.2, 0.4],
@@ -49,7 +49,7 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'glom_to_glom': ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv', 'e_sage'],
     'cell_to_glom': ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv', 'e_sage'],
     'cell_to_cell': ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv', 'e_sage'],
-    "msg_passing_types": ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv'],
+    "msg_passing_types": ['sage', 'gat_v2', 'cfconv', 'e_sage'],
     "learning_rate": [1e-3, 1e-4, 1e-5, 1e-6],
     "fc_learning_rate": [1e-1, 1e-2, 1e-3, 1e-4],
     "max_lr": [0.01, 0.001],
