@@ -215,6 +215,7 @@ class HeteroGNN(nn.Module):
                  hidden_dims: list[int] = None,
                  hidden_dim: int = None,
                  n_message_passings: int = None,
+                 n_readout_layers: int = 1,
                  dropout=0.5,
                  n_fc_layers: int = 0,
                  norm: str = None,
@@ -275,7 +276,17 @@ class HeteroGNN(nn.Module):
                 self.fc_layers.append(lin_dict)
 
         # Output layer
-        self.output_layer = nn.LazyLinear(output_dim)
+        self.output_layer = []
+
+        for _ in range(n_readout_layers - 1):
+            self.output_layer.append(nn.Sequential(
+                nn.LazyLinear(self.hidden_dims[-1]),
+                init_norm_layer(self.norm_fc_layers)(self.hidden_dims[-1]),
+                nn.ReLU(),
+                nn.Dropout(p=dropout)
+            ))
+        self.output_layer.append(nn.Linear(self.hidden_dims[-1], output_dim))
+        self.output_layer = nn.Sequential(*self.output_layer)
 
     def forward(self, x_dict, edge_index_dict, edge_attr_dict=None):
         fc_layer_index = 0

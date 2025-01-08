@@ -39,8 +39,9 @@ REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {
 
 PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'hidden_dim': [32, 64],
+    'n_readout_layers': [1, 2, 4, 8],
     'n_message_passings': [2,3,4],
-    'n_fc_layers': [1, 2, 3],
+    'n_fc_layers': [1, 2],
     'dropout': [0.1, 0.2, 0.3, 0.4, 0.5],
     'mlp_dropout': [0.0, 0.2, 0.4],
     'softmax_function': ['softmax', 'log_softmax', 'none'],

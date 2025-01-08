@@ -1,19 +1,20 @@
 use_gpu: true
-run_name: "gs14_gnn_g2g550_maxlr001_diffMSGP"
+run_name: "gs14_gnn_g2g550_maxlr001_optim_gs_readout"
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
     n_message_passings: 3
     n_fc_layers: 1
     norm_fc_layers: none
+    n_readout_layers: gs
     output_dim: 3
     dropout: gs
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
-      glom_to_glom: gs
-      cell_to_glom: gs
-      cell_to_cell: gs
+      glom_to_glom: gat_v2
+      cell_to_glom: gat_v2
+      cell_to_cell: gat_v2
 training_parameters:
   batch_size: 1
   epochs: 600
