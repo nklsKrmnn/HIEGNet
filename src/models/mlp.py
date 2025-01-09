@@ -65,4 +65,37 @@ class MLP(nn.Module):
 
         return output
 
+class MLP_dumm(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        """
+        Initializes the MLP model.
 
+        Args:
+            input_size (int): The size of the input features.
+            output_size (int): The size of the output features.
+        """
+        super(MLP_dumm, self).__init__()
+
+        self.model = nn.Sequential(
+            nn.Linear(input_dim, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, output_dim)
+        )
+
+    def forward(self, x):
+        """
+        Defines the forward pass of the MLP.
+
+        Args:
+            x (torch.Tensor): The input tensor.
+
+        Returns:
+            torch.Tensor: The output tensor.
+        """
+        x = self.model(x)
+        output = F.log_softmax(x, dim=1)
+        return output

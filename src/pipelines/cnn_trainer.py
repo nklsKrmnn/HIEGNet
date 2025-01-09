@@ -77,18 +77,23 @@ class ImageTrainer(Trainer):
             torch.Tensor: The loss for the batch.
         """
         image, labels = data[0].to(self.device), data[1].to(self.device)
-
+        labels = labels.long() if isinstance(self.loss, nn.NLLLoss) else labels
         predictions = self.model.forward(image)
         loss = self.loss(predictions, labels)
 
         if len(labels.shape) == 1 or return_softmax:
-            pred = predictions.detach().cpu()
             targ = labels.detach().cpu()
         elif labels.shape[1] > 1:
-            pred = predictions.detach().argmax(dim=1).cpu()
             targ = labels.detach().argmax(dim=1).cpu()
         else:
             raise ValueError("Target shape is not valid.")
+
+        if len(predictions.shape) == 1 or return_softmax:
+            pred = predictions.detach().cpu()
+        elif predictions.shape[1] > 1:
+            pred = predictions.detach().argmax(dim=1).cpu()
+        else:
+            raise ValueError("Prediction shape is not valid.")
 
         return pred, targ, loss
 
