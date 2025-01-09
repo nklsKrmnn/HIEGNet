@@ -285,7 +285,7 @@ class HeteroGNN(nn.Module):
                 nn.ReLU(),
                 nn.Dropout(p=dropout)
             ))
-        self.output_layer.append(nn.Linear(self.hidden_dims[-1], output_dim))
+        self.output_layer.append(nn.LazyLinear(output_dim))
         self.output_layer = nn.Sequential(*self.output_layer)
 
     def forward(self, x_dict, edge_index_dict, edge_attr_dict=None):

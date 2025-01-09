@@ -2,15 +2,16 @@ use_gpu: true
 run_name: "gs15_gnn_jk_g2g550_maxlr001_sameMSGP_withoutClone"
 model_parameters:
   hetero_jk:
-    hidden_dim: gs
-    n_message_passings: gs
-    n_fc_layers: gs
+    hidden_dim: 64
+    n_message_passings: 3
+    n_fc_layers: 1
+    n_readout_layers: gs
     norm_fc_layers: none
     output_dim: 3
     dropout: gs
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
-    msg_passing_types: gs
+    msg_passing_types: gat_v2
 training_parameters:
   batch_size: 1
   epochs: 600
