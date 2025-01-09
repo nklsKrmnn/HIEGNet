@@ -1,7 +1,9 @@
 from typing import Final
 
+from models.mlp import MLP_dumm
 from models.pretrained_cnn import initialize_efficientnet_v2
 from models.resnet import resnet_custom
+from preprocessing.datasets.tabular_dataset import TabularDataset
 from src.models.cnn import CNN, CBR
 from src.models.full_model import FullHybrid, FullHybridJK
 from src.models.gnn_cnn_hybrid_skip import SkipHeteroHybridGNN
@@ -23,7 +25,8 @@ DATASET_NAME_MAPPING: Final[dict[str, any]] = {
     "hetero_graph_dataset": HeteroGraphDataset,
     "hybrid_graph_dataset": HybridGraphDataset,
     "hetero_hybrid_graph_dataset": HeteroHybridGraphDataset,
-    "full_graph_dataset": FullGraphDataset
+    "full_graph_dataset": FullGraphDataset,
+    "tabular_dataset": TabularDataset
 }
 
 REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {
@@ -38,8 +41,8 @@ REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {
 }
 
 PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
-    'hidden_dim': [32, 64],
-    'n_readout_layers': [1, 2, 4, 8],
+    'hidden_dim': [32, 64, 128],
+    'n_readout_layers': [1, 2],
     'n_message_passings': [2,3,4],
     'n_fc_layers': [1, 2],
     'dropout': [0.1, 0.2, 0.3, 0.4, 0.5],
@@ -50,15 +53,15 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'glom_to_glom': ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv', 'e_sage'],
     'cell_to_glom': ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv', 'e_sage'],
     'cell_to_cell': ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv', 'e_sage'],
-    "msg_passing_types": ['sage', 'gat_v2', 'cfconv', 'e_sage'],
+    "msg_passing_types": ['sage', 'gat_v2', 'e_sage'],
     "learning_rate": [1e-3, 1e-4, 1e-5, 1e-6],
     "fc_learning_rate": [1e-1, 1e-2, 1e-3, 1e-4],
     "max_lr": [0.01, 0.001],
     "layers": [34, 18],
     "enet_size": ['s', 'm'],
     "optimizer": ['adam', 'sgd'],
-    "mlp_hidden_dim": [256, 512],
-    "mlp_hidden_layers": [8, 16],
+    "mlp_hidden_dim": [64, 128],
+    "mlp_hidden_layers": [4, 8, 16],
 }
 
 MODEL_NAME_MAPPING: Final[dict[str, any]] = {
@@ -77,5 +80,6 @@ MODEL_NAME_MAPPING: Final[dict[str, any]] = {
     "hetero_full_model": FullHybrid,
     "hetero_full_jk_model": FullHybridJK,
     "hetero_jk": HeteroGnnJK,
-    "cbr": CBR
+    "cbr": CBR,
+    'mlp_dump': MLP_dumm
 }

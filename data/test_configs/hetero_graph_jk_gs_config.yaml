@@ -1,10 +1,10 @@
 use_gpu: true
-run_name: "gs15_gnn_jk_g2g550_maxlr001_sameMSGP_withoutClone"
+run_name: "gs15_gnn_jk_g2g550_maxlr001_sameMSGP_withoutClone_var_readout"
 model_parameters:
   hetero_jk:
-    hidden_dim: 64
-    n_message_passings: 3
-    n_fc_layers: 1
+    hidden_dim: gs
+    n_message_passings: gs
+    n_fc_layers: gs
     n_readout_layers: gs
     norm_fc_layers: none
     output_dim: 3
