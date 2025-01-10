@@ -43,15 +43,15 @@ REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {
 PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'hidden_dim': [32, 64],
     'n_readout_layers': [1, 2],
-    'n_message_passings': [2,3,4],
+    'n_message_passings': [2,3],
     'n_fc_layers': [1, 2],
     'dropout': [0.1, 0.2, 0.3, 0.4, 0.5],
-    'mlp_dropout': [0.0, 0.2, 0.4],
+    'mlp_dropout': [0.2, 0.4, 0.6, 0.8],
     'softmax_function': ['softmax', 'log_softmax', 'none'],
     'norm_fc_layers': ['batch', 'layer', 'none'],
     'norm': ['batch', 'layer', 'none'],
-    'glom_to_glom': ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv', 'e_sage'],
-    'cell_to_glom': ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv', 'e_sage'],
+    'glom_to_glom': ['sage', 'gat_v2', 'e_sage'],
+    'cell_to_glom': ['sage', 'gat_v2', 'e_sage'],
     'cell_to_cell': ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv', 'e_sage'],
     "msg_passing_types": ['sage', 'gat_v2', 'e_sage'],
     "learning_rate": [1e-3, 1e-4, 1e-5, 1e-6],
@@ -60,8 +60,8 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     "layers": [34, 18],
     "enet_size": ['s', 'm'],
     "optimizer": ['adam', 'sgd'],
-    "mlp_hidden_dim": [64, 128],
-    "mlp_hidden_layers": [4, 8, 16],
+    "mlp_hidden_dim": [16, 32, 64],
+    "mlp_hidden_layers": [2,3,4]
 }
 
 MODEL_NAME_MAPPING: Final[dict[str, any]] = {
