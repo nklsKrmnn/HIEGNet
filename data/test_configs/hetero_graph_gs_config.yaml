@@ -1,5 +1,6 @@
 use_gpu: true
 run_name: "gs14_gnn_g2g550_gs_combined"
+gs_start_index: 210
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
