@@ -60,8 +60,9 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     "layers": [34, 18],
     "enet_size": ['s', 'm'],
     "optimizer": ['adam', 'sgd'],
-    "mlp_hidden_dim": [16, 32, 64],
-    "mlp_hidden_layers": [2,3,4]
+    "mlp_hidden_dim": [2, 4, 8, 16, 32, 64, 128, 256],
+    "mlp_hidden_layers": [1, 2, 4, 8],
+    "weight_dacay": [1e-3, 1e-4, 1e-5, 1e-6]
 }
 
 MODEL_NAME_MAPPING: Final[dict[str, any]] = {

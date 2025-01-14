@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "gs14_gnn_g2g550_combined_3rd"
+run_name: "gs14_gnn_g2g0_combined"
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
@@ -12,7 +12,7 @@ model_parameters:
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
-      glom_to_glom: gs
+      glom_to_glom: none
       cell_to_glom: gs
       cell_to_cell: gs
 training_parameters:
@@ -47,7 +47,7 @@ dataset_parameters:
   processed_file_name: "glom_graph"
   glom_graph:
     method: "radius" # Options: "knn", "radius", "delaunay"
-    radius: 550 # Options: "k", "radius", ""
+    radius: 0 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 5

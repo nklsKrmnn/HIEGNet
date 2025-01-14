@@ -20,7 +20,7 @@ class HeteroMessagePassingLayer(nn.Module):
     normalization layers and dropout rates for the message passing layers.
     """
 
-    def __init__(self, output_dim, edge_types: dict[tuple, str], dropout=0.5, norm: str = None):
+    def __init__(self, output_dim, msgp_type_dict: dict[tuple, str], dropout=0.5, norm: str = None):
         """
         Initialize the message passing layer.
 
@@ -32,21 +32,25 @@ class HeteroMessagePassingLayer(nn.Module):
         be the input dimension.
 
         :param output_dim: Output dimension of the message passing layer
-        :param edge_types: Dictionary of edge types as tuple of strings like ["node_type1", "to", "node_type2"] and
+        :param msgp_type_dict: Dictionary of edge types as tuple of strings like ["node_type1", "to", "node_type2"] and
         message passing types as strings
         :param dropout: Dropout rate for the message passing layers
         :param norm: Which normalisation to use. Options are "batch", "layer" or None
         """
 
         super(HeteroMessagePassingLayer, self).__init__()
-        self.edge_types = edge_types
+        self.edge_types = msgp_type_dict
 
         edge_types_to_remove = []
 
         hetero_conv_dict = {}
-        for i in range(len(edge_types)):
-            edge_type = list(edge_types.keys())[i]
-            msg_passing_type = list(edge_types.values())[i]
+        for i in range(len(msgp_type_dict)):
+            # Continue if message passing type is none
+            if list(msgp_type_dict.values())[i] == 'none':
+                continue
+
+            edge_type = list(msgp_type_dict.keys())[i]
+            msg_passing_type = list(msgp_type_dict.values())[i]
 
             # Only add self loops for message passing between equal node types
             add_self_loops = edge_type[0] == edge_type[2]
@@ -188,6 +192,10 @@ class HeteroMessagePassingLayer(nn.Module):
                     # Insert edge type tensor (required for rgcn class)
                     input_msg_passing['edge_type'].update({edge_type: torch.zeros(edge_attr_dict[edge_type].shape[0])})
 
+        # Remove edge index dict entries with empty edge index tensors
+        input_msg_passing['edge_index_dict'] = {k: v for k, v in input_msg_passing['edge_index_dict'].items() if
+                                                v.shape[1] != 0}
+
         x_dict = self.message_passing_layer(**input_msg_passing)
 
         # Aggregate helper node types with regular node types
@@ -258,7 +266,7 @@ class HeteroGNN(nn.Module):
             # Intermediate message passing layer
             self.message_passing_layers.append(HeteroMessagePassingLayer(
                 output_dim=self.hidden_dims[i],
-                edge_types=edge_types,
+                msgp_type_dict=edge_types,
                 dropout=dropout,
                 norm=norm,
             ))
