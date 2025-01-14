@@ -112,6 +112,9 @@ def main() -> None:
         torch.manual_seed(seed)
         if device == torch.device("cuda"):
             torch.cuda.manual_seed(seed)
+            print(f"[MAIN]: Random seed set to {seed} for both CPU and GPU.")
+        else:
+            print(f"[MAIN]: Random seed set to {seed} for CPU.")
 
     # Extracting model parameters from config
     model_parameters = config.pop("model_parameters")
