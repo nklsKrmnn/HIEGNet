@@ -2,9 +2,10 @@ use_gpu: true
 run_name: "coding"
 model_parameters:
   hetero_gnn:
-    hidden_dim: 32
+    hidden_dim: 16
     n_message_passings: 2
     n_fc_layers: 1
+    n_readout_layers: 1
     norm_fc_layers: batch
     output_dim: 3
     dropout: 0.4
@@ -51,14 +52,14 @@ dataset_parameters:
     k: 5 # Options: "k", "radius", ""
   train_patients:
     - 001
-    - 002
-    - 003
-    - 004
+    #- 002
+    #- 003
+    #- 004
   test_patients:
     - 001
-    - 002
-    - 003
-    - 004
+    #- 002
+    #- 003
+    #- 004
   random_seed: 123
   onehot_targets: true
   process: true
