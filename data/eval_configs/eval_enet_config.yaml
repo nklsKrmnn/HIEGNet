@@ -6,7 +6,7 @@ model_parameters:
     output_dim: 3
     dropout: 0.1
 training_parameters:
-  batch_size: 20
+  batch_size: 14
   epochs: 300
   learning_rate: 0.00001 # Will be ignored with OneCycleLR schduler
   lr_scheduler_params:
