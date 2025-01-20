@@ -76,6 +76,9 @@ def initialize_efficientnet_v2(output_dim: int,
         nn.Linear(num_features, 32),  # Replace 'num_classes' with the number of your output classes
         nn.ReLU(),
         nn.Dropout(dropout),
+        nn.Linear(32, 32),  # Replace 'num_classes' with the number of your output classes
+        nn.ReLU(),
+        nn.Dropout(dropout),
         nn.Linear(32, output_dim)
     )
 
