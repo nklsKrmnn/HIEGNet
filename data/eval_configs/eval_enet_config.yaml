@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "eval_efficientnetV2m_p1-3_within"
+run_name: "eval_efficientnetV2m_p1-3_between"
 model_parameters:
   efficientnet_v2_pretrained:
     enet_size: m
@@ -28,7 +28,7 @@ training_parameters:
 dataset_parameters:
   class_name: image_dataset
   validation_split: 0.0
-  test_split: 0.15
+  test_split: 1.0
   process: true
   norm_mean: 0.6532708406448364
   norm_std: 0.19844505190849304
@@ -39,10 +39,10 @@ dataset_parameters:
     - 002
     - 003
   test_patients:
-    - 001
-    - 002
-    - 003
-    #- 004
+    #- 001
+    #- 002
+    #- 003
+    - 004
   random_seed: 123
   onehot_targets: true
   hot_load: false
