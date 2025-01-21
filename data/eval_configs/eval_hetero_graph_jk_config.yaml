@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "eval_hetero_jk_gnn_after_gs15_g2g550_between"
+run_name: "eval_hetero_jk_gnn_after_gs15_combined_1_within"
 model_parameters:
   hetero_jk:
     hidden_dim: 64
@@ -8,13 +8,13 @@ model_parameters:
     n_readout_layers: 1
     norm_fc_layers: none
     output_dim: 3
-    dropout: 0.3
+    dropout: 0.1
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
-      glom_to_glom: 'gat_v2'
+      glom_to_glom: 'sage'
       cell_to_glom: 'gat_v2'
-      cell_to_cell: 'gat_v2'
+      cell_to_cell: 'sage'
 training_parameters:
   batch_size: 1
   epochs: 600
@@ -44,7 +44,7 @@ dataset_parameters:
   set_indices_path: "/repos/histograph/data/input/set_indices/test15_val15"
   split_action: "load" # Options: "load", "save", "split"
   validation_split: 0.0
-  test_split: 1.0
+  test_split: 0.15
   processed_file_name: "glom_graph"
   glom_graph:
     method: "radius" # Options: "knn", "radius", "delaunay"
@@ -59,10 +59,10 @@ dataset_parameters:
     - 003
     #- 004
   test_patients:
-    #- 001
-    #- 002
-    #- 003
-    - 004
+    - 001
+    - 002
+    - 003
+    #- 004
   random_seed: 123
   onehot_targets: true
   process: true
