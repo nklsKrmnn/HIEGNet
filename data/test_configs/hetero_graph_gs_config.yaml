@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "gs14_gnn_g2g0_combined"
+run_name: "gs14_gnn_g2g0_combined_WARNING!"
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
