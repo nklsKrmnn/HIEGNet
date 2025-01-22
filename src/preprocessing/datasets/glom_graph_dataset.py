@@ -50,6 +50,7 @@ class GlomGraphDataset(Dataset):
                  test_patients: list[str] = [],
                  split_action:str = 'load',
                  set_indices_path: str = "/repos/histograph/data/input/set_indices/test15_val15",
+                 image_feature_file_path: str = None,
                  onehot_targets: bool = True,
                  preprocessing_params: dict = None,
                  transform=None,
@@ -80,6 +81,7 @@ class GlomGraphDataset(Dataset):
 
         self.processed_file_name = processed_file_name
         self.feature_file_path = ROOT_DIR + feature_file_path
+        self.image_feature_file_path = [ROOT_DIR + image_feature_file_path] if image_feature_file_path is not None else []
         self.test_split = test_split if test_patients != [] else 0.0
         self.val_split = validation_split if validation_patients != [] else 0.0
         self.train_patients = train_patients
@@ -87,7 +89,8 @@ class GlomGraphDataset(Dataset):
         self.test_patients = test_patients
         self.split_action = split_action
         self.set_indices_path = ROOT_DIR + set_indices_path
-        self.feature_list = feature_list
+        self.feature_list = feature_list if feature_list != 'image_features' else\
+            [c for c in pd.read_csv(self.image_feature_file_path[0]).columns if 'feature' in c]
         self.glom_graph = glom_graph
         self.random_seed = random_seed
         self.onehot_targets = onehot_targets
@@ -95,8 +98,6 @@ class GlomGraphDataset(Dataset):
         self.preprocessing_params = preprocessing_params
         self.node_scalers = {}
         self.edge_scalers = {}
-
-
 
         root = ROOT_DIR + root
         super(GlomGraphDataset, self).__init__(root, transform, pre_transform)
@@ -122,7 +123,7 @@ class GlomGraphDataset(Dataset):
 
         :return: List of input file names
         """
-        return [self.feature_file_path]
+        return [self.feature_file_path] + self.image_feature_file_path
 
     @property
     def annotation_file_paths(self) -> list[str]:
@@ -168,6 +169,7 @@ class GlomGraphDataset(Dataset):
         """
         print('[Dataset]: Processing data')
 
+        #TODO: Move patient id into annotation df and load image features are feature file
         df = pd.read_csv(self.input_file_paths[0])
         data_objects = {}
 
@@ -181,7 +183,7 @@ class GlomGraphDataset(Dataset):
         df.dropna(subset=[f for f in self.feature_list if f in df.columns], inplace=True)
 
         df_annotations = pd.concat([pd.read_csv(path) for path in self.annotation_file_paths])
-        df = pd.merge(df, df_annotations, left_on="glom_index", right_on="ID", how="left")
+        df = pd.merge(df, df_annotations, left_on="glom_index", right_on="ID", how="inner")
         patients_in_raw_data = df['patient'].unique()
 
         file_names = []
