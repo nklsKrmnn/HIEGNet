@@ -271,7 +271,7 @@ class HeteroGNN(nn.Module):
                 norm=norm,
             ))
 
-            # Intermediate FC layers
+            # Update FC layers
             for _ in range(n_fc_layers):
                 lin_dict = nn.ModuleDict()
                 for node_type in node_types:
