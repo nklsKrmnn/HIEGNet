@@ -41,7 +41,7 @@ REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {
 }
 
 PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
-    'hidden_dim': [32, 64],
+    'hidden_dim': [64, 128],
     'n_readout_layers': [1, 2],
     'n_message_passings': [2,3],
     'n_fc_layers': [1, 2],
