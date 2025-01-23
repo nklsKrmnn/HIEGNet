@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "eval_hetero_jk_gnn_after_gs15_combined_1_within"
+run_name: "eval_hetero_jk_gnn_after_gs15_combined_1_between"
 model_parameters:
   hetero_jk:
     hidden_dim: 64
@@ -44,7 +44,7 @@ dataset_parameters:
   set_indices_path: "/repos/histograph/data/input/set_indices/test15_val15"
   split_action: "load" # Options: "load", "save", "split"
   validation_split: 0.0
-  test_split: 0.15
+  test_split: 1.0
   processed_file_name: "glom_graph"
   glom_graph:
     method: "radius" # Options: "knn", "radius", "delaunay"
@@ -59,10 +59,10 @@ dataset_parameters:
     - 003
     #- 004
   test_patients:
-    - 001
-    - 002
-    - 003
-    #- 004
+    #- 001
+    #- 002
+    #- 003
+    - 004
   random_seed: 123
   onehot_targets: true
   process: true
