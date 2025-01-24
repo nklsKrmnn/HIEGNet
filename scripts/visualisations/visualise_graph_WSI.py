@@ -14,7 +14,7 @@ import matplotlib.colors as mcolors
 
 
 
-IMAGE_NAME = "patch_p001_s25_i1333560.png"
+IMAGE_NAME = "patch_p001_s25_i1330627.png" #"patch_p001_s25_i1333560.png"
 STAINING = 25
 patient = get_patient(IMAGE_NAME)
 glom_id = get_glom_index(IMAGE_NAME)
@@ -236,11 +236,7 @@ for i, df_cell_nodes in enumerate(list_cell_nodes):
         df_other_cell_nodes = df_other_cell_nodes[df_other_cell_nodes['patient'] == patient].reset_index(
             drop=True)
 
-        # Get all nodes in range of cnetral glom
-        df_other_cell_nodes['center_x_local'] = df_other_cell_nodes['center_x_global'] - glom_center[0]
-        df_other_cell_nodes['center_y_local'] = df_other_cell_nodes['center_y_global'] - glom_center[1]
-
-        other_cell_coords = df_other_cell_nodes[['center_x_global', 'center_y_global']].to_numpy()
+        other_cell_coords = df_other_cell_nodes[['center_x_local_1', 'center_y_local_1']].to_numpy()
         other_cell_edge_index, other_cell_edge_weight = graph_connection(cell_coords, other_cell_coords,
                                                                          **cell_graph_params)
 
@@ -303,23 +299,24 @@ for ct, df_cell_nodes in enumerate(list_cell_nodes):
         v = v + len(nodes['M0']) if current_cell_type == 'tcell' else v
         for u, glom in close_gloms.iterrows():
             distance = [d['distance'] for d in cell['associated_glomeruli'] if d['glom_index'] == glom[('ID')]]
-            edge_type = ("cell", 'to', u)
+            edge_type = (current_cell_type, 'to', 'glom')
             if distance:
                 u = u + n_edges_c2c
                 edge_weight = distance[0]
                 G.add_edge(v,u, edge_weight=edge_weight, edge_type=edge_type)
 
 # Define edge types that should be black
-black_edge_types = [("tcell","to","tcell"), ("M0","to","tcell"), ("tcell","to","M0") , ("M0","to","M0")]
+black_edge_types = [("tcell","to","tcell"), ("M0","to","tcell"), ("tcell","to","M0") , ("M0","to","M0"), ('glom','to','glom')]
 
 # Get the edge attributes
 edge_types = nx.get_edge_attributes(G, 'edge_type')
 edge_weights = nx.get_edge_attributes(G, 'edge_weight')
 
 # Define color palettes for other edge types
-palettes = ['Purples','Blues', 'YlOrBr', 'Reds', 'PuRd', 'PuBuGn', 'BuGn', 'YlGn']
-existing_edge_types = [("cell","to",v) for v in range(len(close_gloms)) if ("cell","to",v) in edge_types.values()]
-type_colormaps = {et: cm.get_cmap(f'{palettes[_]}_r') for _, et in enumerate(existing_edge_types)}
+type_colormaps = {
+    ('tcell', 'to','glom'): cm.RdPu_r,
+    ('M0', 'to', 'glom'): cm.Blues_r
+}
 
 # Prepare edge colors
 edge_colors = []
@@ -334,9 +331,8 @@ for edge in G.edges:
         norm = mcolors.Normalize(vmin=min(edge_weights.values()), vmax=max(edge_weights.values()))
         edge_colors.append(cmap(norm(edge_weights[edge])))
 
-
-
-nx.draw_networkx_edges(G, pos, edge_color=edge_colors, alpha=0.5, ax=ax)
+ax.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+nx.draw_networkx_edges(G, pos, edge_color=edge_colors, alpha=0.3, ax=ax)
 
 # Set axis limits to match the image dimensions
 height, width, _ = image.shape
@@ -351,6 +347,9 @@ plt.savefig("4_c2g.png")
 
 # Add glom2glom edges
 epsilon = 550
+G3 = nx.Graph()
+G.add_nodes_from(range(len(close_gloms)), cell_type='glom')
+pos.update({_: (row['offset_x']+size*0.5, -row['offset_y']+size*0.5) for _, row in close_gloms.iterrows()})
 
 for u, glom in close_gloms.iterrows():
     for v, glom2 in close_gloms.iterrows():
@@ -359,11 +358,14 @@ for u, glom in close_gloms.iterrows():
         distance = np.sqrt((glom['offset_x'] - glom2['offset_x'])**2 + (glom['offset_y'] - glom2['offset_y'])**2)
         if distance <= epsilon:
             edge_type = ('glom', 'to', 'glom')
-            G.add_edge(u + n_edges_c2c, v + n_edges_c2c, edge_weight=distance, edge_type=edge_type)
+            G3.add_edge(u,v, edge_weight=distance, edge_type=edge_type)
+
+# Get the edge attributes
+edge_types = nx.get_edge_attributes(G3, 'edge_type')
+edge_weights = nx.get_edge_attributes(G3, 'edge_weight')
 
 
-
-nx.draw_networkx_edges(G, pos, edge_color=edge_colors, alpha=0.5, ax=ax)
+nx.draw_networkx_edges(G3, pos, edge_color='orange', alpha=1, ax=ax, width=2)
 
 # Set axis limits to match the image dimensions
 height, width, _ = image.shape
