@@ -1,9 +1,9 @@
 use_gpu: true
-run_name: "gs14_gnn_g2g550_image_ft_jk"
+run_name: "gs14_gnn_g2g550_image_ft_jk_combined"
 model_parameters:
   hetero_jk:
     hidden_dim: gs
-    n_message_passings: 3
+    n_message_passings: gs
     n_fc_layers: 1
     norm_fc_layers: none
     n_readout_layers: 1
@@ -12,9 +12,9 @@ model_parameters:
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
-      glom_to_glom: e_sage
-      cell_to_glom: gat_v2
-      cell_to_cell: gine
+      glom_to_glom: gs
+      cell_to_glom: gs
+      cell_to_cell: gs
 training_parameters:
   batch_size: 1
   epochs: 600
@@ -30,7 +30,7 @@ training_parameters:
   momentum: 0.1
   seed: 69
   batch_shuffle: false
-  patience: 100
+  patience: 75
   log_image_frequency: 100
   n_folds: 4 # Set to 0 for no cross-validation
   reported_set: 'val'
