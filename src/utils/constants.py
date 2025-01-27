@@ -3,6 +3,7 @@ from typing import Final
 from models.mlp import MLP_dumm
 from models.pretrained_cnn import initialize_efficientnet_v2
 from models.resnet import resnet_custom
+from preprocessing.datasets.hetero_graph_dataset2 import HeteroUnifiedGraphDataset
 from preprocessing.datasets.tabular_dataset import TabularDataset
 from src.models.cnn import CNN, CBR
 from src.models.full_model import FullHybrid, FullHybridJK
@@ -26,7 +27,8 @@ DATASET_NAME_MAPPING: Final[dict[str, any]] = {
     "hybrid_graph_dataset": HybridGraphDataset,
     "hetero_hybrid_graph_dataset": HeteroHybridGraphDataset,
     "full_graph_dataset": FullGraphDataset,
-    "tabular_dataset": TabularDataset
+    "tabular_dataset": TabularDataset,
+    "hetero_unified_graph_dataset":HeteroUnifiedGraphDataset
 }
 
 REFERENCE_POINTS: Final[dict[str, dict[str, tuple[float, float]]]] = {

@@ -6,6 +6,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pandas as pd
 
+
 def knn_graph_construction(X: np.array, k: int) -> np.array:
     """
     Construct a k-nearest neighbor graph from the data points in X.
@@ -36,7 +37,7 @@ def knn_graph_construction(X: np.array, k: int) -> np.array:
     return A
 
 
-def knn_feature_graph_construction(X_1: np.array, X_2: np.array, k: int, lim: float=np.inf) -> csr_matrix:
+def knn_feature_graph_construction(X_1: np.array, X_2: np.array, k: int, lim: float = np.inf) -> csr_matrix:
     """
     Construct a k-nearest neighbor graph between two sets of data points X_1 and X_2 and add the distnace as edge
     features. To use one set of data points, set X_1 and X_2 to the same value.
@@ -101,7 +102,7 @@ def knn_feature_graph_construction(X_1: np.array, X_2: np.array, k: int, lim: fl
         return A
 
 
-def delaunay_graph_construction(X: np.array) -> csr_matrix:
+def delaunay_graph_construction(X: np.array, lim: float = np.inf) -> csr_matrix:
     """
     Construct a graph from the data points in X using Delaunay triangulation.
     The distance between the nodes is added as edge feature.
@@ -149,6 +150,13 @@ def delaunay_graph_construction(X: np.array) -> csr_matrix:
     # Invert the distances to get weights
     # data = 1 - data
 
+    # Remove any edges with distances larger than the limit
+    if lim < np.inf:
+        mask = np.array(data) <= lim
+        row_indices = np.array(row_indices)[mask]
+        col_indices = np.array(col_indices)[mask]
+        data = np.array(data)[mask]
+
     # Create the sparse matrix
     A = csr_matrix((data, (row_indices, col_indices)), shape=(n, n))
 
@@ -187,6 +195,7 @@ def radius_based_graph_construction(X: np.array, radius: float) -> csr_matrix:
     # A.data[A.data == 0] = 1e-10
 
     return A
+
 
 def graph_construction(X: np.array, method: str, **kwargs) -> tuple[np.array, np.array]:
     """
