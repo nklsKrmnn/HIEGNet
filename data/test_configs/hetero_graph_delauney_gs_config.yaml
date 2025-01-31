@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "gs_eb_glom_delauney"
+run_name: "gs_eb_glom_no_edge"
 model_parameters:
   hetero_gnn:
     hidden_dim: 32
@@ -12,7 +12,7 @@ model_parameters:
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
-      glom_to_glom: gs
+      glom_to_glom: gin
       cell_to_glom: gat_v2
       cell_to_cell: gine
 training_parameters:
@@ -46,7 +46,8 @@ dataset_parameters:
   test_split: 0.15
   processed_file_name: "glom_graph"
   glom_graph:
-    method: "delaunay" # Options: "knn", "radius", "delaunay"
+    method: "knn" # Options: "knn", "radius", "delaunay"
+    k: 0
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 5
