@@ -2,17 +2,17 @@ use_gpu: true
 run_name: "eval_hetero_gnn_after_gs14_g2g550_image_ft_between"
 model_parameters:
   hetero_jk:
-    hidden_dim: gs
+    hidden_dim: 128
     n_message_passings: 3
     n_fc_layers: 1
     norm_fc_layers: none
     output_dim: 3
-    dropout: 0.1
+    dropout: 0.4
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
-      glom_to_glom: 'gat_v2'
-      cell_to_glom: 'sage'
+      glom_to_glom: 'sage'
+      cell_to_glom: 'gat_v2'
       cell_to_cell: 'sage'
 training_parameters:
   batch_size: 1
