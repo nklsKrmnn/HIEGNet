@@ -14,7 +14,7 @@ model_parameters:
     msg_passing_types:
       glom_to_glom: 'e_sage'
       cell_to_glom: 'gat_v2'
-      cell_to_cell: 'gin'
+      cell_to_cell: 'gine'
 training_parameters:
   batch_size: 1
   epochs: 600
