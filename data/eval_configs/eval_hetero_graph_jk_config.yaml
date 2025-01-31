@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "eval_hetero_jk_gnn_after_gs15_combined_1_within"
+run_name: "eval_hetero_jk_gnn_after_gs15_combined_2_within"
 model_parameters:
   hetero_jk:
     hidden_dim: 64
@@ -8,13 +8,13 @@ model_parameters:
     n_readout_layers: 1
     norm_fc_layers: none
     output_dim: 3
-    dropout: 0.1
+    dropout: 0.2
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
-      glom_to_glom: 'sage'
+      glom_to_glom: 'e_sage'
       cell_to_glom: 'gat_v2'
-      cell_to_cell: 'sage'
+      cell_to_cell: 'gin'
 training_parameters:
   batch_size: 1
   epochs: 600
