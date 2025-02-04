@@ -1,16 +1,15 @@
 #!/bin/bash
 
-# List of config files
-configs=(
-  "data/bash_configs/hetero_graph_unified_delauney.yaml"
-  "data/bash_configs/hetero_graph_unified_knn5.yaml"
-  "data/bash_configs/hetero_graph_knn5.yaml"
-  # Add more config files as needed
-)
+# Define the folder containing the config files
+CONFIG_DIR="data/bash_configs"
 
+# Export Python path
 export PYTHONPATH=$(pwd)
-# Loop through each config file and run the command
-for config in "${configs[@]}"; do
-  echo "Running training with config: $config"
-  python src/main.py --pipeline grid_search --trainer graph --config "$config"
+
+# Loop through all YAML files in the given folder
+for config in "$CONFIG_DIR"/*.yaml; do
+  if [[ -f "$config" ]]; then
+    echo "Running training with config: $config"
+    python src/main.py --pipeline grid_search --trainer graph --config "$config"
+  fi
 done

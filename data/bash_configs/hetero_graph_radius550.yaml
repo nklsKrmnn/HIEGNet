@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "hetero_graph_test_unified_knn5"
+run_name: "hetero_graph_g2g_r550"
 gs_start_index: 1030 #(starting from 1)
 model_parameters:
   hetero_gnn:

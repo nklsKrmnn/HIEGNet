@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "hetero_graph_test_knn5"
+run_name: "hetero_graph_g2g_r2200"
 gs_start_index: 1030 #(starting from 1)
 model_parameters:
   hetero_gnn:
@@ -48,7 +48,7 @@ dataset_parameters:
   processed_file_name: "glom_graph"
   glom_graph:
     method: "radius" # Options: "knn", "radius", "delaunay"
-    radius: 550 # Options: "k", "radius", ""
+    radius: 2200 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 5
