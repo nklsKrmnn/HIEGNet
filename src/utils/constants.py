@@ -3,8 +3,8 @@ from typing import Final
 from models.mlp import MLP_dumm
 from models.pretrained_cnn import initialize_efficientnet_v2
 from models.resnet import resnet_custom
-from preprocessing.datasets.hetero_graph_dataset2 import HeteroUnifiedGraphDataset
-from preprocessing.datasets.tabular_dataset import TabularDataset
+from graph_preprocessing.datasets.hetero_graph_dataset2 import HeteroUnifiedGraphDataset
+from graph_preprocessing.datasets.tabular_dataset import TabularDataset
 from src.models.cnn import CNN, CBR
 from src.models.full_model import FullHybrid, FullHybridJK
 from src.models.gnn_cnn_hybrid_skip import SkipHeteroHybridGNN
@@ -13,12 +13,12 @@ from src.models.gnn_hetero import HeteroGNN, HeteroGnnJK
 from src.models.gnn_models import GCN, GCNJumpingKnowledge, GATv2
 from src.models.mlp import MLP
 from src.models.pretrained_cnn import initialize_resnet, initialize_efficientnet_v2
-from src.preprocessing.datasets.full_graph import FullGraphDataset
-from src.preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
-from src.preprocessing.datasets.hetero_hybrid_graph_dataset import HeteroHybridGraphDataset
-from src.preprocessing.datasets.hybrid_graph_dataset import HybridGraphDataset
-from src.preprocessing.datasets.image_dataset import GlomImageDataset
-from src.preprocessing.datasets.hetero_graph_dataset import HeteroGraphDataset
+from src.graph_preprocessing.datasets.full_graph import FullGraphDataset
+from src.graph_preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
+from src.graph_preprocessing.datasets.hetero_hybrid_graph_dataset import HeteroHybridGraphDataset
+from src.graph_preprocessing.datasets.hybrid_graph_dataset import HybridGraphDataset
+from src.graph_preprocessing.datasets.image_dataset import GlomImageDataset
+from src.graph_preprocessing.datasets.hetero_graph_dataset import HeteroGraphDataset
 
 DATASET_NAME_MAPPING: Final[dict[str, any]] = {
     "glom_graph_dataset": GlomGraphDataset,

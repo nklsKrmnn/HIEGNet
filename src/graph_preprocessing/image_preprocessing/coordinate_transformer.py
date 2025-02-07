@@ -10,9 +10,9 @@ class CoordinateTransformater:
     Class for transforming coordinates from a origin to a target coordinate system
 
     This class has to be initialized with the known parameters for the coordinate transformation like rotation,
-    magnification etc. except for the linear offset. These can be calculated automatically with the function
+    magnification etc. except for the linear offset. These can be calculated automatically with the functions
     calculate_offset. After the initialization the class can be used, to an array of coordinates from the origin space
-    to elements in an array of point in the target space. The function match_coordinates can be used to match the origin
+    to elements in an array of point in the target space. The functions match_coordinates can be used to match the origin
     coordinates to the target coordinates with the nearest neighbour algorithm.
 
     Args:
@@ -116,9 +116,9 @@ class CoordinateTransformater:
         """
         Match the origin coordinates to the target coordinates with the nearest neighbour algorithm.
 
-        The function first transforms all origin coordinates in the array to the target space with the given
+        The functions first transforms all origin coordinates in the array to the target space with the given
         transformation parameters from the class. Then each transformed coordinate is matched to the nearest neighbour
-        in the target coordinates. Afterward, the function tests for each target coordinate if the matching distance is
+        in the target coordinates. Afterward, the functions tests for each target coordinate if the matching distance is
          bellow a threshold and eliminates double matches.
 
         :param origin: Array of coordinates in the origin space

@@ -6,11 +6,11 @@ import torch
 import os
 import time
 
-from src.preprocessing.datasets.dataset_utils.image_utils import load_images
-from src.preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
-from src.preprocessing.datasets.hetero_graph_dataset import HeteroGraphDataset
-from src.preprocessing.datasets.hybrid_graph_dataset import HybridGraphDataset
-from src.preprocessing.feature_preprocessing import get_image_paths, feature_preprocessing
+from src.graph_preprocessing.datasets.dataset_utils.image_utils import load_images
+from src.graph_preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
+from src.graph_preprocessing.datasets.hetero_graph_dataset import HeteroGraphDataset
+from src.graph_preprocessing.datasets.hybrid_graph_dataset import HybridGraphDataset
+from src.graph_preprocessing.feature_preprocessing import get_image_paths, feature_preprocessing
 from src.utils.path_io import get_path_up_to
 
 ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")

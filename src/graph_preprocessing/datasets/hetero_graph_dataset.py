@@ -7,11 +7,11 @@ import os
 
 from torch_geometric.data import HeteroData
 
-from preprocessing.preprocessing_constants import SCALER_OPTIONS
-from src.preprocessing.datasets.dataset_utils.dataset_utils import get_train_val_test_indices, create_mask
-from src.preprocessing.graph_preprocessing.hetero_graph_processing import drop_cell_glom_edges, create_cell_glom_edges
-from src.preprocessing.graph_preprocessing.knn_graph_constructor import graph_construction, graph_connection
-from src.preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
+from graph_preprocessing.preprocessing_constants import SCALER_OPTIONS
+from src.graph_preprocessing.datasets.dataset_utils.dataset_utils import get_train_val_test_indices, create_mask
+from src.graph_preprocessing.graph_preprocessing.hetero_graph_processing import drop_cell_glom_edges, create_cell_glom_edges
+from src.graph_preprocessing.graph_preprocessing.knn_graph_constructor import graph_construction, graph_connection
+from src.graph_preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
 from src.utils.path_io import get_path_up_to
 
 ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")

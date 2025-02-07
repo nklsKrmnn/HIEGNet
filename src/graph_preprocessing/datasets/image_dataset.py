@@ -8,21 +8,20 @@ from sklearn.utils import compute_class_weight
 from torchvision.io import read_image
 import numpy as np
 
-from preprocessing.datasets.image_dataset import GlomImageDataset
-from src.preprocessing.datasets.dataset_utils.dataset_utils import list_annotation_file_names, \
+from src.graph_preprocessing.datasets.dataset_utils.dataset_utils import list_annotation_file_names, \
     get_train_val_test_indices
-from src.preprocessing.datasets.dataset_utils.image_utils import load_images
-from src.preprocessing.datasets.hybrid_graph_dataset import HybridGraphDataset
-from src.preprocessing.feature_preprocessing import get_image_paths, feature_preprocessing
+from src.graph_preprocessing.datasets.dataset_utils.image_utils import load_images
+from src.graph_preprocessing.datasets.hybrid_graph_dataset import HybridGraphDataset
+from src.graph_preprocessing.feature_preprocessing import get_image_paths
 from src.utils.path_io import get_path_up_to
 
 ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")
 
 
-class TabularDataset(GlomImageDataset):
+class GlomImageDataset(HybridGraphDataset):
     def __init__(self,
                  annotations_path,
-                 feature_file_path: str,
+                 image_file_path: str,
                  feature_list: list,
                  random_seed: int = 42,
                  validation_split: float = 0.2,
@@ -30,8 +29,10 @@ class TabularDataset(GlomImageDataset):
                  train_patients: list[str] = [],
                  test_patients: list[str] = [],
                  split_action:str = 'load',
-                 preprocessing_params: dict = None,
                  set_indices_path: str = "/repos/histograph/data/input/set_indices/test15_val15",
+                 hot_load: bool = False,
+                 norm_mean: float = 0.0,
+                 norm_std: float = 1.0,
                  onehot_targets: bool = True):
 
         self.test_split = test_split
@@ -40,16 +41,21 @@ class TabularDataset(GlomImageDataset):
         self.test_patients = test_patients
         self.split_action = split_action
         self.set_indices_path = ROOT_DIR + set_indices_path
-        self.path_file = ROOT_DIR + feature_file_path
+        self.path_file = ROOT_DIR + image_file_path
         self.annotations_paths = list_annotation_file_names(ROOT_DIR + annotations_path)
         self.random_seed = random_seed
         self.onehot_targets = onehot_targets
+        self.hot_load = hot_load
         self.feature_list = feature_list
-        self.preprocessing_params = preprocessing_params
+        self.norm_mean = norm_mean
+        self.norm_std = norm_std
+        if self.hot_load:
+            self.x_hot = []
         self.target_labels = ['Term_Healthy', 'Term_Sclerotic', 'Term_Dead']
 
         # Attributes to be set when data is processed
         self.targets = None
+        self.img_paths = None
         self.indices = None
         self.patients = None
         self.folds = {}
@@ -95,7 +101,7 @@ class TabularDataset(GlomImageDataset):
             test_indices += [indices[i] for i in idx[2]]
 
 
-        self.input = self.create_features(df, train_indices, self.feature_list, self.preprocessing_params)
+        self.img_paths = self.create_features(df, [], self.feature_list)
         self.indices = (train_indices, val_indices, test_indices)
 
         # Safe patient ids for visualisation purposes
@@ -107,20 +113,97 @@ class TabularDataset(GlomImageDataset):
                         train_indices: list[int],
                         feature_list: list[str],
                         preprocessing_params: dict = None) -> list[list[str | Any]]:
-        # TODO use from parent
-        x = feature_preprocessing(df, feature_list, train_indices, **preprocessing_params)
+
+        # Get paths to images
+        x = get_image_paths(df, feature_list, ROOT_DIR)
+
+        # Save images in instance variable if hot load is enabled
+        if self.hot_load:
+            self.x_hot = load_images(x)
 
         return x
 
     @property
     def image_size(self):
-        return None
+        image = read_image(self.img_paths[0][0])
+        return image.shape[1]
 
+    def get_set_indices(self) -> tuple[np.array, np.array, np.array]:
+        return self.indices
+
+    def get_class_weights(self) -> torch.Tensor:
+        """
+        Get the class weights for the dataset.
+
+        The class weights are
+        calculated based on the distribution of the target labels in the dataset.
+        """
+        # Labels of train data
+        train_indices = self.get_set_indices()[0]
+        y_labels = self.targets[train_indices]
+
+        if self.onehot_targets:
+            y_labels = y_labels.argmax(dim=1).numpy()
+            label_classes = np.unique(y_labels)
+        else:
+            y_labels = y_labels.numpy()
+            label_classes = np.unique(y_labels)
+
+        class_weights = compute_class_weight('balanced',
+                                             classes=label_classes,
+                                             y=y_labels)
+        class_weights_tensor = torch.tensor(class_weights, dtype=torch.float)
+        return class_weights_tensor
+
+    def create_folds(self, n_folds: int) -> None:
+        """
+        Creates n fold for cross validation.
+
+        Applies a stratified k fold split on dataset excluding the test set and saves the indices of the folds into a dict.
+
+        :param n_folds: Number of cross validation folds
+        :return: None
+        """
+        # Get train and val indices
+        train_indices, val_indices, _ = self.get_set_indices()
+
+        indices = np.array(train_indices + val_indices)
+
+        # Get targets
+        y_labels = self.targets[indices]
+        if self.onehot_targets:
+            y_labels = y_labels.argmax(dim=1).numpy()
+        else:
+            y_labels = y_labels.numpy()
+
+        # Create folds
+        skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=self.random_seed)
+
+        for fold, (train_indices, val_indices) in enumerate(skf.split(indices, y_labels)):
+            self.folds[fold] = (list(indices[train_indices]), list(indices[val_indices]))
+
+    def activate_fold(self, fold: int) -> None:
+        """
+        Activates a specific fold for cross validation.
+
+        :param fold: The fold to activate
+        :return: None
+        """
+        self.indices = (self.folds[fold][0], self.folds[fold][1], self.indices[2])
 
     def __len__(self):
-        return len(self.targets)
+        return len(self.img_paths)
+
+    def transform_image(self, image):
+        image_standardised = (image - image.min()) / ((image.max() - image.min()) + 0.0000001) #image / 255
+        image_normalised = (image_standardised - self.norm_mean) / self.norm_std
+        return image_normalised
 
     def __getitem__(self, idx):
-        input = self.input[idx]
+        if self.hot_load:
+            image = self.x_hot[idx]
+        else:
+            image = load_images([self.img_paths[idx]])[0]
+        image = self.transform_image(image)
         label = self.targets[idx]
-        return input, label
+        return image, label

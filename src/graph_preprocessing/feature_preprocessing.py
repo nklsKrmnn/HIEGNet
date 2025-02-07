@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import torch
 
-from src.preprocessing.preprocessing_constants import SCALER_OPTIONS
+from src.graph_preprocessing.preprocessing_constants import SCALER_OPTIONS
 
 
 def feature_preprocessing(df: pd.DataFrame,

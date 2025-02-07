@@ -6,9 +6,9 @@ import torch
 import os
 import time
 
-from src.preprocessing.datasets.dataset_utils.image_utils import load_images
-from src.preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
-from src.preprocessing.feature_preprocessing import get_image_paths
+from src.graph_preprocessing.datasets.dataset_utils.image_utils import load_images
+from src.graph_preprocessing.datasets.glom_graph_dataset import GlomGraphDataset
+from src.graph_preprocessing.feature_preprocessing import get_image_paths
 from src.utils.path_io import get_path_up_to
 
 ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")

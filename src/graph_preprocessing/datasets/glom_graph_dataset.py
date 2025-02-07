@@ -12,11 +12,11 @@ from sklearn.utils import compute_class_weight
 from torch_geometric.data import Dataset, Data
 from sklearn.model_selection import StratifiedKFold
 
-from preprocessing.preprocessing_constants import SCALER_OPTIONS
-from src.preprocessing.datasets.dataset_utils.dataset_utils import list_annotation_file_names, \
+from graph_preprocessing.preprocessing_constants import SCALER_OPTIONS
+from src.graph_preprocessing.datasets.dataset_utils.dataset_utils import list_annotation_file_names, \
     get_train_val_test_indices, create_mask
-from src.preprocessing.feature_preprocessing import feature_preprocessing
-from src.preprocessing.graph_preprocessing.knn_graph_constructor import graph_construction
+from src.graph_preprocessing.feature_preprocessing import feature_preprocessing
+from src.graph_preprocessing.graph_preprocessing.knn_graph_constructor import graph_construction
 from src.utils.path_io import get_path_up_to
 
 ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "repos")
@@ -73,7 +73,7 @@ class GlomGraphDataset(Dataset):
         :param split_action: Action to perform on the set indices (load, save or split without save)
         :param set_indices_path: Path to folder with the set index files
         :param onehot_targets: Bool if to use onehot encoding for targets
-        :param preprocessing_params: Parameters for preprocessing (especially normalisation)
+        :param preprocessing_params: Parameters for graph_preprocessing (especially normalisation)
         :param transform: not used
         :param pre_transform: not used
         :param random_seed: Random seed
@@ -161,7 +161,7 @@ class GlomGraphDataset(Dataset):
         Process the raw data to the graph data format.
 
         The raw data of the features and the annotations is loaded from raw files and merged into one DataFrame. For
-        each of the patients in the DataFrame the data is processed by calling a function to create a graph data
+        each of the patients in the DataFrame the data is processed by calling a functions to create a graph data
         object. Each of the processed graph objects is then stored as file in the root dir and the file names are
         saved in and extra file.
 
@@ -233,7 +233,7 @@ class GlomGraphDataset(Dataset):
         First the graph ist constructed from the passed DataFrame which the graph construction method given in this
         dataset object. Afterward, the target labels are created from the data (Y) and the train, val, test split is
         applied. At last the feature tensor is generated from the input DataFrame and preprocessed based on the given
-        preprocessing parameters and the train indices (for normalization).
+        graph_preprocessing parameters and the train indices (for normalization).
 
         :param df_patient: DataFrame for one graph data object
         :return: Graph data object.
