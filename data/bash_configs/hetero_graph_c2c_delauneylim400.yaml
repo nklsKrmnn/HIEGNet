@@ -18,7 +18,7 @@ model_parameters:
       cell_to_cell: gs
 training_parameters:
   batch_size: 1
-  epochs: 600
+  epochs: 601
   learning_rate: 0.0003
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
