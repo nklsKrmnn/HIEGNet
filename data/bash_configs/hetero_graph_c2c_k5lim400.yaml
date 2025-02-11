@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "hetero_graph_test_unified_knn5"
+run_name: "hetero_graph_c2c_k5lim400"
 gs_start_index: 1030 #(starting from 1)
 model_parameters:
   hetero_gnn:
@@ -52,7 +52,7 @@ dataset_parameters:
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 5
-    lim: 400 # Options: "k", "radius", ""
+    lim: 400
   train_patients:
     - 001
     - 002
