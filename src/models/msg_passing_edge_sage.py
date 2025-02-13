@@ -44,4 +44,4 @@ class SAGEConvEdge(SAGEConv):
         return out
 
     def message(self, x_j: Tensor) -> Tensor:
-        return x_j #torch.cat([x_j, self.edge_attr_tmp], dim=1)
+        return torch.cat([x_j, self.edge_attr_tmp], dim=1)
