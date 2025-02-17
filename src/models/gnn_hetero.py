@@ -201,10 +201,13 @@ class HeteroMessagePassingLayer(nn.Module):
         # Aggregate helper node types with regular node types
         for edge_type in self.edge_types.keys():
             if "->" in edge_type[0]:
+                if edge_type[0] not in x_dict:
+                    continue
                 edge_target = edge_type[0].split("->")[1]
                 n_target_indices = x_dict[edge_target].size()[0]
                 x_dict[edge_target] = x_dict[edge_target] + x_dict[edge_type[0]][-n_target_indices:]
                 x_dict.pop(edge_type[0])
+                test = x_dict[edge_type[0]]
 
         x_dict = {key: self.norm(x) for key, x in x_dict.items()}
         x_dict = {key: F.relu(x) for key, x in x_dict.items()}
