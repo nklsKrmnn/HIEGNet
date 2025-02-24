@@ -1,6 +1,6 @@
 use_gpu: true
 run_name: "gs19_gnn_g2gk1_c2ck5lim400_part2"
-gs_start_index: 520 #(starting from 1)
+gs_start_index: 540 #(starting from 1)
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
