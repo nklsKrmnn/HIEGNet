@@ -1,6 +1,6 @@
 use_gpu: true
-run_name: "hetero_graph_g2g_r2200"
-gs_start_index: 1030 #(starting from 1)
+run_name: "gs19_gnn_g2gk1_c2ck5lim400_part2"
+gs_start_index: 520 #(starting from 1)
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
@@ -47,12 +47,12 @@ dataset_parameters:
   test_split: 0.15
   processed_file_name: "glom_graph"
   glom_graph:
-    method: "radius" # Options: "knn", "radius", "delaunay"
-    radius: 2200 # Options: "k", "radius", ""
+    method: "knn" # Options: "knn", "radius", "delaunay"
+    k: 1 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
-    k: 5
-    lim: 400 # Options: "k", "radius", ""
+    k: 5 # Options: "k", "radius", ""
+    lim: 400
   train_patients:
     - 001
     - 002

@@ -52,7 +52,7 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'softmax_function': ['softmax', 'log_softmax', 'none'],
     'norm_fc_layers': ['batch', 'layer', 'none'],
     'norm': ['batch', 'layer', 'none'],
-    'glom_to_glom': ['gin','gcn','gat_v2'], #['sage', 'gat_v2', 'e_sage'],
+    'glom_to_glom': ['sage', 'gat_v2', 'e_sage'],
     'cell_to_glom': ['sage', 'gat_v2', 'e_sage'],
     'cell_to_cell': ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv', 'e_sage'],
     "msg_passing_types": ['sage', 'gat_v2', 'e_sage'],
