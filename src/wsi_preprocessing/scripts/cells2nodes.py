@@ -9,7 +9,6 @@ from tqdm import tqdm as tdqm
 
 from src.wsi_preprocessing.functions.image_io import get_paths, upsampling_image
 from src.wsi_preprocessing.functions.path_io import extract_index, extract_patient_id, get_path_up_to
-from wsi_preprocessing.scripts.cells2nodes_macro import error_counter
 
 ROOT_DIR = get_path_up_to(os.path.abspath(__file__), "repos")
 
