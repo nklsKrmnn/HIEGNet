@@ -11,8 +11,9 @@ from src.wsi_preprocessing.functions.path_io import get_path_up_to, extract_pati
 
 ROOT_DIR = get_path_up_to(os.path.abspath(__file__), "repos")
 
+CLASSES = ['Healthy','Dead','Sclerotic']
 STAINS = [25]
-PATIENTS = ['002','003', '004']
+PATIENTS = ['005', "006"]
 
 for stain in STAINS:
     # Get dir for masks
@@ -32,7 +33,7 @@ for stain in STAINS:
 
             # Import annotations
             df_annotation = pd.read_csv(f'{ROOT_DIR}/data/1_cytomine_downloads/EXC/annotations/{stain}/annotations_{patient}_{stain}.csv')
-            df_annotation = df_annotation[df_annotation["Term"] != "Tissue"]
+            df_annotation = df_annotation[df_annotation['Term'].apply(lambda t: t in CLASSES)].reset_index(drop=True)
 
             # Initialize coordinate transformer
             magnification = 0.5

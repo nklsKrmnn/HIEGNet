@@ -6,10 +6,12 @@ import matplotlib.pyplot as plt
 
 from wsi_preprocessing.functions.color_transformations import transform_to_florescent
 
+CLASSES = ['Healthy','Dead','Sclerotic']
 STAINING: Final[str] = "25"
 PROJECT: Final[str] = "EXC"
 LOD: Final[int] = 0
 CROPPING_SIZE: Final[int] = 2200 #hight and width of the patch around a glom in pixels
+patients = ['005','006']
 
 input_dir = f"/home/dascim/data/1_cytomine_downloads/{PROJECT}"
 output_dir = f"/home/dascim/data/2_images_preprocessed/{PROJECT}"
@@ -24,6 +26,9 @@ for image_path in input_image_paths:
     image_name = os.path.basename(image_path)
     patient = image_name.split("_")[2]
 
+    if patient not in patients:
+        continue
+
     annotation_file_name = f"annotations_{patient}_{STAINING}.csv"
     csv_path = f"{annotations_dir}/{annotation_file_name}"
 
@@ -31,7 +36,7 @@ for image_path in input_image_paths:
     print(f"CSV path: {csv_path}")
 
     annotations = pd.read_csv(csv_path)
-    annotations = annotations[annotations['Term'] != 'Tissue'].reset_index(drop=True)
+    annotations = annotations[annotations['Term'].apply(lambda t: t in CLASSES)].reset_index(drop=True)
 
     for index, row in annotations.iterrows():
         patch = read_svs_patch(image_path,
@@ -42,7 +47,7 @@ for image_path in input_image_paths:
 
         # Save patch in brightfield
         patch_name = f"patch_p{patient}_s{STAINING}_i{row['ID']}.png"
-        patch_path = f"{output_dir}/patches2/{STAINING}/{patch_name}"
+        patch_path = f"{output_dir}/patches/{STAINING}/{patch_name}"
         plt.imsave(patch_path, patch)
 
         # Save patch in florescent

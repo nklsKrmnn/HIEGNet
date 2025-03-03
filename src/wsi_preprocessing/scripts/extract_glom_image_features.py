@@ -16,11 +16,18 @@ PROJECT: Final[str] = "EXC"
 input_dir = '/home/dascim/data/2_images_preprocessed/EXC/patches_glom_isolated/25/'
 output_dir = f"/home/dascim/data/3_extracted_features/{PROJECT}/"
 
+PATIENTS = ['006', '005']
+
 input_mask_paths = get_paths(input_dir, ".png")
 
 list_image_features = []
 
 for path in tqdm(input_mask_paths):
+    patient = extract_patient_id(path)
+
+    if patient not in PATIENTS:
+        continue
+
     image = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
 
     # Isolate the central glomerulus
@@ -40,7 +47,7 @@ for path in tqdm(input_mask_paths):
 
 df_features = pd.DataFrame(list_image_features)
 
-df_features.to_csv(f"{output_dir}/glom_features_uniform.csv", index=False)
+df_features.to_csv(f"{output_dir}/glom_features_uniform_56.csv", index=False)
 
 
 
