@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "0104_ablation_hetero_gnn_after_gs14_g2g1100_sameMSGP_1_within"
+run_name: "0302_ablation_hetero_gnn_drop_edges_submitted"
 ablation_parameters:
   drop_edge_types:
     - ('glom', 'to', 'glom')
@@ -17,9 +17,9 @@ ablation_parameters:
       - ('M0', 'to', 'tcell')
 model_parameters:
   hetero_gnn:
-    hidden_dim: 64
+    hidden_dim: 4
     n_message_passings: 2
-    n_fc_layers: 1
+    n_fc_layers: 2
     norm_fc_layers: none
     output_dim: 3
     dropout: 0.2
@@ -27,8 +27,8 @@ model_parameters:
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
       glom_to_glom: 'gat_v2'
-      cell_to_glom: 'gat_v2'
-      cell_to_cell: 'gat_v2'
+      cell_to_glom: 'sage'
+      cell_to_cell: 'e_sage'
 training_parameters:
   batch_size: 1
   epochs: 600
@@ -63,7 +63,7 @@ dataset_parameters:
   processed_file_name: "glom_graph"
   glom_graph:
     method: "radius" # Options: "knn", "radius", "delaunay"
-    radius: 0 # Options: "k", "radius", ""
+    radius: 550 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 5
