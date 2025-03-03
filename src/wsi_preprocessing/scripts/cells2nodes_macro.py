@@ -23,10 +23,11 @@ cell_masks_file_paths = get_paths(input_dir, ".npy")
 
 error_counter = 0
 cells = []
-for i, cell_masks_path in tdqm(enumerate(cell_masks_file_paths), total=len(cell_masks_file_paths)):
 
-    if extract_patient_id(cell_masks_path) not in PATIENTS:
-        continue
+# filter file paths for patients
+cell_masks_file_paths = [path for path in cell_masks_file_paths if extract_patient_id(path) in PATIENTS]
+
+for i, cell_masks_path in tdqm(enumerate(cell_masks_file_paths), total=len(cell_masks_file_paths)):
 
     print(f"Processing ({1 + i}/{len(cell_masks_file_paths)}): {cell_masks_path}")
     try:
