@@ -87,7 +87,10 @@ for i, cell_masks_path in tdqm(enumerate(cell_masks_file_paths), total=len(cell_
                           "is_in_glom": is_in_glom,
                           "patient": patient})
 
-    except:
+
+    except KeyboardInterrupt:
+        raise  # Re-raise the KeyboardInterrupt to allow interruption
+    except Exception as e:
         error_counter += 1
         print(error_counter)
 
