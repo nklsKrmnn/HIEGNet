@@ -11,6 +11,7 @@ from src.wsi_preprocessing.functions.image_io import get_paths, upsampling_image
 from src.wsi_preprocessing.functions.path_io import extract_index, extract_patient_id, get_path_up_to
 
 ROOT_DIR = get_path_up_to(os.path.abspath(__file__), "repos")
+PATIENTS = ['006', '005']
 
 CELL_TYPE = "tcell"
 stain = 25
@@ -24,6 +25,9 @@ cell_masks_file_paths = get_paths(input_dir, ".npy")
 error_counter = 0
 cells = []
 for i, cell_masks_path in tdqm(enumerate(cell_masks_file_paths), total=len(cell_masks_file_paths)):
+    if extract_patient_id(cell_masks_path) not in PATIENTS:
+        continue
+
     print(f"Processing ({1 + i}/{len(cell_masks_file_paths)}): {cell_masks_path}")
     # Load cell mask
     try:
@@ -86,4 +90,4 @@ for i, cell_masks_path in tdqm(enumerate(cell_masks_file_paths), total=len(cell_
         print(error_counter)
 
 df_cells = pd.DataFrame(cells)
-df_cells.to_csv(f"{output_dir}/{CELL_TYPE}_cell_nodes_prejoin.csv", index=False)
+df_cells.to_csv(f"{output_dir}/{CELL_TYPE}_cell_nodes_prejoin_56.csv", index=False)
