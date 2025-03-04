@@ -41,6 +41,7 @@ class Logger():
         self._summary_writer = SummaryWriter(self.name)
         self._training_start: Optional[datetime] = None
 
+
     def write_text(self, tag: str, text: str) -> None:
         """
         Writes a custom text to a custom tag in the TensorBoard log file.
@@ -172,6 +173,20 @@ class Logger():
             class_label (str): The set for which the accuracy is logged. Defaults to 'val'.
         """
         self._summary_writer.add_scalar(f"{score}/{class_label}", value, epoch)
+
+    def log_performance(self, value: float, epoch: int, name: str) -> None:
+        """
+        Logs the accuracy for an epoch.
+
+        This method writes a message to the console and writes the value to the
+        TensorBoard log file.
+
+        Args:
+            value (float): The value to log.
+            epoch (int): The epoch number.
+            name (str): Name of the value (e.g. epoch_time).
+        """
+        self._summary_writer.add_scalar(f"performance/{name}", value, epoch)
 
     def log_lr(self, lr: float, epoch: int) -> None:
         """

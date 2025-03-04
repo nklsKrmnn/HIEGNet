@@ -29,6 +29,7 @@ class FoldLogger(Logger):
         self.val_loss = {}
         self.test_loss = {}
         self.scores = {}
+        self.performance_values = {}
         self.text = {}
 
     def write_text(self, tag: str, text: str) -> None:
@@ -104,6 +105,23 @@ class FoldLogger(Logger):
         if class_label not in self.scores[score].keys():
             self.scores[score][class_label] = {}
         self.scores[score][class_label][epoch] = value
+
+    def log_performance(self, value: float, epoch: int, name: str) -> None:
+        """
+            Logs the accuracy for an epoch.
+
+            This method writes a message to the console and writes the value to the
+            TensorBoard log file.
+
+            Args:
+                value (float): The value to log.
+                epoch (int): The epoch number.
+                name (str): Name of the value (e.g. epoch_time).
+            """
+        super().log_test_score(value, epoch, name)
+        if name not in self.performance_values.keys():
+            self.performance_values[name] = {}
+        self.performance_values[name][epoch] = value
 
     def log_model_path(self, model_path: str) -> None:
         """

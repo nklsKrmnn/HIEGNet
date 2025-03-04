@@ -119,7 +119,7 @@ def cell_segmentation(input_dir: str,
         mask_path = f"{output_dir}/{project}/masks_cellpose/{cell_type}/{mask_name}"
         plt.imsave(mask_path, mask, cmap='gray')
         np.save(mask_path.replace(".png", ".npy"), mask)
-        masks.append(mask)
+        #masks.append(mask)
 
     return masks
 
