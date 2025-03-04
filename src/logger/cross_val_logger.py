@@ -166,6 +166,9 @@ class ManyFoldLogger():
                 max_scores[f'{loss}_loss_fold{i}'] = fold.train_loss[best_epoch] if loss == 'train' else fold.val_loss[
                     best_epoch]
 
+            for perf_value in fold.performance_values.keys():
+                max_scores[f'{perf_value}_performance_fold{i}'] = np.mean(list(fold.performance_values[perf_value].values()))
+
         # Calculate means and std
         for score in self.fold_logger[0].scores.keys():
             for class_label in self.fold_logger[0].scores[score].keys():
@@ -181,6 +184,13 @@ class ManyFoldLogger():
 
             max_scores[f'{loss}_loss_mean'] = mean
             max_scores[f'{loss}_loss_std'] = std
+
+        for perf_value in fold.performance_values.keys():
+            mean = np.mean([max_scores[f'{perf_value}_performance_fold{i}'] for i in range(len(self.fold_logger))])
+            std = np.std([max_scores[f'{perf_value}_performance_fold{i}'] for i in range(len(self.fold_logger))])
+
+            max_scores[f'{perf_value}_performance_mean'] = mean
+            max_scores[f'{perf_value}_performance_std'] = std
 
         return max_scores
 

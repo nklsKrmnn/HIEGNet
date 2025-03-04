@@ -1,6 +1,8 @@
 """
 This module contains the Trainer class which is used to train a PyTorch model.
 """
+import resource
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, Union
@@ -177,6 +179,10 @@ class Trainer:
             if device == torch.device("cuda"):
                 torch.cuda.manual_seed(seed)
 
+        # Reset peak memory stats to measure GPU peak RAM
+        if device == torch.device("cuda"):
+            torch.cuda.reset_peak_memory_stats()
+
         self.batch_size = batch_size
         self.epochs = epochs
         self.learning_rate = learning_rate
@@ -276,6 +282,7 @@ class Trainer:
         finish_reason = "Training terminated before training loop ran through."
         for epoch in tqdm(range(self.epochs)):
             try:
+                epoch_start_time = time.time()
                 train_loss, train_results = self.train_step(train_loader)
 
                 # Logging loss of results
@@ -358,6 +365,11 @@ class Trainer:
                     min_f1 = f1_score
                     self.save_model()
 
+                # Add end time
+                epoch_end_time = time.time()
+                epoch_time = (epoch_end_time - epoch_start_time)
+                self.logger.log_performance(name="epoch_duration_seconds", value=epoch_time, epoch=epoch)
+
             except KeyboardInterrupt:
                 finish_reason = "Training interrupted by user input."
                 break
@@ -366,6 +378,13 @@ class Trainer:
         # stopping or user input
         if finish_reason == "Training terminated before training loop ran through.":
             finish_reason = "Training was normally completed."
+
+        # Log max GPU memory usage
+        if self.device == torch.device("cuda"):
+            peak_memory_MB = torch.cuda.max_memory_allocated() / (1024 ** 2)
+        else:
+            peak_memory_MB = 1
+        self.logger.log_performance(name="peak_memory_mb", value=peak_memory_MB, epoch=self.epochs)
 
         return finish_reason
 
