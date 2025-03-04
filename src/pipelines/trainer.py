@@ -183,6 +183,7 @@ class Trainer:
         if device == torch.device("cuda"):
             torch.cuda.reset_peak_memory_stats()
 
+
         self.batch_size = batch_size
         self.epochs = epochs
         self.learning_rate = learning_rate
@@ -604,13 +605,15 @@ class Trainer:
                                           continuous=use_continuous_matrix,
                                           set=f'{set_idx}_{set}')
 
-    def save_model(self) -> None:
+    def save_model(self, new_version:bool=False) -> None:
         """
         This method uses the `save_model` function to save the trained model to a file.
         After the model is saved, the method logs a message to the console with the path
         to the file.
         """
-        self.model_path = ModelService.save_model(self.model)
+        #TODO avoid new saves for crossvald and grid search
+        run_name = self.logger.name.split('/')[1][20:]
+        self.model_path = ModelService.save_model(self.model, name=run_name, new_version=new_version)
         self.logger.log_model_path(model_path=self.model_path)
         print(f"Model saved to '{self.model_path}'.")
 

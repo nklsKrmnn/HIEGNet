@@ -77,10 +77,14 @@ def multi_init_evaluation(model_name: str,
         print(f'Test initialisation {fold}/{n_test_initialisations}')
         print('##################################')
 
-
+        #TODO: Make a nicer way to load models
         model = ModelService.create_model(model_name=model_name,
-                                          model_attributes=model_attributes)
+                                          model_attributes=model_attributes,
+                                          fold=fold)
         logger.fold_logger[fold].write_model(model)
+
+        if training_parameters['epochs'] > 0 and 'model_dir' in model_attributes.keys():
+            raise Warning('Model is loaded but epochs are not set to 0. Training will be performed.')
 
         trainer = trainer_class(
             dataset=dataset,
@@ -90,10 +94,10 @@ def multi_init_evaluation(model_name: str,
             **training_parameters)
 
         trainer.start_training()
-        trainer.load_best_model(model_name=model_name,
-                                model_attributes=model_attributes)
+        if training_parameters['epochs'] > 0:
+            trainer.load_best_model(model_name=model_name,
+                                    model_attributes=model_attributes)
         trainer.evaluate()
-        trainer.save_model()
 
         # Increasing torch seed by one
         torch.manual_seed(torch.initial_seed() + fold + 1)

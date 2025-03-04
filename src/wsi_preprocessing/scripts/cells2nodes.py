@@ -65,9 +65,6 @@ for i, cell_masks_path in tdqm(enumerate(cell_masks_file_paths), total=len(cell_
             perimeter = props[0].perimeter
             solidity = props[0].solidity
 
-            # safe mask
-            plt.imsave("isolated_macro.png", cell_mask, cmap='gray')
-
             center_global = (glom_center[0] - cell_mask.shape[1] // 2 + center[1],
                              glom_center[1] + cell_mask.shape[1] // 2 - center[0])
 

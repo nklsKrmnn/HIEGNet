@@ -1,7 +1,7 @@
 """
 This module contains the ModelService class which provides methods for creating, saving, and loading PyTorch trained_models.
 """
-
+import os
 from pathlib import Path
 from typing import Final, Optional
 
@@ -9,8 +9,11 @@ import torch
 import torch.nn as nn
 
 from src.utils.constants import MODEL_NAME_MAPPING
+from utils.path_io import get_path_up_to
 
 MODEL_OUTPUT_PATH: Final[Path] = Path("data", "output", "trained_models")
+ROOT_DIR: Final[str] = get_path_up_to(os.path.abspath(__file__), "src")
+
 
 first_save = True
 path: str = ""
@@ -29,7 +32,8 @@ class ModelService():
     @classmethod
     def create_model(cls,
                      model_name: str,
-                     model_attributes: dict) -> nn.Module:
+                     model_attributes: dict,
+                     fold: int = None) -> nn.Module:
         """
         Creates a new model from a configuration.
 
@@ -46,8 +50,22 @@ class ModelService():
         Returns:
             nn.Module: The created model.
         """
+        #TODO: Work with version
         model_attributes = model_attributes.copy()
-        model_path = model_attributes.pop("model_path") if "model_path" in model_attributes else None
+
+        # Use models from dir if available
+        if "model_dir" in model_attributes.keys():
+            # Read model files in dir
+            dir_path = ROOT_DIR + model_attributes.pop("model_dir")
+            model_files = os.listdir(dir_path) #
+            model_files.sort()
+            model_file = model_files[fold]
+            model_path = dir_path + model_file
+        elif "model_path" in model_attributes.keys():
+            model_path = model_attributes.pop("model_path")
+            model_path = ROOT_DIR + model_path
+        else:
+            model_path = None
 
         # Decompose the msg_passing_types attribute if it is set the same for all edge groups
         if 'msg_passing_types' in model_attributes.keys():
@@ -95,7 +113,7 @@ class ModelService():
         return None
 
     @classmethod
-    def save_model(cls, model: nn.Module) -> str:
+    def save_model(cls, model: nn.Module, name: str, new_version:bool=False) -> str:
         """
         Saves the specified PyTorch model to a file in the `MODEL_OUTPUT_PATH` directory.
 
@@ -113,18 +131,14 @@ class ModelService():
         """
         # Use the global variable to determine if this is the first run of the
         # program.
-        global first_save, path
-        # Get the class name of the model as string
-        model_class_name = type(model).__name__
-        version = cls.get_latest_version(model_class_name)
+        global path
+
+        version = cls.get_latest_version(name)
 
         if version is None:
             version = 0
 
-        if first_save:
-            path = Path(MODEL_OUTPUT_PATH,
-                        f'{model_class_name}_v{version + 1}.pt')
-            first_save = False
+        path = Path(MODEL_OUTPUT_PATH, f'{name}_v{version + 1}.pt')
 
         # Save the model state dict to the specified path
         torch.save(model.state_dict(), path)
