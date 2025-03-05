@@ -37,7 +37,7 @@ CELL_TYPE = args.celltype
 PATCH_SIZE = 2200
 
 path = f"{ROOT_DIR}/data/3_extracted_features/EXC/cell_nodes/{CELL_TYPE}_cell_nodes_prejoin.csv"
-df = pd.read_csv(f"{ROOT_DIR}/data/3_extracted_features/EXC/cell_nodes/{CELL_TYPE}_cell_nodes_prejoin.csv")
+df = pd.read_csv(f"{ROOT_DIR}/data/3_extracted_features/EXC/cell_nodes/{CELL_TYPE}_cell_nodes_prejoin_56.csv")
 
 df['center_distance'] = np.sqrt((df['center_x_local'] - PATCH_SIZE//2 )**2 + (df['center_y_local'] - PATCH_SIZE//2 )**2)
 
@@ -105,6 +105,6 @@ for i, glom in tqdm(df_glomeruli.iterrows(), total=len(df_glomeruli)):
                 if potential_same_cells.index.values[0] in df.index.values:
                     df.drop(potential_same_cells.index[0], inplace=True)
 
-df.to_csv(f"{ROOT_DIR}/data/3_extracted_features/EXC/cell_nodes/{CELL_TYPE}_cell_nodes.csv", index=False)
+df.to_csv(f"{ROOT_DIR}/data/3_extracted_features/EXC/cell_nodes/{CELL_TYPE}_cell_nodes_56.csv", index=False)
 # pickle results
-df.to_pickle(f"{ROOT_DIR}/data/3_extracted_features/EXC/cell_nodes/{CELL_TYPE}_cell_nodes.pkl")
+df.to_pickle(f"{ROOT_DIR}/data/3_extracted_features/EXC/cell_nodes/{CELL_TYPE}_cell_nodes_56.pkl")
