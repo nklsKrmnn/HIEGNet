@@ -138,7 +138,10 @@ class ModelService():
         if version is None:
             version = 0
 
-        path = Path(MODEL_OUTPUT_PATH, f'{name}_v{version + 1}.pt')
+        if new_version:
+            version += 1
+
+        path = Path(MODEL_OUTPUT_PATH, f'{name}_v{version}.pt')
 
         # Save the model state dict to the specified path
         torch.save(model.state_dict(), path)

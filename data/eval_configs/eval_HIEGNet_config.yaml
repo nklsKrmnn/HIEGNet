@@ -35,7 +35,7 @@ training_parameters:
   n_test_initialisations: 20
   reported_set: "test" # Options: "val", "test", 'train'
 dataset_parameters:
-  class_name: hetero_graph_dataset
+  class_name: hetero_unified_graph_dataset
   root: "/data/4_input_data_graphs/glob_graphs/"
   feature_file_path: "/data/3_extracted_features/EXC/glom_features_uniform.csv"
   cell_node_dir_path: "/data/3_extracted_features/EXC/cell_nodes"
