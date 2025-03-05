@@ -17,7 +17,7 @@ ablation_parameters:
       - ('M0', 'to', 'tcell')
 model_parameters:
   hetero_gnn:
-    hidden_dim: 4
+    hidden_dim: 64
     n_message_passings: 2
     n_fc_layers: 2
     norm_fc_layers: none
