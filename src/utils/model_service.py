@@ -57,7 +57,8 @@ class ModelService():
         if "model_dir" in model_attributes.keys():
             # Read model files in dir
             dir_path = ROOT_DIR + model_attributes.pop("model_dir")
-            model_files = os.listdir(dir_path) #
+            model_files = os.listdir(dir_path)
+            model_files = [f for f in model_files if f.endswith(".pt")]#
             model_files.sort()
             model_file = model_files[fold]
             model_path = dir_path + model_file

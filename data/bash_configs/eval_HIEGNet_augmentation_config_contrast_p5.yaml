@@ -1,7 +1,8 @@
 use_gpu: true
-run_name: "eval_HIEGNet_gs21_between_within_1-3 NOT USED!"
+run_name: "eval_HIEGNet_gs21_augmentation_contrast_p5"
 model_parameters:
   hetero_gnn:
+    model_dir: "/data/input/models/HIEGNet_gs21_between/"
     hidden_dim: 64
     n_message_passings: 2
     n_fc_layers: 2
@@ -16,7 +17,7 @@ model_parameters:
       cell_to_cell: 'sage'
 training_parameters:
   batch_size: 1
-  epochs: 600
+  epochs: 0
   learning_rate: 0.0003
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
@@ -38,12 +39,13 @@ dataset_parameters:
   class_name: hetero_unified_graph_dataset
   root: "/data/4_input_data_graphs/glob_graphs/"
   feature_file_path: "/data/3_extracted_features/EXC/glom_features_uniform.csv"
+  augmented_feature_file_path: "/data/3_extracted_features/EXC/augmentations/glom_features_contrast_plus5.csv"
   cell_node_dir_path: "/data/3_extracted_features/EXC/cell_nodes"
   annotations_path: "/data/1_cytomine_downloads/EXC/annotations/25/"
   set_indices_path: "/repos/histograph/data/input/set_indices/test15_val15"
   split_action: "split" # Options: "load", "save", "split"
   validation_split: 0.0
-  test_split: 0.15
+  test_split: 1.0
   processed_file_name: "glom_graph"
   glom_graph:
     method: "radius" # Options: "knn", "radius", "delaunay"
@@ -58,12 +60,12 @@ dataset_parameters:
     - 003
     #- 004
   test_patients:
-    - 001
-    - 002
-    - 003
-#    - 004
-#    - 005
-#    - 006
+    #- 001
+    #- 002
+    #- 003
+    - 004
+    - 005
+    - 006
   random_seed: 123
   onehot_targets: true
   process: true
