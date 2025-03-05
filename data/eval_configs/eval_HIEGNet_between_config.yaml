@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "eval_HIEGNet_between_test_4-6"
+run_name: "eval_HIEGNet_gs21_between_test_4-6"
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
@@ -12,8 +12,8 @@ model_parameters:
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
       glom_to_glom: 'gat_v2'
-      cell_to_glom: 'sage'
-      cell_to_cell: 'e_sage'
+      cell_to_glom: 'e_sage'
+      cell_to_cell: 'sage'
 training_parameters:
   batch_size: 1
   epochs: 600
