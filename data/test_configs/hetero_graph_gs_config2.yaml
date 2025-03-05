@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "gs21_HIETNet_c2g_sage"
+run_name: "gs21_HIETNet_c2g_esage"
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
@@ -13,7 +13,7 @@ model_parameters:
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
       glom_to_glom: gatv2
-      cell_to_glom: sage
+      cell_to_glom: esage
       cell_to_cell: gs
 training_parameters:
   batch_size: 1

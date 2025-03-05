@@ -53,7 +53,7 @@ PARAMETER_SEARCH_SPACE: Final[dict[str, list]] = {
     'norm_fc_layers': ['batch', 'layer', 'none'],
     'norm': ['batch', 'layer', 'none'],
     'glom_to_glom': ['gin','gcn','gat_v2'], #['sage', 'gat_v2', 'e_sage'],
-    'cell_to_glom': ['sage', 'gat_v2', 'e_sage'],
+    'cell_to_glom': ['sage', 'e_sage'],
     'cell_to_cell': ['gcn', 'sage', 'gat_v2', 'gine', 'cfconv', 'e_sage'],
     "msg_passing_types": ['sage', 'gat_v2', 'e_sage'],
     "learning_rate": [1e-3, 1e-4, 1e-5, 1e-6],
