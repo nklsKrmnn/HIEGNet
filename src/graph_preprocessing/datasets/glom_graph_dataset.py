@@ -55,7 +55,8 @@ class GlomGraphDataset(Dataset):
                  preprocessing_params: dict = None,
                  transform=None,
                  pre_transform=None,
-                 random_seed=None) -> None:
+                 random_seed=None,
+                 augmented_feature_file_path: str = None) -> None:
         """
         Initialize the dataset.
 
@@ -81,6 +82,7 @@ class GlomGraphDataset(Dataset):
 
         self.processed_file_name = processed_file_name
         self.feature_file_path = ROOT_DIR + feature_file_path
+        self.augmented_feature_file_path = ROOT_DIR + augmented_feature_file_path if augmented_feature_file_path is not None else None
         self.image_feature_file_path = [ROOT_DIR + image_feature_file_path] if image_feature_file_path is not None else []
         self.test_split = test_split if test_patients != [] else 0.0
         self.val_split = validation_split if validation_patients != [] else 0.0
@@ -112,6 +114,8 @@ class GlomGraphDataset(Dataset):
         :return: List of raw file names
         """
         raw_files = [self.feature_file_path] + list_annotation_file_names(self.annot_path)
+        if self.augmented_feature_file_path is not None:
+            raw_files.append(self.augmented_feature_file_path)
         return raw_files
 
     @property
@@ -171,6 +175,17 @@ class GlomGraphDataset(Dataset):
 
         #TODO: Move patient id into annotation df and load image features are feature file
         df = pd.read_csv(self.input_file_paths[0])
+
+        # Concat augmented image features if they exist
+        if self.augmented_feature_file_path is not None:
+            augmented_path = self.raw_file_names.pop(-1)
+            df_augmented = pd.read_csv(augmented_path)
+
+            augmented_patients = df_augmented['patient'].unique()
+            df = df[~df['patient'].isin(augmented_patients)]
+
+            df = pd.concat([df, df_augmented], ignore_index=True)
+
         data_objects = {}
 
         # Load additional feature dataframes (like image paths for full dataset)
