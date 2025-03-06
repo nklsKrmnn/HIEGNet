@@ -61,6 +61,10 @@ def init_optimizer(epochs: int,
         optimizer_instance = optim.Adam(
             model.parameters(), lr=learning_rate)
 
+    if epochs == 0:
+        warnings.warn("[TRAINER]: Epochs set to 0, no learning rate scheduler is used.")
+        lr_scheduler = None
+
     # Setting up the learning rate scheduler
     if lr_scheduler_params is not None:
         if lr_scheduler_params["scheduler"] == "ReduceLROnPlateau":
