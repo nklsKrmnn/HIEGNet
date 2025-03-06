@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "0305_ablation_HIETNet_gs21_drop_edges"
+run_name: "0305_ablation_HIETNet_submitted_drop_edges"
 ablation_parameters:
   drop_edge_types:
     - ('glom', 'to', 'glom')
@@ -27,7 +27,7 @@ model_parameters:
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
       glom_to_glom: 'gat_v2'
-      cell_to_glom: 'e_sage'
+      cell_to_glom: 'sage'
       cell_to_cell: 'sage'
 training_parameters:
   batch_size: 1
