@@ -63,7 +63,7 @@ def init_optimizer(epochs: int,
 
     if epochs == 0:
         warnings.warn("[TRAINER]: Epochs set to 0, no learning rate scheduler is used.")
-        lr_scheduler = None
+        lr_scheduler_params = None
 
     # Setting up the learning rate scheduler
     if lr_scheduler_params is not None:
