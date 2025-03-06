@@ -1,8 +1,8 @@
 use_gpu: true
-run_name: "eval_HIEGNet_gs21_augmentation_intensity_m5"
+run_name: "eval_HIEGNet_submitted_augmentation_intensity_m5"
 model_parameters:
   hetero_gnn:
-    model_dir: "/data/input/models/HIEGNet_gs21_between/"
+    model_dir: "/data/input/models/HIEGNet_submitted_between/"
     hidden_dim: 64
     n_message_passings: 2
     n_fc_layers: 2
@@ -13,7 +13,7 @@ model_parameters:
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
       glom_to_glom: 'gat_v2'
-      cell_to_glom: 'e_sage'
+      cell_to_glom: 'sage'
       cell_to_cell: 'sage'
 training_parameters:
   batch_size: 1
