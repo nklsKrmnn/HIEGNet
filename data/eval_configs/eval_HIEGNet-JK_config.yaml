@@ -42,7 +42,7 @@ dataset_parameters:
   cell_node_dir_path: "/data/3_extracted_features/EXC/cell_nodes"
   annotations_path: "/data/1_cytomine_downloads/EXC/annotations/25/"
   set_indices_path: "/repos/histograph/data/input/set_indices/test15_val15"
-  split_action: "load" # Options: "load", "save", "split"
+  split_action: "split" # Options: "load", "save", "split"
   validation_split: 0.0
   test_split: 1.0
   processed_file_name: "glom_graph"
