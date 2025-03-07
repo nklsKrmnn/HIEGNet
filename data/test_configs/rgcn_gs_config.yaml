@@ -1,28 +1,28 @@
 use_gpu: true
-run_name: "gs_eb_glom_no_edge"
+run_name: "gs22_rgcn"
 model_parameters:
   hetero_gnn:
-    hidden_dim: 32
-    n_message_passings: 5
-    n_fc_layers: 1
-    norm_fc_layers: batch
+    hidden_dim: gs
+    n_message_passings: gs
+    n_fc_layers: 0
+    norm_fc_layers: none
     n_readout_layers: 1
     output_dim: 3
     dropout: gs
     norm: none
     softmax_function: "softmax" # Options: "softmax", "log_softmax", "none" (Default: "softmax")
     msg_passing_types:
-      glom_to_glom: gs
-      cell_to_glom: gat_v2
-      cell_to_cell: gine
+      glom_to_glom: gcn
+      cell_to_glom: gcn
+      cell_to_cell: gcn
 training_parameters:
   batch_size: 1
-  epochs: 500
+  epochs: 600
   learning_rate: 0.0003
   lr_scheduler_params:
     scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
     params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: 0.003
+      max_lr: 0.001
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
@@ -30,7 +30,7 @@ training_parameters:
   momentum: 0.1
   seed: 69
   batch_shuffle: false
-  patience: 1000
+  patience: 100
   log_image_frequency: 100
   n_folds: 4 # Set to 0 for no cross-validation
   reported_set: 'val'
@@ -46,8 +46,8 @@ dataset_parameters:
   test_split: 0.15
   processed_file_name: "glom_graph"
   glom_graph:
-    method: "knn" # Options: "knn", "radius", "delaunay"
-    k: 0
+    method: "radius" # Options: "knn", "radius", "delaunay"
+    radius: 550 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
     k: 5
