@@ -1,20 +1,18 @@
 use_gpu: true
-run_name: "0305_ablation_HIETNet_submitted_drop_edges"
+run_name: "0307_ablation_HIETNet_submitted_drop_edges"
 ablation_parameters:
   drop_edge_types:
-    - ('glom', 'to', 'glom')
-    - ('tcell', 'to', 'glom')
-    - ('M0', 'to', 'glom')
-    - - ('glom', 'to', 'M0')
-      - ('glom', 'to', 'tcell')
-    - - ('M0', 'to', 'glom')
-      - ('tcell', 'to', 'glom')
-    - ('M0', 'to', 'M0')
-    - ('tcell', 'to', 'tcell')
-    - - ('M0', 'to', 'M0')
-      - ('tcell', 'to', 'tcell')
+    - ('glomeruli', 'to', 'glomeruli')
     - - ('tcell', 'to', 'M0')
       - ('M0', 'to', 'tcell')
+      - ('tcell', 'to', 'tcell')
+      - ('M0', 'to', 'M0')
+    - - ('glomeruli', 'to', 'M0')
+      - ('glomeruli', 'to', 'tcell')
+      - ('M0', 'to', 'glomeruli')
+      - ('tcell', 'to', 'glomeruli')
+    - ('tcell', 'to', 'glomeruli')
+    - ('M0', 'to', 'glomeruli')
 model_parameters:
   hetero_gnn:
     hidden_dim: 64
