@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "eval_efficientnetV2m_p1-3_between"
+run_name: "eval_efficientnetV2m_p1-3_between_p4-6"
 model_parameters:
   efficientnet_v2_pretrained:
     enet_size: m
@@ -43,10 +43,12 @@ dataset_parameters:
     #- 002
     #- 003
     - 004
+    - 005
+    - 006
   random_seed: 123
   onehot_targets: true
   hot_load: false
-  image_file_path: "/data/3_extracted_features/EXC/image_paths_p1-4.csv"
+  image_file_path: "/data/3_extracted_features/EXC/image_paths_p1-6.csv"
   annotations_path: "/data/1_cytomine_downloads/EXC/annotations/25/"
   feature_list:
     - 'path_25'

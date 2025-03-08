@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "eval_restnet18_p1-3_between_p4"
+run_name: "eval_restnet18_p1-3_between_p4-6"
 model_parameters:
   resnet_pretrained:
     layers: 18
@@ -21,7 +21,7 @@ training_parameters:
   momentum: 0.1
   seed: 69
   batch_shuffle: false
-  patience: 100000000
+  patience: 100
   log_image_frequency: 50
   n_test_initialisations: 20
   n_folds: 0
@@ -38,10 +38,12 @@ dataset_parameters:
     - 003
   test_patients:
     - 004
+    - 005
+    - 006
   random_seed: 123
   onehot_targets: true
   hot_load: false
-  image_file_path: "/data/3_extracted_features/EXC/image_paths_p1-4.csv"
+  image_file_path: "/data/3_extracted_features/EXC/image_paths_p1-6.csv"
   annotations_path: "/data/1_cytomine_downloads/EXC/annotations/25/"
   feature_list:
     - 'path_25'
