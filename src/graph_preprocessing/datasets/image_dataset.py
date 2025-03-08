@@ -70,6 +70,8 @@ class GlomImageDataset(HybridGraphDataset):
 
         # Sort df the same order as the graph dataset
         sorted_indices = pd.read_csv(ROOT_DIR + "/data/3_extracted_features/EXC/glom_index_order.csv")["glom_index"]
+        df = df[df['glom_index'].isin(sorted_indices)]
+        sorted_indices = sorted_indices[sorted_indices.isin(df['glom_index'])]
         df = df.set_index("glom_index").loc[sorted_indices].reset_index()
 
         # Drop rows where feature or image path is missing (most likely because no match through slices)
