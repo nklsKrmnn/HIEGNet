@@ -1,0 +1,7 @@
+*.ipynb
+*.cdv
+*.pdf
+__pycache__/
+eda/
+runs/*
+data/output/trained_models/*
