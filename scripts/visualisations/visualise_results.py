@@ -26,7 +26,8 @@ def visualise_results(data, save_path, colors):
 
     # Annotate bars for "Within Patients"
     for i, (score, std) in enumerate(zip(f1_within, std_within)):
-        axes[0].text(i, score + std + 0.02, f"{score:.2f}\n$\pm$ {std}", ha="center", va="bottom",
+        s = "*" if i in [1,2] else ""
+        axes[0].text(i, score + std + 0.02, f"{score:.2f}\n$\pm$ {std}{s}", ha="center", va="bottom",
                      fontsize=label_font_size)
 
     # Plot for "Between Patients" with error bars
@@ -38,7 +39,8 @@ def visualise_results(data, save_path, colors):
 
     # Annotate bars for "Between Patients"
     for i, (score, std) in enumerate(zip(f1_between, std_between)):
-        axes[1].text(i, score + std + 0.02, f"{score:.2f}\n$\pm$ {std}", ha="center", va="bottom",
+        s = "*" if i in [1, 2] else ""
+        axes[1].text(i, score + std + 0.02, f"{score:.2f}\n$\pm$ {std}{s}", ha="center", va="bottom",
                      fontsize=label_font_size)
 
     # Adjust layout
@@ -51,14 +53,24 @@ def visualise_results(data, save_path, colors):
     plt.savefig(save_path,bbox_inches='tight', pad_inches=0)
 
 # Input data structured as a list of dictionaries
+# data = [
+#     {"Model": "Random Forest", "F1_Within": 0.62, "F1_Between": 0.64, "Std_Within": 0.02, "Std_Between": 0.02},
+#     {"Model": "ResNet-18", "F1_Within": 0.52, "F1_Between": 0.35, "Std_Within": 0.06, "Std_Between": 0.04},
+#     {"Model": "EfficientNetV2", "F1_Within": 0.32, "F1_Between": 0.53, "Std_Within": 0.02, "Std_Between": 0.07},
+#     {"Model": "U-Net", "F1_Within": 0.77, "F1_Between": 0.52, "Std_Within": 0.03, "Std_Between": 0.08},
+#     {"Model": "HIEGNet", "F1_Within": 0.73, "F1_Between": 0.73, "Std_Within": 0.02, "Std_Between": 0.01},
+#     {"Model": "HIEGNet-JK", "F1_Within": 0.72, "F1_Between": 0.68, "Std_Within": 0.03, "Std_Between": 0.03},
+#     {"Model": "Hybrid-HIEGNet", "F1_Within": 0.71, "F1_Between": 0.43, "Std_Within": 0.03, "Std_Between": 0.01},
+# ]
+
 data = [
     {"Model": "Random Forest", "F1_Within": 0.62, "F1_Between": 0.60, "Std_Within": 0.02, "Std_Between": 0.02},
     {"Model": "ResNet-18", "F1_Within": 0.52, "F1_Between": 0.35, "Std_Within": 0.06, "Std_Between": 0.04},
     {"Model": "EfficientNetV2", "F1_Within": 0.32, "F1_Between": 0.53, "Std_Within": 0.02, "Std_Between": 0.07},
     {"Model": "U-Net", "F1_Within": 0.77, "F1_Between": 0.54, "Std_Within": 0.03, "Std_Between": 0.05},
-    {"Model": "HIEGNet", "F1_Within": 0.73, "F1_Between": 0.61, "Std_Within": 0.02, "Std_Between": 0.02},
-    {"Model": "HIEGNet-JK", "F1_Within": 0.72, "F1_Between": 0.59, "Std_Within": 0.03, "Std_Between": 0.03},
-    {"Model": "Hybrid-HIEGNet", "F1_Within": 0.71, "F1_Between": 0.44, "Std_Within": 0.03, "Std_Between": 0.04},
+    {"Model": "HIEGNet", "F1_Within": 0.72, "F1_Between": 0.61, "Std_Within": 0.02, "Std_Between": 0.02},
+    {"Model": "HIEGNet-JK", "F1_Within": 0.72, "F1_Between": 0.59, "Std_Within": 0.03, "Std_Between": 0.02},
+    {"Model": "Hybrid-HIEGNet", "F1_Within": 0.71, "F1_Between": 0.44, "Std_Within": 0.03, "Std_Between": 0.02},
 ]
 
 colors = plt.cm.tab10(np.linspace(0, 1, 7))  # Generate distinct colors for each model
@@ -67,7 +79,7 @@ visualise_results(data, "model_comparison_thesis.pdf", colors)
 
 data_paper = [r for r in data if r["Model"] not in ["Hybrid-HIEGNet", "HIEGNet-JK"]]
 
-visualise_results(data_paper, "model_comparison_paper.pdf", colors[:-2])
+#visualise_results(data_paper, "model_comparison_paper.pdf", colors[:-2])
 
 # Function to blend color with white
 def blend_with_white(color, blend_factor=0.5):
@@ -76,4 +88,4 @@ def blend_with_white(color, blend_factor=0.5):
 # Reduce saturation for the first 5 colors
 new_colors = [blend_with_white(c, 0.5) for c in colors[:5]] + list(colors[5:])
 
-visualise_results(data, "model_comparison_appendix.pdf", new_colors)
+#visualise_results(data, "model_comparison_appendix.pdf", new_colors)

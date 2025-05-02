@@ -39,7 +39,7 @@ python src/wsi_preprocessing/scripts/cell_detection_macro.py
 python src/wsi_preprocessing/scripts/cell_features_extraction.py -t M0
 
 # Create nodes
-python src/wsi_preprocessing/scripts/cells2nodes-macro.py
+python src/wsi_preprocessing/scripts/cells2nodes_macro.py
 
 # Remove duplicates from overlapping glomeruli image patches
 python src/wsi_preprocessing/scripts/cell_join.py -t M0

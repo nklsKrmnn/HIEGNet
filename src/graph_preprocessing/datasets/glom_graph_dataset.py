@@ -1,3 +1,5 @@
+import time
+import tracemalloc
 import warnings
 
 import cv2
@@ -213,7 +215,16 @@ class GlomGraphDataset(Dataset):
             if (df_patient.shape[0] > 10) and (
                     patient in self.train_patients + self.validation_patients + self.test_patients):
                 # Create the data object for each graph
+                tracemalloc.start()
+                start = time.time()
+
                 data = self.create_graph_object(df_patient, patient)
+
+                end = time.time()
+                print(f"Time for graph {patient}: {end - start:.2f} s")
+                current, peak = tracemalloc.get_traced_memory()
+                print(f"Memory peak usage for graph {patient}: {peak / (1024 * 1024):.2f} MB")
+                tracemalloc.stop()
 
                 # Save graph data object
                 file_name = f"{self.processed_file_name}_p{patient}.pt"

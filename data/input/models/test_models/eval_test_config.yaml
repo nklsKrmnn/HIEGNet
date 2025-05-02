@@ -1,11 +1,13 @@
 use_gpu: true
-run_name: "eval_hetero_gnn_after_gs14_g2g550_combined_2_within"
+run_name: "eval_train_models"
 model_parameters:
   hetero_gnn:
-    hidden_dim: 64
-    n_message_passings: 2
-    n_fc_layers: 2
-    norm_fc_layers: none
+    #model_dir: "/data/input/models/HIEGNet/"
+    hidden_dim: 16
+    n_message_passings: 1
+    n_fc_layers: 1
+    n_readout_layers: 1
+    norm_fc_layers: batch
     output_dim: 3
     dropout: 0.2
     norm: none
@@ -16,12 +18,12 @@ model_parameters:
       cell_to_cell: 'sage'
 training_parameters:
   batch_size: 1
-  epochs: 600
+  epochs: 1
   learning_rate: 0.0003
-  lr_scheduler_params:
-    scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
-    params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
-      max_lr: 0.001
+  #lr_scheduler_params:
+  #  scheduler: "OneCycleLR" # Options: "ReduceLROnPlateau", "CyclicLR", "OneCycleLR"
+  #  params: # Give the parameters for the specific class you chose. Here you can find the documentation: https://pytorch.org/docs/stable/optim.html
+  #    max_lr: 0.003
   loss: "crossentropy" # Options: "mse", "crossentropy", "nll", "weighted_mse"
   optimizer: "adam" # Options: "adam", "sgd"
   weight_decay: 0.000000
@@ -40,28 +42,20 @@ dataset_parameters:
   feature_file_path: "/data/3_extracted_features/EXC/glom_features_uniform.csv"
   cell_node_dir_path: "/data/3_extracted_features/EXC/cell_nodes"
   annotations_path: "/data/1_cytomine_downloads/EXC/annotations/25/"
-  set_indices_path: "/repos/histograph/data/input/set_indices/test15_val15"
-  split_action: "load" # Options: "load", "save", "split"
   validation_split: 0.0
-  test_split: 0.15
+  test_split: 1
   processed_file_name: "glom_graph"
   glom_graph:
     method: "radius" # Options: "knn", "radius", "delaunay"
     radius: 550 # Options: "k", "radius", ""
   cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
-    k: 5
-    lim: 400 # Options: "k", "radius", ""
+    k: 5 # Options: "k", "radius", ""
+    lim: 400
   train_patients:
     - 001
-    - 002
-    - 003
-    #- 004
   test_patients:
-    - 001
-    - 002
-    - 003
-    #- 004
+    - 004
   random_seed: 123
   onehot_targets: true
   process: true
@@ -74,15 +68,6 @@ dataset_parameters:
     - 'circularity'
     - 'aspect_ratio'
     - 'eccentricity'
-    #- 'lbp_0'
-    #- 'lbp_1'
-    #- 'lbp_2'
-    #- 'lbp_3'
-    #- 'lbp_4'
-    #- 'lbp_5'
-    #- 'lbp_6'
-    #- 'lbp_7'
-    #- 'lbp_8'
     - 'lbp_uniform_0'
     - 'lbp_uniform_1'
     - 'lbp_uniform_2'
@@ -101,7 +86,7 @@ dataset_parameters:
     - "perimeter"
     - "eccentricity"
     - "aspect_ratio"
-    - "circularity"
+    - "compactness"
     #- "solidity"
     - "is_in_glom"
 

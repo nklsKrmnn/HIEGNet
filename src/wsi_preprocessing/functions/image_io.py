@@ -29,6 +29,18 @@ def get_paths(input_folder: str, file_types: list[str] | str = ['.png', '.svs'])
                 image_paths.append(os.path.join(root, file))
     return image_paths
 
+def get_subfolders(input_folder: str) -> list[str]:
+    """
+    Get subfolders in input folder.
+    :param input_folder: Path to the input folder
+    :return: List of subfolders
+    """
+    subfolders = []
+    for root, dirs, _ in os.walk(input_folder):
+        for dir in dirs:
+            subfolders.append(os.path.join(root, dir))
+    return subfolders
+
 
 def get_csv_paths(input_folder: str) -> list[str]:
     """
@@ -168,6 +180,35 @@ def upsampling_image(image: np.ndarray, upsampling_factor: int, interpolation=cv
     image = cv2.resize(image, (image.shape[1] * upsampling_factor, image.shape[0] * upsampling_factor),
                        interpolation=interpolation)
     return image
+
+def isolate_central_contour(image: np.array) -> np.array:
+    # Binarize the image
+    binary_image = (image > 0).astype(np.uint8)
+
+    # Isolate central glomerulus
+    # Find contours in the binary mask
+    contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Calculate the center of the image
+    center = (image.shape[0] // 2, image.shape[0] // 2)
+
+    # Find the contour that covers the central pixel
+    central_contour = None
+    for contour in contours:
+        if cv2.pointPolygonTest(contour, center, False) >= 0:
+            central_contour = contour
+            break
+
+    # If central contour is not on central pixel check for closest contour
+    if central_contour is None:
+        min_dist = -1000
+        for contour in contours:
+            dist = cv2.pointPolygonTest(contour, center, True)
+            if dist > min_dist:
+                min_dist = dist
+                central_contour = contour
+
+    return central_contour
 
 
 def isolate_central_mask(image: np.array) -> np.array:

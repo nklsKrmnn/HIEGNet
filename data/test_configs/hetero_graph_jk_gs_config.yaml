@@ -1,5 +1,5 @@
 use_gpu: true
-run_name: "gs15_gnn_jk_g2g550_maxlr001_sameMSGP_withoutClone_var_readout"
+run_name: "gs19_gnn_jk_g2gk1_c2c"
 model_parameters:
   hetero_jk:
     hidden_dim: 64
@@ -46,12 +46,10 @@ dataset_parameters:
   test_split: 0.15
   processed_file_name: "glom_graph"
   glom_graph:
-    method: "radius" # Options: "knn", "radius", "delaunay"
-    radius: 550 # Options: "k", "radius", ""
-  cell_graph:
     method: "knn" # Options: "knn", "radius", "delaunay"
-    k: 5
-    lim: 400 # Options: "k", "radius", ""
+    k: 1 # Options: "k", "radius", ""
+  cell_graph:
+
   train_patients:
     - 001
     - 002

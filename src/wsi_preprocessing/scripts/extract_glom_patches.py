@@ -11,7 +11,7 @@ STAINING: Final[str] = "25"
 PROJECT: Final[str] = "EXC"
 LOD: Final[int] = 0
 CROPPING_SIZE: Final[int] = 2200 #hight and width of the patch around a glom in pixels
-patients = ['005','006']
+patients = ['006']
 
 input_dir = f"/home/dascim/data/1_cytomine_downloads/{PROJECT}"
 output_dir = f"/home/dascim/data/2_images_preprocessed/{PROJECT}"

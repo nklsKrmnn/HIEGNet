@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage.feature import graycomatrix, graycoprops, local_binary_pattern
 
+from wsi_preprocessing.functions.image_io import isolate_central_contour
+
 
 def extract_shape_based_features(binary_image: np.array) -> dict:
     """
@@ -20,8 +22,9 @@ def extract_shape_based_features(binary_image: np.array) -> dict:
     """
 
     # Extract contour
-    contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    contour = contours[0]
+    #contours, _ = cv2.findContours(binary_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    #contour = contours[0]
+    contour = isolate_central_contour(binary_image)
 
     # Extract features
     area = cv2.contourArea(contour)

@@ -1,10 +1,10 @@
 use_gpu: true
-run_name: "coding"
+run_name: "memor_record_test"
 #gs_start_index: 1 #(starting from 1)
 model_parameters:
   hetero_gnn:
     hidden_dim: 16
-    n_message_passings: 1
+    n_message_passings: gs
     n_fc_layers: 1
     norm_fc_layers: none
     output_dim: 3

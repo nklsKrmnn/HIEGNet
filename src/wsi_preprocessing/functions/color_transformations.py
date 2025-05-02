@@ -1,7 +1,8 @@
 import numpy as np
-from skimage.color import rbd_from_rgb, separate_stains
+from skimage.color import rbd_from_rgb, separate_stains, combine_stains
+from skimage.color import rgb_from_rbd
 from skimage.exposure import rescale_intensity
-from skimage.util import img_as_ubyte
+from skimage.util import img_as_ubyte, img_as_float
 import matplotlib.pyplot as plt
 
 
@@ -38,6 +39,32 @@ def transform_to_florescent(image: np.array) -> np.array:
         plt.show()
 
     return flor_image
+
+def transform_to_rgb(flor_image: np.array) -> np.array:
+    """
+    Reverse the florescent transformation back to an RGB image.
+    :param flor_image: Fluorescent image (macrophages in blue, T-cells in green).
+    :return: RGB image.
+    """
+    # Convert to float for processing
+    flor_image = img_as_float(flor_image)
+
+    # Extract channels: Green (T-cells), Blue (Macrophages)
+    green_stain = flor_image[:, :, 1]  # Extract green channel (T-cells)
+    blue_stain = flor_image[:, :, 2]   # Extract blue channel (Macrophages)
+
+    # Reconstruct the stain matrix with zeros for the red channel
+    stain_matrix = np.dstack((np.zeros_like(green_stain), green_stain, blue_stain))
+
+    # Convert back to RGB using inverse stain separation
+    reconstructed_rgb = combine_stains(stain_matrix, rgb_from_rbd)
+
+    # Normalize and convert back to 8-bit for visualization
+    reconstructed_rgb = rescale_intensity(reconstructed_rgb, out_range=(0, 1))
+    reconstructed_rgb = img_as_ubyte(reconstructed_rgb)
+
+    return reconstructed_rgb
+
 
 def create_cell_masks(image: np.array) -> np.array:
     """

@@ -41,6 +41,7 @@ class HeteroUnifiedGraphDataset(HeteroGraphDataset):
         edge_index, edge_weights = graph_construction(coords, **self.glom_graph)
         data[('glomeruli', 'to', 'glomeruli')].edge_index = torch.tensor(edge_index, dtype=torch.long)
         data[('glomeruli', 'to', 'glomeruli')].edge_attr = torch.tensor(edge_weights, dtype=torch.float).unsqueeze(1)
+        # TODO: Add this to list of edge types
         # Fit scaler to edge attributes
         if patient in self.train_patients:
             self.create_and_fit_edge_scaler(data, ('glomeruli', 'to', 'glomeruli'), patient)
@@ -154,6 +155,15 @@ class HeteroUnifiedGraphDataset(HeteroGraphDataset):
             # Partial fit of scaler to node features
             if patient in self.train_patients:
                 self.node_scalers[current_cell_type].partial_fit(data[current_cell_type].x)
+
+        # print total number of nodes of all types
+        n_nodes = data['glomeruli'].x.shape[0] + sum([data[cell_type].x.shape[0] for cell_type in self.cell_types])
+        print(f"Patient {patient} has {n_nodes} nodes in total")
+
+        # print total number of edges of all types
+        n_edges = data[('glomeruli', 'to', 'glomeruli')].edge_index.shape[1] + sum(data[edge_type].edge_index.shape[1] for edge_type in data.edge_types if edge_type[1] == 'to')
+        print(f"Patient {patient} has {n_edges} edges in total")
+
 
         return data
 

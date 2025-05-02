@@ -8,7 +8,7 @@ from tqdm import tqdm
 from sklearn.preprocessing import MinMaxScaler
 
 from src.wsi_preprocessing.functions.hand_crafted_feature import extract_shape_based_features, extract_texture_based_features
-from src.wsi_preprocessing.functions.image_io import get_paths, isolate_central_mask
+from src.wsi_preprocessing.functions.image_io import get_paths, isolate_central_contour
 from src.wsi_preprocessing.functions.path_io import extract_patient_id, extract_index
 
 PROJECT: Final[str] = "EXC"
@@ -31,7 +31,7 @@ for path in tqdm(input_mask_paths):
     image = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
 
     # Isolate the central glomerulus
-    isolated_glom_image = isolate_central_mask(image)
+    isolated_glom_image = isolate_central_contour(image)
 
     # Binarize the isolated glomerulus
     isolated_glom_bin_image = (isolated_glom_image > 0).astype(np.uint8)

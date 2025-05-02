@@ -5,7 +5,7 @@ import gc
 
 import matplotlib.pyplot as plt
 from src.wsi_preprocessing.functions.coordinate_transformer import CoordinateTransformater
-from src.wsi_preprocessing.functions.image_io import crop_patch_png, binning_image, get_paths, isolate_central_mask
+from src.wsi_preprocessing.functions.image_io import crop_patch_png, binning_image, get_paths, isolate_central_contour
 import os
 from src.wsi_preprocessing.functions.path_io import get_path_up_to, extract_patient_id
 
@@ -61,7 +61,7 @@ for stain in STAINS:
                 #local_mask = binning_image(local_mask, 2)
 
                 # Isolate the central glomerulus
-                isolated_glom_mask = isolate_central_mask(cv2.convertScaleAbs(local_mask))
+                isolated_glom_mask = isolate_central_contour(cv2.convertScaleAbs(local_mask))
 
                 # Load original image
                 glom_id = row["ID"]
